@@ -19,9 +19,10 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("");
     static TextField scanBox = new TextField("");
 
-    // New text fields for Python environment and script path
-    static TextField virtualEnvField = new TextField("c:/Users/lociuser/miniconda3/envs/spath");
-    static TextField pythonScriptField = new TextField("c:/Users/lociuser/pythontest.py");
+    // New text fields for Python environment, script path, and sample label
+    static TextField virtualEnvField = new TextField("");
+    static TextField pythonScriptField = new TextField("");
+    static TextField sampleLabelField = new TextField("");  // New field for sample label
 
     static void createGUI() {
         // Create the dialog
@@ -42,6 +43,7 @@ class QP_scope_GUI {
         // Handling the response
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields
+            def sampleLabel = sampleLabelField.getText();
             def x1 = x1Field.getText();
             def y1 = y1Field.getText();
             def x2 = x2Field.getText();
@@ -62,10 +64,10 @@ class QP_scope_GUI {
             }
 
             // Check if any value is empty
-            if ([x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Incomplete data entered.");
             } else {
-                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, x1, y1, x2, y2);
+                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, sampleLabel, x1, y1, x2, y2);
             }
         }
     }
@@ -75,6 +77,10 @@ class QP_scope_GUI {
         pane.setHgap(10);
         pane.setVgap(10);
         def row = 0;
+
+        // Add new component for Sample Label
+        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++);
+
         // Add existing components to the grid
         addToGrid(pane, new Label('X1:'), x1Field, row++);
         addToGrid(pane, new Label('Y1:'), y1Field, row++);
@@ -82,7 +88,7 @@ class QP_scope_GUI {
         addToGrid(pane, new Label('Y2:'), y2Field, row++);
         addToGrid(pane, new Label('Full bounding box:'), scanBox, row++);
 
-        // Add new components for Python environment and script path
+        // Add components for Python environment and script path
         addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++);
         addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++);
 
