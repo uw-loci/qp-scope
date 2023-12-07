@@ -30,6 +30,7 @@ class QP_scope implements QuPathExtension {
 	@Override
 	void installExtension(QuPathGUI qupath) {
 		addMenuItem(qupath)
+
 	}
 	/**
 	 * Get the description of the extension.
@@ -56,6 +57,8 @@ class QP_scope implements QuPathExtension {
 		def fileNameStitching = new MenuItem("Start qp_scope")
 		// TODO tooltip "Coordinates are expected to be in the format ImageName[xCoordinateInMicrons, yCoordinateInMicrons].tif"
 		fileNameStitching.setOnAction(e -> {
+			//TODO check preferences for all necessary entries
+
 			QP_scope_GUI.createGUI()
 
 		})

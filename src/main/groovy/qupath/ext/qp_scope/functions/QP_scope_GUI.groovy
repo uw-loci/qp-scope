@@ -9,6 +9,10 @@ import javafx.scene.layout.GridPane
 import javafx.stage.Modality
 import qupath.ext.qp_scope.utilities.utilityFunctions
 import qupath.lib.gui.dialogs.Dialogs
+import groovy.io.FileType
+import java.awt.image.BufferedImage
+import qupath.lib.images.servers.ImageServerProvider
+
 
 class QP_scope_GUI {
 
@@ -17,12 +21,14 @@ class QP_scope_GUI {
     static TextField y1Field = new TextField("");
     static TextField x2Field = new TextField("");
     static TextField y2Field = new TextField("");
-    static TextField scanBox = new TextField("");
+    static TextField scanBox = new TextField("20,25,30,35");
+    static preferences = utilityFunctions.getPreferences()
 
     // New text fields for Python environment, script path, and sample label
-    static TextField virtualEnvField = new TextField("");
-    static TextField pythonScriptField = new TextField("");
-    static TextField sampleLabelField = new TextField("");  // New field for sample label
+    static TextField virtualEnvField = new TextField(preferences.environment);
+    static TextField pythonScriptField = new TextField(preferences.installation);
+    static TextField projectsFolderField = new TextField(preferences.projects);
+    static TextField sampleLabelField = new TextField("First_Test");  // New field for sample label
 
     static void createGUI() {
         // Create the dialog
@@ -48,8 +54,10 @@ class QP_scope_GUI {
             def y1 = y1Field.getText();
             def x2 = x2Field.getText();
             def y2 = y2Field.getText();
-            def virtualEnvPath = virtualEnvField.getText();
-            def pythonScriptPath = pythonScriptField.getText();
+            def virtualEnvPath = virtualEnvField.getText()
+            def pythonScriptPath = pythonScriptField.getText()
+            def projectsFolderPath = projectsFolderField.getText()
+
 
             // Handle full bounding box input
             def boxString = scanBox.getText();
@@ -67,7 +75,16 @@ class QP_scope_GUI {
             if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Incomplete data entered.");
             } else {
-                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, sampleLabel, x1, y1, x2, y2);
+                Object project = utilityFunctions.createProjectFolder(projectsFolderPath,sampleLabel, preferences.firstScanType)
+                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, projectsFolderPath, sampleLabel, x1, y1, x2, y2);
+
+                //TODO figure out how to call stitching function in other plugin
+                utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
+                String stitchedImagePathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages" + File.separator + preferences.firstScanType + sampleLabel;
+                File stitchedImagePath = new File(stitchedImagePathStr);
+                utilityFunctions.addImageToProject(stitchedImagePath, project)
+
+                //}
             }
         }
     }
@@ -91,6 +108,7 @@ class QP_scope_GUI {
         // Add components for Python environment and script path
         addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++);
         addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++);
+        addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++);
 
         return pane;
     }
@@ -99,4 +117,6 @@ class QP_scope_GUI {
         pane.add(label, 0, rowIndex);
         pane.add(control, 1, rowIndex);
     }
+
+
 }

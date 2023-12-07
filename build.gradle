@@ -52,8 +52,6 @@ dependencies {
     // If you aren't using Groovy, this can be removed
     shadow libs.bundles.groovy
 
-
-
     testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     testImplementation libs.junit
 }
