@@ -9,11 +9,11 @@ plugins {
   id 'org.bytedeco.gradle-javacpp-platform'
 }
 
-// TODO: Change the module name
-ext.moduleName = 'io.github.qupath.extension.qp_scope'
+//the module name
+ext.moduleName = 'qupath.extension.qp_scope'
 
-// TODO: Define the extension version & provide a short description
-version = "0.4.4"
+//Define the extension version & provide a short description
+version = "0.1.0"
 description = 'A basic QuPath extension for stitching.'
 
 // TODO: Specify the QuPath version, compatible with the extension.
@@ -42,7 +42,7 @@ dependencies {
     shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     //Access to BioFormats extension for writing ome.tif files
     implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
-    //implementation "qupath.ext.basicstitching:BasicStitching:${qupathVersion}"
+    implementation "qupath.ext.basicstitching:BasicStitching:0.1.0"
 
     //TODO figure out syntax for other plugins
     // For logging - the version comes from QuPath's version catalog at
@@ -140,11 +140,11 @@ tasks.named('test') {
 repositories {
     // Add this if you need access to dependencies only installed locally
     mavenLocal()
-    /*
+
     flatDir{
         dirs 'C:/ImageAnalysis/QPExtensionTest/BasicStitching/build/libs'
     }
-    */
+
     mavenCentral()
 
     // Add scijava - which is where QuPath's jars are hosted

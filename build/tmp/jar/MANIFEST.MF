@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Implementation-Title: qp_scope
-Implementation-Version: 0.4.4
-Automatic-Module-Name: io.github.qupath.extension.qp_scope
+Implementation-Version: 0.1.0
+Automatic-Module-Name: qupath.extension.qp_scope
 
