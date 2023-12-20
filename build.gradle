@@ -42,8 +42,9 @@ dependencies {
     shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     //Access to BioFormats extension for writing ome.tif files
     implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
+    //implementation "qupath.ext.basicstitching:BasicStitching:${qupathVersion}"
+
     //TODO figure out syntax for other plugins
-    //implementation "io.github.qupath:BasicStitchingExtension:${qupathVersion}"
     // For logging - the version comes from QuPath's version catalog at
     // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml
     // See https://docs.gradle.org/current/userguide/platforms.html
@@ -138,17 +139,16 @@ tasks.named('test') {
 // within QuPath itself (which is useful during development).
 repositories {
     // Add this if you need access to dependencies only installed locally
-    //  mavenLocal()
-
+    mavenLocal()
+    /*
+    flatDir{
+        dirs 'C:/ImageAnalysis/QPExtensionTest/BasicStitching/build/libs'
+    }
+    */
     mavenCentral()
 
     // Add scijava - which is where QuPath's jars are hosted
     maven {
-        url "https://maven.scijava.org/content/repositories/releases"
+        url "https://maven.scijava.org/content/groups/public"
     }
-
-    maven {
-        url "https://maven.scijava.org/content/repositories/snapshots"
-    }
-
 }

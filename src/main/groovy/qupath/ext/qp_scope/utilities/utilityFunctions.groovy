@@ -2,8 +2,9 @@ package qupath.ext.qp_scope.utilities
 
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
+import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.images.servers.ImageServerProvider
-
+import qupath.lib.projects.ProjectIO
 import java.awt.image.BufferedImage
 import qupath.lib.projects.Projects;
 import java.io.File
@@ -30,20 +31,26 @@ class utilityFunctions {
     }
 
     static boolean addImageToProject(File stitchedImagePath, Project project){
+        def logger = LoggerFactory.getLogger(QuPathGUI.class)
 
-        def imagePath = stitchedImagePath.getCanonicalPath()
+        def imagePath = stitchedImagePath.toURI().toString()
+        //logger.info(imagePath)
 
-        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath, "")
-        println(support)
+        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath)
+        //logger.info(support as String)
         def builder = support.builders.get(0)
         // Make sure we don't have null
         if (builder == null) {
-            print "Image not supported: " + imagePath
+            logger.warn("Image not supported: " + imagePath)
             return false
         }
 
         // Add the image as entry to the project
-        print "Adding: " + imagePath
+        logger.info("Adding: " + imagePath)
+        if (project == null) {
+            logger.warn("Project is null, there must have been a problem creating the project")
+            return false
+        }
         Object entry = project.addImage(builder)
 
         // Set a particular image type
@@ -63,6 +70,8 @@ class utilityFunctions {
 }
 
     static Project createProjectFolder(String projectsFolderPath, String sampleLabel, String scanType) {
+        //TODO check if a project is open! It probably should not be?
+
         // Ensure that the projectsFolderPath exists, if it does not, create it.
         File projectsFolder = new File(projectsFolderPath)
         if (!projectsFolder.exists()) {
@@ -76,15 +85,28 @@ class utilityFunctions {
         }
 
         // Check for a .qpproj file in the sampleLabel folder
-        File[] qpprojFiles = sampleLabelFolder.listFiles({ File f -> f.name.endsWith('.qpproj') } as FilenameFilter)
-        //Create a QuPath project in the sampleLabelFolder, within the projects folder
+        File[] qpprojFiles = sampleLabelFolder.listFiles({ dir, name -> name.endsWith('.qpproj') } as FilenameFilter)
+        //Create a QuPath project in the sampleLabelFolder, within the projects folder, provided there are no existing .qpproj files
         Project project = null
         if (qpprojFiles == null || qpprojFiles.length == 0) {
             project = Projects.createProject(sampleLabelFolder, BufferedImage.class)
+        }else{
+            //WARNING: This assumes there will be only one file ending in .qpproj
+            // this should USUALLY be a safe assumption
+            if (qpprojFiles.length > 1){
+                Dialogs.showWarningNotification("Warning!", "Multiple Project files found, may cause unexpected behavior!")
+            }
+
+            project = ProjectIO.loadProject(qpprojFiles[0], BufferedImage.class)
         }
 
+        if (project == null) {
+            Dialogs.showWarningNotification("Warning!", "Project is null!")
+        }
         // Within projectsFolderPath, check for a folder with the name "SlideImages", if it does not exist, create it
-        File slideImagesFolder = new File(projectsFolder, sampleLabelFolder, "SlideImages")
+        String slideImagesFolderPathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages" ;
+        File slideImagesFolder =  new File(slideImagesFolderPathStr);
+
         if (!slideImagesFolder.exists()) {
             slideImagesFolder.mkdirs()
         }
@@ -94,6 +116,7 @@ class utilityFunctions {
         if (!scanTypeFolder.exists()) {
             scanTypeFolder.mkdirs()
         }
+
         return project
     }
 
@@ -143,6 +166,7 @@ class utilityFunctions {
         //TODO add code to access Preferences fields
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
-        return [installation: "C:\\ImageAnalysis\\python", environment: "C:\\Anaconda\\envs\\paquo", projects: "C:\\ImageAnalysis\\slides", firstScanType: "4x_bf_", secondScanType:"20x_bf"]
+        //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
+        return [installation: "C:\\ImageAnalysis\\python\\py_dummydoc.py", environment: "C:\\Anaconda\\envs\\paquo", projects: "C:\\ImageAnalysis\\slides", firstScanType: "4x_bf_", secondScanType:"20x_bf"]
     }
 }

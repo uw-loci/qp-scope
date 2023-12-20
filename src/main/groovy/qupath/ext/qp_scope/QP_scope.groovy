@@ -5,15 +5,10 @@ import qupath.lib.common.Version;
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.extensions.QuPathExtension;
 import qupath.ext.qp_scope.functions.*
+import org.slf4j.LoggerFactory
 
 /**
- * This is a demo to provide a template for creating a new QuPath extension in Groovy.
- * <p>
- * <b>Important!</b> For your extension to work in QuPath, you need to make sure the name & package
- * of this class is consistent with the file
- * <pre>
- *     /resources/META-INF/services/qupath.lib.gui.extensions.QuPathExtension
- * </pre>
+ * Built from the QuPath extension template - an extension to control a microscope through a Python interface
  */
 class QP_scope implements QuPathExtension {
 
@@ -53,9 +48,15 @@ class QP_scope implements QuPathExtension {
 	}
 
 	private void addMenuItem(QuPathGUI qupath) {
+		def logger = LoggerFactory.getLogger(QuPathGUI.class)
+		//Check for dependencies and QuPath version
+		logger.info("QuPath Version")
+		logger.info(getQuPathVersion().toString())
+		//TODO how to check if version is supported?
+
 		def menu = qupath.getMenu("Extensions>${name}", true)
 		def fileNameStitching = new MenuItem("Start qp_scope")
-		// TODO tooltip "Coordinates are expected to be in the format ImageName[xCoordinateInMicrons, yCoordinateInMicrons].tif"
+		// TODO tooltip
 		fileNameStitching.setOnAction(e -> {
 			//TODO check preferences for all necessary entries
 

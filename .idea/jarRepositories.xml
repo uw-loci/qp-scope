@@ -26,5 +26,15 @@
       <option name="name" value="maven" />
       <option name="url" value="https://maven.scijava.org/content/repositories/releases" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenLocal" />
+      <option name="name" value="MavenLocal" />
+      <option name="url" value="file:/$PROJECT_DIR$/../../../Users/Michael%20Nelson/.m2/repository/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven" />
+      <option name="name" value="maven" />
+      <option name="url" value="https://maven.scijava.org/content/groups/public" />
+    </remote-repository>
   </component>
 </project>

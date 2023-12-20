@@ -10,11 +10,14 @@ import javafx.stage.Modality
 import qupath.ext.qp_scope.utilities.utilityFunctions
 import qupath.lib.gui.dialogs.Dialogs
 import groovy.io.FileType
-import java.awt.image.BufferedImage
-import qupath.lib.images.servers.ImageServerProvider
+import qupath.lib.projects.Project
+import qupath.lib.gui.QuPathGUI
+import qupath.lib.scripting.QP
+import qupath.lib.gui.scripting.QPEx
+import qupath.ext.basicstitching.BasicStitchingExtension
 
 
-class QP_scope_GUI {
+public class QP_scope_GUI {
 
     // Existing text fields
     static TextField x1Field = new TextField("");
@@ -35,7 +38,7 @@ class QP_scope_GUI {
         def dlg = new Dialog<ButtonType>();
         dlg.initModality(Modality.APPLICATION_MODAL);
         dlg.setTitle("qp_scope");
-        dlg.setHeaderText("Enter details:");
+        dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
 
         // Set the content
         dlg.getDialogPane().setContent(createContent());
@@ -75,14 +78,28 @@ class QP_scope_GUI {
             if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Incomplete data entered.");
             } else {
-                Object project = utilityFunctions.createProjectFolder(projectsFolderPath,sampleLabel, preferences.firstScanType)
+                Project currentQuPathProject= utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
+
                 utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, projectsFolderPath, sampleLabel, x1, y1, x2, y2);
 
                 //TODO figure out how to call stitching function in other plugin
+
                 utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
-                String stitchedImagePathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages" + File.separator + preferences.firstScanType + sampleLabel;
+                String stitchedImagePathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages" + File.separator + preferences.firstScanType + sampleLabel + ".ome.tif";
                 File stitchedImagePath = new File(stitchedImagePathStr);
-                utilityFunctions.addImageToProject(stitchedImagePath, project)
+                utilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
+
+                //open the newly created project
+                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
+                def qupathGUI = QPEx.getQuPath()
+
+                qupathGUI.setProject(currentQuPathProject)
+                //Find the existing images - there should only be one since the project was just created
+                def firstImage = currentQuPathProject.getImageList()[0]
+
+                //Open the first image
+                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
+                qupathGUI.openImageEntry(firstImage)
 
                 //}
             }
@@ -117,6 +134,5 @@ class QP_scope_GUI {
         pane.add(label, 0, rowIndex);
         pane.add(control, 1, rowIndex);
     }
-
 
 }
