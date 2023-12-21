@@ -131,17 +131,18 @@ class utilityFunctions {
      * @param x2 The second x-coordinate to be passed to the Python script.
      * @param y2 The second y-coordinate to be passed to the Python script.
      */
-    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath,String projectsFolderPath, String sampleLabel, String x1, String y1, String x2, String y2) {
+    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath,String projectsFolderPath, String sampleLabel,String imageType, String x1 = "", String y1 = "", String x2 = "", String y2 = "", annotationJsonFileLocation = null) {
         try {
             def logger = LoggerFactory.getLogger(QuPathGUI.class)
             // Path to the Python executable in the Anaconda environment
             String pythonExecutable = "${anacondaEnvPath}/python.exe";
 
             // Combine coordinates into a single argument
-            String args = "$pythonScriptPath, $projectsFolderPath, $sampleLabel, ${x1},${y1},${x2},${y2}";
+            String args = "$anacondaEnvPath $projectsFolderPath $sampleLabel $imageType $x1 $y1 $x2 $y2 $annotationJsonFileLocation";
             logger.info(args)
             // Construct the command
             String command = "\"${pythonExecutable}\" \"${pythonScriptPath}\" ${args}";
+            logger.info("Check the following command")
             logger.info(command)
             // Execute the command
             Process process = command.execute();
@@ -167,6 +168,6 @@ class utilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [installation: "C:\\ImageAnalysis\\python\\py_dummydoc.py", environment: "C:\\Anaconda\\envs\\paquo", projects: "C:\\ImageAnalysis\\slides", firstScanType: "4x_bf_", secondScanType:"20x_bf"]
+        return [installation: "C:\\ImageAnalysis\\python\\pycromanager_step_1.py", environment: "C:\\Anaconda\\envs\\paquo", projects: "C:\\ImageAnalysis\\slides", firstScanType: "4x_bf_", secondScanType:"20x_bf", deleteTiles:"True"]
     }
 }

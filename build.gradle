@@ -44,7 +44,7 @@ dependencies {
     implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
     implementation "qupath.ext.basicstitching:BasicStitching:0.1.0"
 
-    //TODO figure out syntax for other plugins
+
     // For logging - the version comes from QuPath's version catalog at
     // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml
     // See https://docs.gradle.org/current/userguide/platforms.html

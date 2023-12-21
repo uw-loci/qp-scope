@@ -60,7 +60,7 @@ class QP_scope implements QuPathExtension {
 		fileNameStitching.setOnAction(e -> {
 			//TODO check preferences for all necessary entries
 
-			QP_scope_GUI.createGUI()
+			QP_scope_GUI.createGUI1()
 
 		})
 		menu.getItems() << fileNameStitching
