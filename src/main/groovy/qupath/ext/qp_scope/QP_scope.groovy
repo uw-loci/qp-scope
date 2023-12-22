@@ -55,15 +55,22 @@ class QP_scope implements QuPathExtension {
 		//TODO how to check if version is supported?
 
 		def menu = qupath.getMenu("Extensions>${name}", true)
-		def fileNameStitching = new MenuItem("Start qp_scope")
+		def qpScope1 = new MenuItem("Start qp_scope")
 		// TODO tooltip
-		fileNameStitching.setOnAction(e -> {
+		qpScope1.setOnAction(e -> {
 			//TODO check preferences for all necessary entries
-
 			QP_scope_GUI.createGUI1()
-
 		})
-		menu.getItems() << fileNameStitching
+
+		def qpScope2 = new MenuItem("Second scan on existing annotations")
+		// TODO tooltip
+		qpScope2.setOnAction(e -> {
+			//TODO check preferences for all necessary entries
+			QP_scope_GUI.createGUI2()
+		})
+
+		menu.getItems() << qpScope1
+		menu.getItems() << qpScope2
 	}
 	
 }

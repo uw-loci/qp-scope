@@ -18,9 +18,13 @@ import qupath.lib.gui.QuPathGUI
 import qupath.lib.scripting.QP
 import qupath.lib.gui.scripting.QPEx
 import qupath.ext.basicstitching.stitching.stitchingImplementations
+
+import java.awt.image.BufferedImage
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
+
+import static qupath.lib.scripting.QP.project
 
 //Thoughts:
 //Have collapsible sections to a larger dialog box?
@@ -85,9 +89,7 @@ class QP_scope_GUI {
                     dataCheck = false
                     return
                 }
-                annotationJsonFileLocation = preferences.projects + File.separator + sampleLabel + File.separator + preferences.firstScanType + sampleLabel + ".geojson"
-
-                QP.exportAllObjectsToGeoJson(annotationJsonFileLocation, "EXCLUDE_MEASUREMENTS", "FEATURE_COLLECTION")
+                annotationJsonFileLocation = utilityFunctions.createAnnotationJson(projectsFolderPath, sampleLabel, preferences.firstScanType)
             } else {
                 // Continue with previous behavior using coordinates
 
@@ -109,22 +111,28 @@ class QP_scope_GUI {
             // Check if any value is empty
             if (dataCheck){
                 Project currentQuPathProject= utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
-                def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+preferences.firstScanType+sampleLabel
-                def matchingString = "${preferences.firstScanType}${sampleLabel}"
+                def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
+                def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+scanTypeWithIndex
                 def logger = LoggerFactory.getLogger(QuPathGUI.class)
-                logger.info(matchingString)
                 logger.info(tempTileDirectory)
-                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, projectsFolderPath, sampleLabel,preferences.firstScanType, x1, y1, x2, y2, annotationJsonFileLocation)
+                //Reduce the number of sent args
+                def boundingBox = "{$x1}, {$y1}, {$x2}, {$y2}"
+                // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
+
+                List args = [pythonScriptPath, projectsFolderPath, sampleLabel,scanTypeWithIndex,annotationJsonFileLocation, boundingBox ]
+                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+
+
                 String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
                 //TODO Need to check if stitching is successful, provide error
                 //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
                 //TODO add output folder to stitchCore
-                stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, matchingString)
+                String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
 
 
                 //utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
 
-                String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.firstScanType + sampleLabel + ".ome.tif"
+                //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.firstScanType + sampleLabel + ".ome.tif"
                 File stitchedImagePath = new File(stitchedImagePathStr)
                 utilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
 
@@ -134,47 +142,26 @@ class QP_scope_GUI {
 
                 qupathGUI.setProject(currentQuPathProject)
                 //Find the existing images - there should only be one since the project was just created
-                def firstImage = currentQuPathProject.getImageList()[0]
+                def matchingImage = currentQuPathProject.getImageList().find { image ->
+                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
+                }
 
                 //Open the first image
                 //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
-                qupathGUI.openImageEntry(firstImage)
-
+                qupathGUI.openImageEntry(matchingImage)
+                qupathGUI.refreshProject()
                 //Check if the tiles should be deleted from the collection folder
-                if (preferences.deleteTiles == "True")
-                    deleteTilesAndFolder(tempTileDirectory)
+                if (preferences.tileHandling == "Delete")
+                    utilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                if (preferences.tileHandling == "Zip") {
+                    utilityFunctions.zipTilesAndMove(tempTileDirectory)
+                    utilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                }
                 //}
             }
         }
     }
-    /**
-     * Deletes all the tiles within the provided folder and the folder itself.
-     *
-     * @param folderPath The path to the folder containing the tiles to be deleted.
-     */
-    private static void deleteTilesAndFolder(String folderPath) {
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
-        try {
 
-            Path directory = Paths.get(folderPath)
-
-            // Delete all files in the folder
-            Files.walk(directory)
-                    .filter(Files::isRegularFile)
-                    .forEach(path -> {
-                        try {
-                            Files.delete(path)
-                        } catch (IOException ex) {
-                            logger.error("Error deleting file: " + path, ex)
-                        }
-                    })
-
-            // Delete the folder itself
-            Files.delete(directory)
-        } catch (IOException ex) {
-            logger.error("Error deleting folder: " + folderPath, ex)
-        }
-    }
     private static GridPane createContent() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
@@ -213,14 +200,16 @@ class QP_scope_GUI {
         pane.add(control, 1, rowIndex)
     }
     static void createGUI2() {
+        //TODO check if in a project?
+        def logger = LoggerFactory.getLogger(QuPathGUI.class)
         // Create the dialog
         def dlg = new Dialog<ButtonType>()
         dlg.initModality(Modality.APPLICATION_MODAL)
-        dlg.setTitle("Secondary collection")
-        dlg.setHeaderText("Existing non-ignored annotations can be used to guide collections with a secondary objective or modality.")
+        dlg.setTitle("Collect image data from an annotated subset of your current image.")
+        dlg.setHeaderText("Create annotations within your image, then click Okay to proceed with a second collection within those areas.");
 
         // Set the content
-        dlg.getDialogPane().setContent(createContent())
+        dlg.getDialogPane().setContent(createContent2())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -229,57 +218,99 @@ class QP_scope_GUI {
         def result = dlg.showAndWait()
 
         // Handling the response
+        logger.info("Starting processing GUI output")
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields
-            def sampleLabel = QP.getCurrentImageNameWithoutExtension()
+            def sampleLabel = sampleLabelField.getText()
             def virtualEnvPath = virtualEnvField.getText()
             def pythonScriptPath = pythonScriptField.getText()
             def projectsFolderPath = projectsFolderField.getText()
-            //TODO select subsets of annotations by class - text box for list? checkboxes?
+
+            def annotationJsonFileLocation = null
+
+            //Boolean to check whether to proceed with running the microscope data collection
+            logger.info("getting annotation objects")
             def annotations = QP.getAnnotationObjects()
 
-            // Check if any value is empty
-            if ([sampleLabel, annotations, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
-                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
-            } else {
-                Project currentQuPathProject= utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.secondScanType)
-                def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+preferences.secondScanType+sampleLabel
-                def matchingString = "${preferences.secondScanType}${sampleLabel}"
-                def logger = LoggerFactory.getLogger(QuPathGUI.class)
-                logger.info(matchingString)
-                logger.info(tempTileDirectory)
-                utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, projectsFolderPath, sampleLabel,preferences.secondScanType)
-                String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-                //TODO Need to check if stitching is successful, provide error
-                //stitchingImplementations.stitchCore(stitchingType, folderPath, stitchedImageOutputFolder, compressionType, pixelSize, downsample, matchingString)
-                //TODO add output folder to stitchCore
-                stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, matchingString)
+            // Check if annotations are present
+            if (annotations.isEmpty() || [sampleLabel, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+                Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
 
-
-                //utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
-
-                String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.secondScanType + sampleLabel + ".ome.tif"
-                File stitchedImagePath = new File(stitchedImagePathStr)
-                utilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
-
-                //open the newly created project
-                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
-                def qupathGUI = QPEx.getQuPath()
-
-                qupathGUI.setProject(currentQuPathProject)
-                //Find the existing images - there should only be one since the project was just created
-                def firstImage = currentQuPathProject.getImageList()[0]
-
-                //Open the first image
-                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
-                qupathGUI.openImageEntry(firstImage)
-
-                //Check if the tiles should be deleted from the collection folder
-                if (preferences.deleteTiles == "True")
-                    deleteTilesAndFolder(tempTileDirectory)
-                //}
+                return
             }
+
+
+
+            def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
+            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+scanTypeWithIndex
+            logger.info("Scan type with index: " + scanTypeWithIndex)
+            logger.info(tempTileDirectory)
+            logger.info("Creating json")
+            annotationJsonFileLocation = utilityFunctions.createAnnotationJson(projectsFolderPath, sampleLabel, scanTypeWithIndex)
+
+            List args = [pythonScriptPath, projectsFolderPath, sampleLabel,scanTypeWithIndex, annotationJsonFileLocation]
+            //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
+            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+            //utilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
+            logger.info("Finished Python Command")
+            String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
+            //TODO Need to check if stitching is successful, provide error
+            //TODO get pixel size from somewhere???
+
+            //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
+            logger.info("Begin stitching")
+            String stitchedImagePathStr =stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+            logger.info("Get project")
+            Project<BufferedImage> currentQuPathProject = getProject()
+
+            //utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
+
+            //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.secondScanType + sampleLabel + ".ome.tif"
+            File stitchedImagePath = new File(stitchedImagePathStr)
+            utilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
+
+            //open the newly created project
+            //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
+            def qupathGUI = QPEx.getQuPath()
+
+            //qupathGUI.setProject(currentQuPathProject)
+            //Find the existing images - there should only be one since the project was just created
+            def matchingImage = currentQuPathProject.getImageList().find { image ->
+                (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
+            }
+            qupathGUI.refreshProject()
+            //Open the first image
+            //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
+            qupathGUI.openImageEntry(matchingImage)
+
+            //Check if the tiles should be deleted from the collection folder
+            //Check if the tiles should be deleted from the collection folder
+            if (preferences.tileHandling == "Delete")
+                utilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            if (preferences.tileHandling == "Zip") {
+                utilityFunctions.zipTilesAndMove(tempTileDirectory)
+                utilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            }
+
         }
     }
+    //Create the second interface window for performing higher resolution or alternate modality scans
+    private static GridPane createContent2() {
+        GridPane pane = new GridPane()
+        pane.setHgap(10)
+        pane.setVgap(10)
+        def row = 0
 
+        // Add new component for Sample Label
+        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+
+
+        // Add components for Python environment and script path
+        addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
+        addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++)
+        addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
+        // Listener for the checkbox
+
+        return pane
+    }
 }

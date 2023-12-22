@@ -5,6 +5,8 @@ import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.images.servers.ImageServerProvider
 import qupath.lib.projects.ProjectIO
+import qupath.lib.scripting.QP
+
 import java.awt.image.BufferedImage
 import qupath.lib.projects.Projects;
 import java.io.File
@@ -14,6 +16,14 @@ import qupath.lib.gui.commands.ProjectCommands
 import javafx.scene.control.Alert
 import javafx.stage.Modality
 import qupath.lib.projects.Project
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.stream.Stream
+import java.io.*;
+import java.nio.file.*;
+import java.util.zip.*;
 
 
 class utilityFunctions {
@@ -111,12 +121,6 @@ class utilityFunctions {
             slideImagesFolder.mkdirs()
         }
 
-        // Within projectFolderPath/sampleLabel, check for a folder with the name that combines the two variables scanType+sampleLabel, if it does not exist, create it
-        File scanTypeFolder = new File(sampleLabelFolder, scanType + sampleLabel)
-        if (!scanTypeFolder.exists()) {
-            scanTypeFolder.mkdirs()
-        }
-
         return project
     }
 
@@ -131,43 +135,166 @@ class utilityFunctions {
      * @param x2 The second x-coordinate to be passed to the Python script.
      * @param y2 The second y-coordinate to be passed to the Python script.
      */
-    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath,String projectsFolderPath, String sampleLabel,String imageType, String x1 = "", String y1 = "", String x2 = "", String y2 = "", annotationJsonFileLocation = null) {
+    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
         try {
             def logger = LoggerFactory.getLogger(QuPathGUI.class)
-            // Path to the Python executable in the Anaconda environment
-            String pythonExecutable = "${anacondaEnvPath}/python.exe";
+            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
 
-            // Combine coordinates into a single argument
-            String args = "$anacondaEnvPath $projectsFolderPath $sampleLabel $imageType $x1 $y1 $x2 $y2 $annotationJsonFileLocation";
-            logger.info(args)
+//            List<String> arguments = [pythonScriptPath, projectsFolderPath, sampleLabel, imageType]
+//            if (x1) arguments.add(x1)
+//            if (y1) arguments.add(y1)
+//            if (x2) arguments.add(x2)
+//            if (y2) arguments.add(y2)
+//            if (annotationJsonFileLocation) arguments.add(annotationJsonFileLocation)
+
+            String args = arguments.collect { "\"$it\"" }.join(' ')
+
             // Construct the command
-            String command = "\"${pythonExecutable}\" \"${pythonScriptPath}\" ${args}";
-            logger.info("Check the following command")
-            logger.info(command)
+            String command = "\"${pythonExecutable}\" -u \"${pythonScriptPath}\" ${args}"
+            logger.info("Executing command: ${command}")
+
             // Execute the command
-            Process process = command.execute();
-            process.waitFor();
+            Process process = command.execute()
+            process.waitFor()
 
             // Read and log standard output
-            process.inputStream.eachLine { line ->
-                logger.info(line)
-            }
+            process.inputStream.eachLine { line -> logger.info(line) }
 
             // Read and log standard error
-            process.errorStream.eachLine { line ->
-                logger.error(line)
-            }
-
+            process.errorStream.eachLine { line -> logger.error(line) }
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace()
         }
     }
+
 
     static Map<String, String> getPreferences() {
         //TODO add code to access Preferences fields
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [installation: "C:\\ImageAnalysis\\python\\pycromanager_step_1.py", environment: "C:\\Anaconda\\envs\\paquo", projects: "C:\\ImageAnalysis\\slides", firstScanType: "4x_bf_", secondScanType:"20x_bf", deleteTiles:"True"]
+        return [installation: "C:\\ImageAnalysis\\python\\pycromanager_step_1.py",
+                environment: "C:\\Anaconda\\envs\\paquo",
+                projects: "C:\\ImageAnalysis\\slides",
+                firstScanType: "4x_bf",
+                secondScanType:"20x_bf",
+                tileHandling:"Zip"] //Zip Delete or anything else is ignored
     }
+/**
+ * Exports all annotations to a JSON file in the specified JSON subfolder of the current project.
+ *
+ * @param projectsFolderPath The base path to the projects folder.
+ * @param sampleLabel The label of the sample.
+ * @param firstScanType The type of the first scan.
+ */
+    static String createAnnotationJson(String projectsFolderPath, String sampleLabel, String firstScanType) {
+        // Construct the folder path for storing the JSON file
+        File folder = new File(projectsFolderPath + File.separator + sampleLabel + File.separator + "JSON");
+
+        // Check if the folder exists, and create it if it doesn't
+        if (!folder.exists()) {
+            folder.mkdirs();  // This will create the directory including any necessary but nonexistent parent directories.
+        }
+
+        // Construct the full path for the annotation JSON file
+        File annotationJsonFile = new File(folder, firstScanType + sampleLabel + ".geojson");
+        String annotationJsonFileLocation = annotationJsonFile.getPath();
+
+        // Export all annotations to the GeoJSON file
+        QP.exportAllObjectsToGeoJson(annotationJsonFileLocation, "EXCLUDE_MEASUREMENTS", "FEATURE_COLLECTION");
+
+        return annotationJsonFileLocation
+    }
+/**
+ * Generates a unique folder name by checking the number of existing folders with a similar name
+ * in the current directory, and then appending that number to the folder name.
+ * The naming starts with _1 and increments for each additional folder with a similar base name.
+ *
+ * @param originalFolderPath The original folder path.
+ * @return A unique folder name.
+ */
+    static String getUniqueFolderName(String originalFolderPath) {
+        Path path = Paths.get(originalFolderPath);
+        Path parentDir = path.getParent();
+        String baseName = path.getFileName().toString();
+
+        int counter = 1;
+        Path newPath = parentDir.resolve(baseName + "_" + counter);
+
+        // Check for existing folders with the same base name and increment counter
+        while (Files.exists(newPath)) {
+            counter++;
+            newPath = parentDir.resolve(baseName + "_" + counter);
+        }
+
+        // Return only the unique folder name, not the full path
+        return newPath.getFileName().toString();
+    }
+
+    /**
+     * Deletes all the tiles within the provided folder and the folder itself.
+     *
+     * @param folderPath The path to the folder containing the tiles to be deleted.
+     */
+    public static void deleteTilesAndFolder(String folderPath) {
+        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+        try {
+
+            Path directory = Paths.get(folderPath)
+
+            // Delete all files in the folder
+            Files.walk(directory)
+                    .filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path)
+                        } catch (IOException ex) {
+                            logger.error("Error deleting file: " + path, ex)
+                        }
+                    })
+
+            // Delete the folder itself
+            Files.delete(directory)
+        } catch (IOException ex) {
+            logger.error("Error deleting folder: " + folderPath, ex)
+        }
+    }
+
+    public static void zipTilesAndMove(String folderPath) {
+        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+        try {
+            Path directory = Paths.get(folderPath);
+            Path parentDirectory = directory.getParent();
+            Path compressedTilesDir = parentDirectory.resolve("Compressed tiles");
+
+            // Create "Compressed tiles" directory if it doesn't exist
+            if (!Files.exists(compressedTilesDir)) {
+                Files.createDirectory(compressedTilesDir);
+            }
+
+            // Create a Zip file
+            String zipFileName = directory.getFileName().toString() + ".zip";
+            Path zipFilePath = compressedTilesDir.resolve(zipFileName);
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFilePath.toFile()))) {
+                Files.walk(directory)
+                        .filter(Files::isRegularFile)
+                        .forEach(path -> {
+                            ZipEntry zipEntry = new ZipEntry(directory.relativize(path).toString());
+                            try {
+                                zos.putNextEntry(zipEntry);
+                                Files.copy(path, zos);
+                                zos.closeEntry();
+                            } catch (IOException ex) {
+                                logger.error("Error adding file to zip: " + path, ex);
+                            }
+                        });
+            }
+
+            // Optionally, delete the original tiles and folder
+            // deleteTilesAndFolder(folderPath);
+        } catch (IOException ex) {
+            logger.error("Error zipping and moving tiles from: " + folderPath, ex);
+        }
+    }
+
 }
