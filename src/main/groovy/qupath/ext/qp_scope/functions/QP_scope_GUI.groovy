@@ -119,7 +119,13 @@ class QP_scope_GUI {
                 def boundingBox = "{$x1}, {$y1}, {$x2}, {$y2}"
                 // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
-                List args = [pythonScriptPath, projectsFolderPath, sampleLabel,scanTypeWithIndex,annotationJsonFileLocation, boundingBox ]
+                List args = [pythonScriptPath,
+                             projectsFolderPath,
+                             sampleLabel,
+                             scanTypeWithIndex,
+                             annotationJsonFileLocation,
+                             boundingBox ]
+                //TODO can we create non-blocking python code
                 utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
 
