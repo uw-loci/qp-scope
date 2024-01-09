@@ -17,9 +17,13 @@ import javafx.scene.control.Alert
 import javafx.stage.Modality
 import qupath.lib.projects.Project
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import java.util.stream.Collectors
 import java.util.stream.Stream
 import java.io.*;
 import java.nio.file.*;
@@ -294,6 +298,106 @@ class utilityFunctions {
             // deleteTilesAndFolder(folderPath);
         } catch (IOException ex) {
             logger.error("Error zipping and moving tiles from: " + folderPath, ex);
+        }
+    }
+
+    static String transformBoundingBox(double x1, double y1, double x2, double y2, String pixelSize, String xCoordinate, String yCoordinate, boolean flip) {
+        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+        //TODO handle flip
+        if (flip){
+
+            logger.info("handle flip")
+        }
+        // Convert pixel coordinates to microns
+        double x1Microns = x1 * (pixelSize as Double);
+        double y1Microns = y1 * (pixelSize as Double);
+        double x2Microns = x2 * (pixelSize as Double);
+        double y2Microns = y2 * (pixelSize as Double);
+
+        // Adjust coordinates relative to the upper right coordinates
+        double adjustedX1 = xCoordinate as Double - x1Microns;
+        double adjustedY1 = yCoordinate as Double - y1Microns;
+        double adjustedX2 = xCoordinate as Double - x2Microns;
+        double adjustedY2 = yCoordinate as Double - y2Microns;
+
+        // Create the bounding box string in the format "x1, y1, x2, y2"
+        String boundingBox = adjustedX1 + ", " + adjustedY1 + ", " + adjustedX2 + ", " + adjustedY2;
+        return boundingBox;
+    }
+
+
+
+    /**
+     * Modifies the specified Groovy script by updating the pixel size and the JSON file path.
+     *
+     * @param groovyScriptPath     The path to the Groovy script file.
+     * @param pixelSize            The new pixel size to set in the script.
+     * @param jsonFilePathString   The new JSON file path to set in the script.
+     * @throws IOException if an I/O error occurs reading from or writing to the file.
+     */
+    public static String modifyTissueDetectScript(String groovyScriptPath, String pixelSize, String jsonFilePathString) throws IOException {
+        // Read, modify, and write the script in one go
+        List<String> lines = Files.lines(Paths.get(groovyScriptPath), StandardCharsets.UTF_8)
+                .map(line -> {
+                    if (line.startsWith("setPixelSizeMicrons")) {
+                        return "setPixelSizeMicrons(" + pixelSize + ", " + pixelSize + ")";
+                    } else if (line.startsWith("createAnnotationsFromPixelClassifier")) {
+                        return line.replaceFirst("\"[^\"]*\"", "\"" + jsonFilePathString + "\"");
+                    } else {
+                        return line;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        return String.join(System.lineSeparator(), lines);
+    }
+
+    /**
+     * Modifies the specified export script by updating the pixel size source and the base directory, and returns the modified script as a string.
+     *
+     * @param exportScriptPathString   The path to the export script file.
+     * @param pixelSize                The new pixel size to set in the script.
+     * @param tilesCSVdirectory        The new base directory to set in the script.
+     * @return String representing the modified script.
+     * @throws IOException if an I/O error occurs reading from the file.
+     */
+    public static String modifyCSVExportScript(String exportScriptPathString, String pixelSize, String tilesCSVdirectory) throws IOException {
+        // Read and modify the script
+        List<String> lines = Files.lines(Paths.get(exportScriptPathString), StandardCharsets.UTF_8)
+                .map(line -> {
+                    if (line.startsWith("double pixelSizeSource")) {
+                        return "double pixelSizeSource = " + pixelSize + ";";
+                    } else if (line.startsWith("baseDirectory")) {
+                        return "baseDirectory = \"" + tilesCSVdirectory.replace("\\", "\\\\") + "\";";
+                    } else {
+                        return line;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        // Join the lines into a single string
+        return String.join(System.lineSeparator(), lines);
+    }
+
+    /**
+     * Extracts the file path from the server path string.
+     *
+     * @param serverPath The server path string.
+     * @return The extracted file path, or null if the path could not be extracted.
+     */
+    public static String extractFilePath(String serverPath) {
+        // Regular expression to match the file path
+        String regex = "file:/(.*?\\.TIF)";
+
+        // Create a pattern and matcher for the regular expression
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(serverPath);
+
+        // Check if the pattern matches and return the file path
+        if (matcher.find()) {
+            return matcher.group(1).replaceFirst("^/", "").replaceAll("%20", " ");
+        } else {
+            return null; // No match found
         }
     }
 

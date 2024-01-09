@@ -49,29 +49,43 @@ class QP_scope implements QuPathExtension {
 
 	private void addMenuItem(QuPathGUI qupath) {
 		def logger = LoggerFactory.getLogger(QuPathGUI.class)
-		//Check for dependencies and QuPath version
+		// Check for dependencies and QuPath version
 		logger.info("QuPath Version")
 		logger.info(getQuPathVersion().toString())
-		//TODO how to check if version is supported?
+		// TODO: how to check if version is supported?
 
+		// Get or create the menu
 		def menu = qupath.getMenu("Extensions>${name}", true)
+
+		// First menu item
 		def qpScope1 = new MenuItem("Start qp_scope")
-		// TODO tooltip
+		// TODO: tooltip
 		qpScope1.setOnAction(e -> {
-			//TODO check preferences for all necessary entries
+			// TODO: check preferences for all necessary entries
 			QP_scope_GUI.createGUI1()
 		})
 
+		// Second menu item
 		def qpScope2 = new MenuItem("Second scan on existing annotations")
-		// TODO tooltip
+		// TODO: tooltip
 		qpScope2.setOnAction(e -> {
-			//TODO check preferences for all necessary entries
+			// TODO: check preferences for all necessary entries
 			QP_scope_GUI.createGUI2()
 		})
 
+		// Third menu item - "Use current image as macro view"
+		def qpScope3 = new MenuItem("Use current image as macro view")
+		// TODO: tooltip
+		qpScope3.setOnAction(e -> {
+			QP_scope_GUI.createGUI3()
+		})
+
+		// Add the menu items to the menu
 		menu.getItems() << qpScope1
 		menu.getItems() << qpScope2
+		menu.getItems() << qpScope3
 	}
+
 	
 }
 //@ActionMenu("Extensions")
