@@ -385,12 +385,13 @@ class QP_scope_GUI {
             }
 
             // Expect the classifier file path to be in a specific location
-            // Extract the directory from pythonScriptPath
-            Path scriptDirectory = Paths.get(pythonScriptPath).getParent();
+            // get the classifier from the groovyScripts folder, which should be "next to" the pythonScripts folder
+            Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent();
+            groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 
             // Combine the directory with the new filename
-            Path jsonFilePath = scriptDirectory.resolve("Tissue-lowres.json");
-            Path exportScriptPath = scriptDirectory.resolve("save4xMacroTiling.groovy")
+            Path jsonFilePath = groovyScriptDirectory.resolve("Tissue-lowres.json");
+            Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
             // Convert Path back to String and fix slashes to not be escape chars
             String jsonFilePathString = jsonFilePath.toString().replace("\\", "/");
             String exportScriptPathString = exportScriptPath.toString().replace("\\", "/");

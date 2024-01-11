@@ -224,7 +224,7 @@ class utilityFunctions {
         return [installation   : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
                 environment    : "C:\\Anaconda\\envs\\paquo",
                 projects       : "C:\\ImageAnalysis\\slides",
-                tissueDetection: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissueSize.groovy",
+                tissueDetection: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy",
                 firstScanType  : "4x_bf",
                 secondScanType : "20x_bf",
                 tileHandling   : "Zip"] //Zip Delete or anything else is ignored
