@@ -1,23 +1,19 @@
 package qupath.ext.qp_scope.utilities
 
+import javafx.scene.control.Alert
+import javafx.stage.Modality
 import org.slf4j.LoggerFactory
-import qupath.lib.gui.QuPathGUI
+import qupath.lib.gui.commands.ProjectCommands
 import qupath.lib.gui.dialogs.Dialogs
+import qupath.lib.images.ImageData
 import qupath.lib.images.servers.ImageServerProvider
 import qupath.lib.objects.PathObject
+import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectIO
+import qupath.lib.projects.Projects
 import qupath.lib.scripting.QP
 
 import java.awt.image.BufferedImage
-import qupath.lib.projects.Projects;
-import java.io.File
-import javax.imageio.ImageIO
-import qupath.lib.images.ImageData;
-import qupath.lib.gui.commands.ProjectCommands
-import javafx.scene.control.Alert
-import javafx.stage.Modality
-import qupath.lib.projects.Project
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -25,29 +21,27 @@ import java.nio.file.Paths
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.stream.Collectors
-import java.util.stream.Stream
-import java.io.*;
-import java.nio.file.*;
-import java.util.zip.*;
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream;
 
 
 class utilityFunctions {
 
     static final logger = LoggerFactory.getLogger(utilityFunctions.class)
 
-    static void showAlertDialog(String message){
+    static void showAlertDialog(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Warning!");
         alert.setHeaderText(null);
         alert.setContentText(message);
 
-    // This line makes the alert a modal dialog
+        // This line makes the alert a modal dialog
         alert.initModality(Modality.APPLICATION_MODAL);
 
         alert.showAndWait();
     }
 
-    static boolean addImageToProject(File stitchedImagePath, Project project){
+    static boolean addImageToProject(File stitchedImagePath, Project project) {
 
         def imagePath = stitchedImagePath.toURI().toString()
         //logger.info(imagePath)
@@ -83,7 +77,7 @@ class utilityFunctions {
         project.syncChanges()
         return true;
 
-}
+    }
 
     static Project createProjectFolder(String projectsFolderPath, String sampleLabel, String scanType) {
         //TODO check if a project is open! It probably should not be?
@@ -106,10 +100,10 @@ class utilityFunctions {
         Project project = null
         if (qpprojFiles == null || qpprojFiles.length == 0) {
             project = Projects.createProject(sampleLabelFolder, BufferedImage.class)
-        }else{
+        } else {
             //WARNING: This assumes there will be only one file ending in .qpproj
             // this should USUALLY be a safe assumption
-            if (qpprojFiles.length > 1){
+            if (qpprojFiles.length > 1) {
                 Dialogs.showWarningNotification("Warning!", "Multiple Project files found, may cause unexpected behavior!")
             }
 
@@ -120,8 +114,8 @@ class utilityFunctions {
             Dialogs.showWarningNotification("Warning!", "Project is null!")
         }
         // Within projectsFolderPath, check for a folder with the name "SlideImages", if it does not exist, create it
-        String slideImagesFolderPathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages" ;
-        File slideImagesFolder =  new File(slideImagesFolderPathStr);
+        String slideImagesFolderPathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages";
+        File slideImagesFolder = new File(slideImagesFolderPathStr);
 
         if (!slideImagesFolder.exists()) {
             slideImagesFolder.mkdirs()
@@ -138,7 +132,7 @@ class utilityFunctions {
      * @param pythonScriptPath The path to the Python script to be executed.
      * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
      */
-    static  runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+    static runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
         try {
             String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
 
@@ -227,13 +221,13 @@ class utilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [installation: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
-                environment: "C:\\Anaconda\\envs\\paquo",
-                projects: "C:\\ImageAnalysis\\slides",
+        return [installation   : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
+                environment    : "C:\\Anaconda\\envs\\paquo",
+                projects       : "C:\\ImageAnalysis\\slides",
                 tissueDetection: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissueSize.groovy",
-                firstScanType: "4x_bf",
-                secondScanType:"20x_bf",
-                tileHandling:"Zip"] //Zip Delete or anything else is ignored
+                firstScanType  : "4x_bf",
+                secondScanType : "20x_bf",
+                tileHandling   : "Zip"] //Zip Delete or anything else is ignored
     }
 /**
  * Exports all annotations to a JSON file in the specified JSON subfolder of the current project.
@@ -248,7 +242,8 @@ class utilityFunctions {
 
         // Check if the folder exists, and create it if it doesn't
         if (!folder.exists()) {
-            folder.mkdirs();  // This will create the directory including any necessary but nonexistent parent directories.
+            folder.mkdirs();
+            // This will create the directory including any necessary but nonexistent parent directories.
         }
 
         // Construct the full path for the annotation JSON file
@@ -390,13 +385,12 @@ class utilityFunctions {
     }
 
 
-
     /**
      * Modifies the specified Groovy script by updating the pixel size and the JSON file path.
      *
-     * @param groovyScriptPath     The path to the Groovy script file.
-     * @param pixelSize            The new pixel size to set in the script.
-     * @param jsonFilePathString   The new JSON file path to set in the script.
+     * @param groovyScriptPath The path to the Groovy script file.
+     * @param pixelSize The new pixel size to set in the script.
+     * @param jsonFilePathString The new JSON file path to set in the script.
      * @throws IOException if an I/O error occurs reading from or writing to the file.
      */
     public static String modifyTissueDetectScript(String groovyScriptPath, String pixelSize, String jsonFilePathString) throws IOException {
@@ -419,9 +413,9 @@ class utilityFunctions {
     /**
      * Modifies the specified export script by updating the pixel size source and the base directory, and returns the modified script as a string.
      *
-     * @param exportScriptPathString   The path to the export script file.
-     * @param pixelSize                The new pixel size to set in the script.
-     * @param tilesCSVdirectory        The new base directory to set in the script.
+     * @param exportScriptPathString The path to the export script file.
+     * @param pixelSize The new pixel size to set in the script.
+     * @param tilesCSVdirectory The new base directory to set in the script.
      * @return String representing the modified script.
      * @throws IOException if an I/O error occurs reading from the file.
      */
@@ -464,6 +458,7 @@ class utilityFunctions {
             return null; // No match found
         }
     }
+
     static List<Object> getTopCenterTile(Collection<PathObject> detections) {
         // Filter out null detections and sort by Y-coordinate
         List<PathObject> sortedDetections = detections.findAll { it != null }
@@ -508,7 +503,7 @@ class utilityFunctions {
 
     //TODO possibly use QuPath's affine transformation tools
     //Convert the QuPath pixel based coordinates for a location into the MicroManager micron based stage coordinates
-    static List<Double> QPtoMicroscopeCoordinates(List<Double> qpCoordinates, Double imagePixelSize, Object transformation){
+    static List<Double> QPtoMicroscopeCoordinates(List<Double> qpCoordinates, Double imagePixelSize, Object transformation) {
         //TODO figure out conversion
         def mmCoordinates = qpCoordinates
         return mmCoordinates

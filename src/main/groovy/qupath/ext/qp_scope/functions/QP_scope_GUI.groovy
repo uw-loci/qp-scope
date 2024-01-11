@@ -1,27 +1,18 @@
 package qupath.ext.qp_scope.functions
 
 import javafx.scene.Node
-
-import javafx.scene.control.ButtonType
-import javafx.scene.control.CheckBox
-import javafx.scene.control.ChoiceDialog
-import javafx.scene.control.Dialog
-import javafx.scene.control.Label
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
-
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
-import qupath.ext.qp_scope.utilities.utilityFunctions
-import qupath.lib.gui.dialogs.Dialogs
-import groovy.io.FileType
-import qupath.lib.images.writers.ome.OMEPyramidWriter
-import qupath.lib.projects.Project
-import qupath.lib.gui.QuPathGUI
-import qupath.lib.scripting.QP
-import qupath.lib.gui.scripting.QPEx
 import qupath.ext.basicstitching.stitching.stitchingImplementations
+import qupath.ext.qp_scope.utilities.utilityFunctions
+import qupath.lib.gui.QuPathGUI
+import qupath.lib.gui.dialogs.Dialogs
+import qupath.lib.gui.scripting.QPEx
+import qupath.lib.projects.Project
+import qupath.lib.scripting.QP
 
 import java.awt.image.BufferedImage
 import java.nio.file.Path
@@ -53,7 +44,8 @@ class QP_scope_GUI {
     static TextField sampleLabelField = new TextField("First_Test")  // New field for sample label
     // GUI3
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
-    static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy") // Default empty
+    static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy")
+    // Default empty
     static TextField pixelSizeField = new TextField("7.2") // Default empty
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
@@ -119,10 +111,10 @@ class QP_scope_GUI {
             }
 
             // Check if any value is empty
-            if (dataCheck){
-                Project currentQuPathProject= utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
+            if (dataCheck) {
+                Project currentQuPathProject = utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
                 def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
-                def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+scanTypeWithIndex
+                def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
                 def logger = LoggerFactory.getLogger(QuPathGUI.class)
                 logger.info(tempTileDirectory)
                 //Reduce the number of sent args
@@ -134,7 +126,7 @@ class QP_scope_GUI {
                              sampleLabel,
                              scanTypeWithIndex,
                              annotationJsonFileLocation,
-                             boundingBox ]
+                             boundingBox]
                 //TODO can we create non-blocking python code
                 utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
@@ -262,15 +254,14 @@ class QP_scope_GUI {
             }
 
 
-
             def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
-            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+scanTypeWithIndex
+            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
             logger.info("Scan type with index: " + scanTypeWithIndex)
             logger.info(tempTileDirectory)
             logger.info("Creating json")
             annotationJsonFileLocation = utilityFunctions.createAnnotationJson(projectsFolderPath, sampleLabel, scanTypeWithIndex)
 
-            List args = [pythonScriptPath, projectsFolderPath, sampleLabel,scanTypeWithIndex, annotationJsonFileLocation]
+            List args = [pythonScriptPath, projectsFolderPath, sampleLabel, scanTypeWithIndex, annotationJsonFileLocation]
             //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
             //utilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
@@ -281,7 +272,7 @@ class QP_scope_GUI {
 
             //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
             logger.info("Begin stitching")
-            String stitchedImagePathStr =stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+            String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
             logger.info("Get project")
             Project<BufferedImage> currentQuPathProject = getProject()
 
@@ -405,9 +396,9 @@ class QP_scope_GUI {
             String exportScriptPathString = exportScriptPath.toString().replace("\\", "/");
 
             //Create the QuPath project
-            Project currentQuPathProject= utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
+            Project currentQuPathProject = utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
             def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
-            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel+File.separator+scanTypeWithIndex
+            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
 
 
             //Get the current image open in QuPath and add it to the project
@@ -425,7 +416,7 @@ class QP_scope_GUI {
             //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
             def qupathGUI = QPEx.getQuPath()
 
-            utilityFunctions.addImageToProject( new File(macroImagePath), currentQuPathProject)
+            utilityFunctions.addImageToProject(new File(macroImagePath), currentQuPathProject)
             qupathGUI.setProject(currentQuPathProject)
             //Find the existing images - there should only be one since the project was just created
             def matchingImage = currentQuPathProject.getImageList().find { image ->
@@ -446,7 +437,7 @@ class QP_scope_GUI {
 
             //Create an export tile locations
             String tilesCSVdirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + "tiles_csv";
-            String exportScript = utilityFunctions.modifyCSVExportScript(exportScriptPathString,  pixelSize,  tilesCSVdirectory)
+            String exportScript = utilityFunctions.modifyCSVExportScript(exportScriptPathString, pixelSize, tilesCSVdirectory)
             logger.info(exportScript)
             logger.info(tilesCSVdirectory)
             logger.info(exportScriptPathString)
@@ -456,7 +447,7 @@ class QP_scope_GUI {
             //Dialog chain to validate stage location
             //////////////////////////////////////
             // the transformation consists of an X-shift in stage microns, a Y-shift in stage microns, and a pixelSize
-            def transformation = [0,0,pixelSize as double]
+            def transformation = [0, 0, pixelSize as double]
             boolean gui4Success = createGUI4();
             if (!gui4Success) {
                 // User cancelled GUI4, so end GUI3 and do not proceed
@@ -467,7 +458,7 @@ class QP_scope_GUI {
             def topCenterTileXY = utilityFunctions.getTopCenterTile(detections)
             QP.selectObjects(topCenterTileXY[2])
             List args = [topCenterTileXY[0], topCenterTileXY[1]]
-            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(topCenterTileXY[2].getROI().getCentroidX(),topCenterTileXY[2].getROI().getCentroidY())
+            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(topCenterTileXY[2].getROI().getCentroidX(), topCenterTileXY[2].getROI().getCentroidY())
             //TODO run python script to move the stage to the middle X value of the lowest Y value
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
             //Validate the position that was moved to or update with an adjusted position
@@ -482,7 +473,7 @@ class QP_scope_GUI {
             def leftCenterTileXY = utilityFunctions.getLeftCenterTile(detections)
             QP.selectObjects(leftCenterTileXY[2])
             args = [leftCenterTileXY[0], leftCenterTileXY[1]]
-            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(leftCenterTileXY[2].getROI().getCentroidX(),leftCenterTileXY[2].getROI().getCentroidY())
+            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(leftCenterTileXY[2].getROI().getCentroidX(), leftCenterTileXY[2].getROI().getCentroidY())
             //TODO run python script to move the stage to the a tile position with the lowest X value, mid Y value
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
             //Once again, validate the position or update
@@ -495,7 +486,7 @@ class QP_scope_GUI {
             }
 
             // Additional code for annotations
-            def annotations = getAnnotationObjects().findAll{it.getPathClass() == QP.getPathClass('Tissue')}
+            def annotations = getAnnotationObjects().findAll { it.getPathClass() == QP.getPathClass('Tissue') }
             if (annotations.size() != 1) {
                 Dialogs.showWarningNotification("Error!", "Can only handle 1 annotation at the moment!");
                 return;
@@ -508,7 +499,7 @@ class QP_scope_GUI {
             // TODO Check if any value is empty
 
             //Send the QuPath pixel coordinates for the bounding box along with the pixel size and upper left coordinates of the tissue
-            def boundingBox = utilityFunctions.transformBoundingBox(x1,y1,x2,y2,pixelSize, xCoordinate, yCoordinate, isSlideFlipped)
+            def boundingBox = utilityFunctions.transformBoundingBox(x1, y1, x2, y2, pixelSize, xCoordinate, yCoordinate, isSlideFlipped)
 
 
             logger.info(tilesCSVdirectory)
@@ -517,11 +508,11 @@ class QP_scope_GUI {
             // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
             args = [pythonScriptPath,
-                         projectsFolderPath,
-                         sampleLabel,
-                         scanTypeWithIndex,
-                         tilesCSVdirectory, //no annotation JSON file location
-                         boundingBox ]
+                    projectsFolderPath,
+                    sampleLabel,
+                    scanTypeWithIndex,
+                    tilesCSVdirectory, //no annotation JSON file location
+                    boundingBox]
             //TODO can we create non-blocking python code
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
@@ -538,7 +529,6 @@ class QP_scope_GUI {
             //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.firstScanType + sampleLabel + ".ome.tif"
             File stitchedImagePath = new File(stitchedImagePathStr)
             utilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
-
 
 
             qupathGUI.setProject(currentQuPathProject)
@@ -600,6 +590,7 @@ class QP_scope_GUI {
 
         return pane
     }
+
     static boolean createGUI4() {
         Dialog<ButtonType> dlg = new Dialog<>();
         dlg.initModality(Modality.NONE);

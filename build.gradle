@@ -1,12 +1,12 @@
 plugins {
-  // Main gradle plugin for building a Java library
-  //id 'java-library'
-  // Support writing the extension in Groovy (remove this if you don't want to)
-  id 'groovy'
-  // To create a shadow/fat jar that bundle up all dependencies
-  id 'com.github.johnrengelman.shadow' version '7.1.2'
-  // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
-  id 'org.bytedeco.gradle-javacpp-platform'
+    // Main gradle plugin for building a Java library
+    //id 'java-library'
+    // Support writing the extension in Groovy (remove this if you don't want to)
+    id 'groovy'
+    // To create a shadow/fat jar that bundle up all dependencies
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
+    id 'org.bytedeco.gradle-javacpp-platform'
 }
 
 //the module name
@@ -73,9 +73,9 @@ jar {
  * Copy the LICENSE file into the jar... if we have one (we should!)
  */
 processResources {
-  from ("${projectDir}/LICENSE") {
-    into 'licenses/'
-  }
+    from("${projectDir}/LICENSE") {
+        into 'licenses/'
+    }
 }
 
 /*
@@ -116,7 +116,7 @@ tasks.withType(Javadoc).configureEach {
  * Specify that the encoding should be UTF-8 for source files
  */
 tasks.named('compileJava') {
-	options.encoding = 'UTF-8'
+    options.encoding = 'UTF-8'
 }
 
 /*
@@ -141,7 +141,7 @@ repositories {
     // Add this if you need access to dependencies only installed locally
     mavenLocal()
 
-    flatDir{
+    flatDir {
         dirs 'C:/ImageAnalysis/QPExtensionTest/BasicStitching/build/libs'
     }
 
