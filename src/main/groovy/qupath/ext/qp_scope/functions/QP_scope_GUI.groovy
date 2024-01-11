@@ -1,13 +1,16 @@
 package qupath.ext.qp_scope.functions
 
 import javafx.scene.Node
+
 import javafx.scene.control.ButtonType
 import javafx.scene.control.CheckBox
+import javafx.scene.control.ChoiceDialog
 import javafx.scene.control.Dialog
 import javafx.scene.control.Label
 import javafx.scene.control.TextField
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
+
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
 import qupath.ext.qp_scope.utilities.utilityFunctions
@@ -21,12 +24,11 @@ import qupath.lib.gui.scripting.QPEx
 import qupath.ext.basicstitching.stitching.stitchingImplementations
 
 import java.awt.image.BufferedImage
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.Files
 import java.util.stream.Collectors
 
+import static qupath.lib.scripting.QP.getAnnotationObjects
 import static qupath.lib.scripting.QP.project
 
 //Thoughts:
@@ -51,8 +53,8 @@ class QP_scope_GUI {
     static TextField sampleLabelField = new TextField("First_Test")  // New field for sample label
     // GUI3
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
-    static TextField groovyScriptField = new TextField("C:/ImageAnalysis/python/DetectTissueSize.groovy") // Default empty
-    static TextField pixelSizeField = new TextField("0.25") // Default empty
+    static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy") // Default empty
+    static TextField pixelSizeField = new TextField("7.2") // Default empty
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
     static void createGUI1() {
@@ -141,7 +143,7 @@ class QP_scope_GUI {
                 //TODO Need to check if stitching is successful, provide error
                 //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
                 //TODO add output folder to stitchCore
-                String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+                String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
 
 
                 //utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
@@ -195,8 +197,8 @@ class QP_scope_GUI {
 
         // Add components for Python environment and script path
         addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
-        addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++)
-        addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
+        addToGrid(pane, new Label('PycroManager .py path:'), pythonScriptField, row++)
+        addToGrid(pane, new Label('Projects parent folder:'), projectsFolderField, row++)
         // Listener for the checkbox
         useAnnotationsCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             x1Field.setDisable(newValue)
@@ -279,7 +281,7 @@ class QP_scope_GUI {
 
             //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
             logger.info("Begin stitching")
-            String stitchedImagePathStr =stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+            String stitchedImagePathStr =stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
             logger.info("Get project")
             Project<BufferedImage> currentQuPathProject = getProject()
 
@@ -329,7 +331,7 @@ class QP_scope_GUI {
 
         // Add components for Python environment and script path
         addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
-        addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++)
+        addToGrid(pane, new Label('PycroManager .py file path:'), pythonScriptField, row++)
         addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
         // Listener for the checkbox
 
@@ -378,7 +380,7 @@ class QP_scope_GUI {
             def projectsFolderPath = projectsFolderField.getText()
 
             // Check if data is all present
-            if ([xCoordinate, yCoordinate, pixelSize, groovyScriptPath].any { it == null || it.isEmpty() }) {
+            if ([pixelSize, groovyScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
@@ -433,7 +435,6 @@ class QP_scope_GUI {
             //Open the first image
             //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
             qupathGUI.openImageEntry(matchingImage)
-            //TODO ADD MACRO IMAGE TO PROJECT and open SECOND image
 
             qupathGUI.refreshProject()
 
@@ -451,8 +452,50 @@ class QP_scope_GUI {
             logger.info(exportScriptPathString)
             QuPathGUI.getInstance().runScript(null, exportScript);
 
+            //////////////////////////////////////
+            //Dialog chain to validate stage location
+            //////////////////////////////////////
+            // the transformation consists of an X-shift in stage microns, a Y-shift in stage microns, and a pixelSize
+            def transformation = [0,0,pixelSize as double]
+            boolean gui4Success = createGUI4();
+            if (!gui4Success) {
+                // User cancelled GUI4, so end GUI3 and do not proceed
+                return;
+            }
+            // Execute Python command to move stage
+            def detections = QP.getDetectionObjects()
+            def topCenterTileXY = utilityFunctions.getTopCenterTile(detections)
+            QP.selectObjects(topCenterTileXY[2])
+            List args = [topCenterTileXY[0], topCenterTileXY[1]]
+            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(topCenterTileXY[2].getROI().getCentroidX(),topCenterTileXY[2].getROI().getCentroidY())
+            //TODO run python script to move the stage to the middle X value of the lowest Y value
+            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+            //Validate the position that was moved to or update with an adjusted position
+            boolean updatePosition = createGUI5()
+
+            if (updatePosition) {
+                //TODO get access to current stage coordinates
+                List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                transformation = utilityFunctions.updateTransformation(transformation, currentStageCoordinates_um, args)
+            }
+
+            def leftCenterTileXY = utilityFunctions.getLeftCenterTile(detections)
+            QP.selectObjects(leftCenterTileXY[2])
+            args = [leftCenterTileXY[0], leftCenterTileXY[1]]
+            QuPathGUI.getInstance().getViewer().setCenterPixelLocation(leftCenterTileXY[2].getROI().getCentroidX(),leftCenterTileXY[2].getROI().getCentroidY())
+            //TODO run python script to move the stage to the a tile position with the lowest X value, mid Y value
+            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+            //Once again, validate the position or update
+            updatePosition = createGUI5()
+            if (updatePosition) {
+                //TODO get access to current stage coordinates
+
+                List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                transformation = utilityFunctions.updateTransformation(transformation, currentStageCoordinates_um, args)
+            }
+
             // Additional code for annotations
-            def annotations = QP.getAnnotationObjects();
+            def annotations = getAnnotationObjects().findAll{it.getPathClass() == QP.getPathClass('Tissue')}
             if (annotations.size() != 1) {
                 Dialogs.showWarningNotification("Error!", "Can only handle 1 annotation at the moment!");
                 return;
@@ -473,7 +516,7 @@ class QP_scope_GUI {
 
             // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
-            List args = [pythonScriptPath,
+            args = [pythonScriptPath,
                          projectsFolderPath,
                          sampleLabel,
                          scanTypeWithIndex,
@@ -487,7 +530,7 @@ class QP_scope_GUI {
             //TODO Need to check if stitching is successful, provide error
             //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
             //TODO add output folder to stitchCore
-            String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileCoordinates.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+            String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
 
 
             //utilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
@@ -537,24 +580,76 @@ class QP_scope_GUI {
         // Add new components for the checkbox and Groovy script path
         addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
         // Add components for Python environment and script path
-        addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
-        addToGrid(pane, new Label('.py file path:'), pythonScriptField, row++)
+        addToGrid(pane, new Label('Python Virtual Env folder:'), virtualEnvField, row++)
+        addToGrid(pane, new Label('PycroManager control file:'), pythonScriptField, row++)
         addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
 
-        addToGrid(pane, new Label('Slide flipped:'), slideFlippedCheckBox, row++)
-        addToGrid(pane, new Label('.groovy file path:'), groovyScriptField, row++)
+        //addToGrid(pane, new Label('Slide flipped:'), slideFlippedCheckBox, row++)
+        addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
         // Add new components for pixel size and non-isotropic pixels checkbox on the same line
         HBox pixelSizeBox = new HBox(10);
-        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY:'), pixelSizeField, nonIsotropicCheckBox);
+        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox);
         addToGrid(pane, pixelSizeBox, row++);
         // Add new components for "Upper left XY coordinate"
-        Label upperLeftLabel = new Label("Upper left XY coordinate")
-        pane.add(upperLeftLabel, 0, row); // Span multiple columns if needed
+        //Label upperLeftLabel = new Label("Upper left XY coordinate")
+        //pane.add(upperLeftLabel, 0, row); // Span multiple columns if needed
 
-        addToGrid(pane, new Label('X coordinate:'), x1Field, ++row);
-        addToGrid(pane, new Label('Y coordinate:'), y1Field, ++row);
+        //addToGrid(pane, new Label('X coordinate:'), x1Field, ++row);
+        //addToGrid(pane, new Label('Y coordinate:'), y1Field, ++row);
 
 
         return pane
     }
+    static boolean createGUI4() {
+        Dialog<ButtonType> dlg = new Dialog<>();
+        dlg.initModality(Modality.NONE);
+        dlg.setTitle("Identify Location");
+        dlg.setHeaderText("Please identify a location of interest in the Live view in uManager and draw an unclassified rectangle in QuPath that matches that FOV.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
+        // Add buttons to the dialog
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Optional<ButtonType> result;
+        boolean validRectangle = false;
+
+        while (!validRectangle) {
+            // Show the dialog and wait for the user response
+            result = dlg.showAndWait();
+
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                // Check for expected rectangle
+                List expectedRectangles = getAnnotationObjects().stream()
+                        .filter(a -> a.getPathClass() == null && a.getROI() instanceof qupath.lib.roi.RectangleROI)
+                        .collect(Collectors.toList());
+
+                if (expectedRectangles.size() != 1) {
+                    // Use utilityFunctions to show a warning
+                    utilityFunctions.showAlertDialog("There needs to be exactly one unclassified rectangle.");
+                } else {
+                    validRectangle = true;
+                }
+            } else {
+                // User cancelled or closed the dialog
+                return false;
+            }
+        }
+        return true
+    }
+
+
+    static boolean createGUI5() {
+        List<String> choices = Arrays.asList("Yes", "Use adjusted position");
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("Yes", choices);
+        dialog.initModality(Modality.NONE);
+        dialog.setTitle("Position Confirmation");
+        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            return "Use adjusted position".equals(result.get());
+        }
+
+        // If no choice is made (e.g., dialog is closed), you can decide to return false or handle it differently
+        return false;
+    }
+
 }

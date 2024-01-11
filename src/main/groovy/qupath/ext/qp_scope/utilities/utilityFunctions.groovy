@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.images.servers.ImageServerProvider
+import qupath.lib.objects.PathObject
 import qupath.lib.projects.ProjectIO
 import qupath.lib.scripting.QP
 
@@ -32,6 +33,8 @@ import java.util.zip.*;
 
 class utilityFunctions {
 
+    static final logger = LoggerFactory.getLogger(utilityFunctions.class)
+
     static void showAlertDialog(String message){
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Warning!");
@@ -45,7 +48,6 @@ class utilityFunctions {
     }
 
     static boolean addImageToProject(File stitchedImagePath, Project project){
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
 
         def imagePath = stitchedImagePath.toURI().toString()
         //logger.info(imagePath)
@@ -134,42 +136,90 @@ class utilityFunctions {
      *
      * @param anacondaEnvPath The path to the Python virtual environment.
      * @param pythonScriptPath The path to the Python script to be executed.
-     * @param x1 The first x-coordinate to be passed to the Python script.
-     * @param y1 The first y-coordinate to be passed to the Python script.
-     * @param x2 The second x-coordinate to be passed to the Python script.
-     * @param y2 The second y-coordinate to be passed to the Python script.
+     * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
      */
-    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+    static  runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
         try {
-            def logger = LoggerFactory.getLogger(QuPathGUI.class)
-            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
+            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
 
-//            List<String> arguments = [pythonScriptPath, projectsFolderPath, sampleLabel, imageType]
-//            if (x1) arguments.add(x1)
-//            if (y1) arguments.add(y1)
-//            if (x2) arguments.add(x2)
-//            if (y2) arguments.add(y2)
-//            if (annotationJsonFileLocation) arguments.add(annotationJsonFileLocation)
+            // Adjust the pythonScriptPath based on arguments
+            if (arguments == null) {
+                // Change the script to 'getStageCoordinates.py'
+                File scriptFile = new File(pythonScriptPath);
+                pythonScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath();
+                // Construct the command
+                String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + arguments;
+                // Execute the command
+                Process process = command.execute();
+                logger.info("Executing command: " + command);
+                logger.info("This should get stage coordinates back")
+                // Construct the command
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                String value1
+                String value2
+                while ((line = reader.readLine()) != null) {
+                    // Process the line to retrieve value1 and value2
+                    // For example, if they are printed in a single line separated by space
+                    String[] values = line.split(" ");
+                    value1 = values[0];
+                    value2 = values[1];
+                    // Do something with the values
+                }
+                return [value1, value2]
+            } else if (arguments.size() == 2) {
+                // Change the script to 'moveStageToCoordinates.py'
+                File scriptFile = new File(pythonScriptPath);
+                pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
+            }
 
-            String args = arguments.collect { "\"$it\"" }.join(' ')
+            String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : "";
 
             // Construct the command
-            String command = "\"${pythonExecutable}\" -u \"${pythonScriptPath}\" ${args}"
-            logger.info("Executing command: ${command}")
+            String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + args;
+            logger.info("Executing command: " + command);
 
             // Execute the command
-            Process process = command.execute()
-            process.waitFor()
+            Process process = command.execute();
+
+            process.waitFor();
 
             // Read and log standard output
-            process.inputStream.eachLine { line -> logger.info(line) }
+            process.inputStream.eachLine { line -> logger.info(line) };
 
             // Read and log standard error
-            process.errorStream.eachLine { line -> logger.error(line) }
+            process.errorStream.eachLine { line -> logger.error(line) };
+            return null
         } catch (Exception e) {
-            e.printStackTrace()
+            e.printStackTrace();
         }
     }
+//    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+//        try {
+//            def logger = LoggerFactory.getLogger(QuPathGUI.class)
+//            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
+//
+//
+//
+//            String args = arguments.collect { "\"$it\"" }.join(' ')
+//
+//            // Construct the command
+//            String command = "\"${pythonExecutable}\" -u \"${pythonScriptPath}\" ${args}"
+//            logger.info("Executing command: ${command}")
+//
+//            // Execute the command
+//            Process process = command.execute()
+//            process.waitFor()
+//
+//            // Read and log standard output
+//            process.inputStream.eachLine { line -> logger.info(line) }
+//
+//            // Read and log standard error
+//            process.errorStream.eachLine { line -> logger.error(line) }
+//        } catch (Exception e) {
+//            e.printStackTrace()
+//        }
+//    }
 
 
     static Map<String, String> getPreferences() {
@@ -177,9 +227,10 @@ class utilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [installation: "C:\\ImageAnalysis\\python\\pycromanager_step_1.py",
+        return [installation: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
                 environment: "C:\\Anaconda\\envs\\paquo",
                 projects: "C:\\ImageAnalysis\\slides",
+                tissueDetection: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissueSize.groovy",
                 firstScanType: "4x_bf",
                 secondScanType:"20x_bf",
                 tileHandling:"Zip"] //Zip Delete or anything else is ignored
@@ -241,7 +292,7 @@ class utilityFunctions {
      * @param folderPath The path to the folder containing the tiles to be deleted.
      */
     public static void deleteTilesAndFolder(String folderPath) {
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+
         try {
 
             Path directory = Paths.get(folderPath)
@@ -265,7 +316,7 @@ class utilityFunctions {
     }
 
     public static void zipTilesAndMove(String folderPath) {
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+
         try {
             Path directory = Paths.get(folderPath);
             Path parentDirectory = directory.getParent();
@@ -302,27 +353,40 @@ class utilityFunctions {
     }
 
     static String transformBoundingBox(double x1, double y1, double x2, double y2, String pixelSize, String xCoordinate, String yCoordinate, boolean flip) {
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
-        //TODO handle flip
-        if (flip){
-
-            logger.info("handle flip")
+        if (flip) {
+            logger.info("Handling flip")
         }
+        // Log the values of all input parameters
+        logger.info("Input Parameters - x1: $x1, y1: $y1, x2: $x2, y2: $y2, pixelSize: $pixelSize, xCoordinate: $xCoordinate, yCoordinate: $yCoordinate, flip: $flip")
+
+        double pixelSizeDouble = parseDoubleSafely(pixelSize)
+        double xCoordinateDouble = parseDoubleSafely(xCoordinate)
+        double yCoordinateDouble = parseDoubleSafely(yCoordinate)
+
         // Convert pixel coordinates to microns
-        double x1Microns = x1 * (pixelSize as Double);
-        double y1Microns = y1 * (pixelSize as Double);
-        double x2Microns = x2 * (pixelSize as Double);
-        double y2Microns = y2 * (pixelSize as Double);
+        double x1Microns = x1 * pixelSizeDouble
+        double y1Microns = y1 * pixelSizeDouble
+        double x2Microns = x2 * pixelSizeDouble
+        double y2Microns = y2 * pixelSizeDouble
 
         // Adjust coordinates relative to the upper right coordinates
-        double adjustedX1 = xCoordinate as Double - x1Microns;
-        double adjustedY1 = yCoordinate as Double - y1Microns;
-        double adjustedX2 = xCoordinate as Double - x2Microns;
-        double adjustedY2 = yCoordinate as Double - y2Microns;
+        double adjustedX1 = xCoordinateDouble - x1Microns
+        double adjustedY1 = yCoordinateDouble - y1Microns
+        double adjustedX2 = xCoordinateDouble - x2Microns
+        double adjustedY2 = yCoordinateDouble - y2Microns
 
         // Create the bounding box string in the format "x1, y1, x2, y2"
-        String boundingBox = adjustedX1 + ", " + adjustedY1 + ", " + adjustedX2 + ", " + adjustedY2;
-        return boundingBox;
+        String boundingBox = "$adjustedX1, $adjustedY1, $adjustedX2, $adjustedY2"
+        return boundingBox
+    }
+
+    static double parseDoubleSafely(String str) {
+        try {
+            return str?.trim()?.toDouble() ?: 0.0
+        } catch (NumberFormatException e) {
+            logger.error("NumberFormatException in parsing string to double: ${e.message}")
+            return 0.0
+        }
     }
 
 
@@ -400,5 +464,95 @@ class utilityFunctions {
             return null; // No match found
         }
     }
+    static List<Object> getTopCenterTile(Collection<PathObject> detections) {
+        // Filter out null detections and sort by Y-coordinate
+        List<PathObject> sortedDetections = detections.findAll { it != null }
+                .sort { it.getROI().getCentroidY() }
 
+        // Get the minimum Y-coordinate (top tiles)
+        double minY = sortedDetections.first().getROI().getCentroidY()
+
+        // Get all tiles that are at the top
+        List<PathObject> topTiles = sortedDetections.findAll { it.getROI().getCentroidY() == minY }
+
+        // Find the median X-coordinate of the top tiles
+        List<Double> xCoordinates = topTiles.collect { it.getROI().getCentroidX() }
+        double medianX = xCoordinates.sort()[xCoordinates.size() / 2]
+
+        // Select the top tile closest to the median X-coordinate
+        PathObject topCenterTile = topTiles.min { Math.abs(it.getROI().getCentroidX() - medianX) }
+
+        return [topCenterTile.getROI().getCentroidX(), topCenterTile.getROI().getCentroidY(), topCenterTile]
+    }
+
+    static List<Object> getLeftCenterTile(Collection<PathObject> detections) {
+        // Filter out null detections and sort by X-coordinate
+        List<PathObject> sortedDetections = detections.findAll { it != null }
+                .sort { it.getROI().getCentroidX() }
+
+        // Get the minimum X-coordinate (left tiles)
+        double minX = sortedDetections.first().getROI().getCentroidX()
+
+        // Get all tiles that are at the left
+        List<PathObject> leftTiles = sortedDetections.findAll { it.getROI().getCentroidX() == minX }
+
+        // Find the median Y-coordinate of the left tiles
+        List<Double> yCoordinates = leftTiles.collect { it.getROI().getCentroidY() }
+        double medianY = yCoordinates.sort()[yCoordinates.size() / 2]
+
+        // Select the left tile closest to the median Y-coordinate
+        PathObject leftCenterTile = leftTiles.min { Math.abs(it.getROI().getCentroidY() - medianY) }
+
+        return [leftCenterTile.getROI().getCentroidX(), leftCenterTile.getROI().getCentroidY(), leftCenterTile]
+    }
+
+    //TODO possibly use QuPath's affine transformation tools
+    //Convert the QuPath pixel based coordinates for a location into the MicroManager micron based stage coordinates
+    static List<Double> QPtoMicroscopeCoordinates(List<Double> qpCoordinates, Double imagePixelSize, Object transformation){
+        //TODO figure out conversion
+        def mmCoordinates = qpCoordinates
+        return mmCoordinates
+    }
+
+
+    static List<Double> updateTransformation(List<Double> transformation, List<String> coordinatesQP, List<String> coordinatesMM) {
+        logger.info("Transformation input: $transformation (Type: ${transformation.getClass()})")
+        logger.info("Coordinates QP input: $coordinatesQP (Type: ${coordinatesQP.getClass()})")
+        logger.info("Coordinates MM input: $coordinatesMM (Type: ${coordinatesMM.getClass()})")
+
+        // Extract transformation elements
+        double xShiftMicrons = transformation[0]
+        double yShiftMicrons = transformation[1]
+        double pixelSize = transformation[2]
+
+        logger.info("Extracted xShiftMicrons: $xShiftMicrons")
+        logger.info("Extracted yShiftMicrons: $yShiftMicrons")
+        logger.info("Extracted pixelSize: $pixelSize")
+
+        // Convert coordinatesQP and coordinatesMM elements from String to Double
+        double xQP = coordinatesQP[0].toDouble()
+        double yQP = coordinatesQP[1].toDouble()
+        double xMM = coordinatesMM[0].toDouble()
+        double yMM = coordinatesMM[1].toDouble()
+
+        logger.info("Converted xQP from String to Double: $xQP")
+        logger.info("Converted yQP from String to Double: $yQP")
+        logger.info("Converted xMM from String to Double: $xMM")
+        logger.info("Converted yMM from String to Double: $yMM")
+
+        // Calculate coordinate shift
+        double xShift = xQP * pixelSize - xMM
+        double yShift = yQP * pixelSize - yMM
+
+        logger.info("Calculated xShift: $xShift")
+        logger.info("Calculated yShift: $yShift")
+
+        // Update transformation values
+        transformation[0] = xShiftMicrons - xShift
+        transformation[1] = yShiftMicrons - yShift
+
+        logger.info("Updated transformation: $transformation")
+
+        return transformation
+    }
 }
