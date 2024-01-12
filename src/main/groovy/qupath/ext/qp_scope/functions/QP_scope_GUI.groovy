@@ -46,7 +46,7 @@ class QP_scope_GUI {
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
     static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy")
     // Default empty
-    static TextField pixelSizeField = new TextField("7.2") // Default empty
+    static TextField pixelSizeField = new TextField(preferences.pixelSizeSource) // Default empty
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
     static void createGUI1() {
@@ -438,11 +438,8 @@ class QP_scope_GUI {
             QuPathGUI.getInstance().runScript(null, tissueDetectScript);
             //At this point the tissue should be outlined in an annotation
 
-            //Create an export tile locations
-            String tilesCSVdirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + "tiles_csv";
-            String exportScript = utilityFunctions.modifyCSVExportScript(exportScriptPathString, pixelSize, tilesCSVdirectory)
+            String exportScript = utilityFunctions.modifyCSVExportScript(exportScriptPathString, pixelSize, preferences)
             logger.info(exportScript)
-            logger.info(tilesCSVdirectory)
             logger.info(exportScriptPathString)
             QuPathGUI.getInstance().runScript(null, exportScript);
 
@@ -504,17 +501,12 @@ class QP_scope_GUI {
             //Send the QuPath pixel coordinates for the bounding box along with the pixel size and upper left coordinates of the tissue
             def boundingBox = utilityFunctions.transformBoundingBox(x1, y1, x2, y2, pixelSize, xCoordinate, yCoordinate, isSlideFlipped)
 
-
-            logger.info(tilesCSVdirectory)
-
-
             // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
             args = [pythonScriptPath,
                     projectsFolderPath,
                     sampleLabel,
                     scanTypeWithIndex,
-                    tilesCSVdirectory, //no annotation JSON file location
                     boundingBox]
             //TODO can we create non-blocking python code
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)

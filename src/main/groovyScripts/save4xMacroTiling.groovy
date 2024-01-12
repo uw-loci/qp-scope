@@ -8,7 +8,6 @@ double pixelSizeSource = 1.105
 double pixelSizeTarget = 1.105
 double frameWidth = 1392 / pixelSizeSource * pixelSizeTarget
 double frameHeight = 1040 / pixelSizeSource * pixelSizeTarget
-//Overlap percent - 10% is 10, not 0.1
 double overlapPercent = 10
 baseDirectory = "to be replaced"
 imagingModality = "4x-tiles"
@@ -39,8 +38,6 @@ imageName = GeneralTools.getNameWithoutExtension(getQuPath().getProject().getEnt
 tilePath = buildFilePath(baseDirectory, imagingModality)
 mkdirs(tilePath)
 
-//CSV will be only two columns with the following header
-String header = "x_pos,y_pos";
 
 annotations.eachWithIndex { a, i ->
 
@@ -89,15 +86,15 @@ annotations.eachWithIndex { a, i ->
     hierarchy.addObjects(newTiles)
     //Does not use CLASS of annotation in the name at the moment.
     annotationName = a.getName()
-    path = buildFilePath(baseDirectory, imagingModality, imageName + "-" + annotationName + ".csv")
+    // Header for TileConfiguration.txt
+    String header = "dim = 2\n";
 
-    new File(path).withWriter { fw ->
+    // Writing to TileConfiguration.txt 
+    new File(buildFilePath(tilePath, "NOTTileConfiguration.txt")).withWriter { fw ->
         fw.writeLine(header)
 
-        //Make sure everything being sent is a child and part of the current annotation.
-
-        xy.each {
-            String line = it[0] as String + "," + it[1] as String
+        xy.eachWithIndex { coords, index ->
+            String line = "${index}.tiff; ; (${coords[0]}, ${coords[1]})"
             fw.writeLine(line)
         }
     }

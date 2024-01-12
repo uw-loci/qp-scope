@@ -255,7 +255,12 @@ class utilityFunctions {
                 tissueDetection: "DetectTissue.groovy",
                 firstScanType  : "4x_bf",
                 secondScanType : "20x_bf",
-                tileHandling   : "Zip"] //Zip Delete or anything else is ignored
+                tileHandling   : "Zip",
+                pixelSizeSource : "7.2",
+                pixelSizeTarget : "1.105",
+                frameWidth : "1392",
+                frameHeight : "1040",
+                overlapPercent : "0"] //Zip Delete or anything else is ignored
     }
 /**
  * Exports all annotations to a JSON file in the specified JSON subfolder of the current project.
@@ -447,14 +452,26 @@ class utilityFunctions {
      * @return String representing the modified script.
      * @throws IOException if an I/O error occurs reading from the file.
      */
-    public static String modifyCSVExportScript(String exportScriptPathString, String pixelSize, String tilesCSVdirectory) throws IOException {
+    public static String modifyCSVExportScript(String exportScriptPathString, String pixelSize, LinkedHashMap<String, String> preferences) throws IOException {
         // Read and modify the script
         List<String> lines = Files.lines(Paths.get(exportScriptPathString), StandardCharsets.UTF_8)
                 .map(line -> {
                     if (line.startsWith("double pixelSizeSource")) {
                         return "double pixelSizeSource = " + pixelSize + ";";
+                    } else if (line.startsWith("double pixelSizeTarget")) {
+                        return "double pixelSizeTarget = " + preferences.pixelSizeTarget + ";";
+                    } else if (line.startsWith("double frameWidth")) {
+                        double frameWidth = Double.parseDouble(preferences.frameWidth) / Double.parseDouble(preferences.pixelSizeSource) * Double.parseDouble(preferences.pixelSizeTarget);
+                        return "double frameWidth = " + frameWidth + ";";
+                    } else if (line.startsWith("double frameHeight")) {
+                        double frameHeight = Double.parseDouble(preferences.frameHeight) / Double.parseDouble(preferences.pixelSizeSource) * Double.parseDouble(preferences.pixelSizeTarget);
+                        return "double frameHeight = " + frameHeight + ";";
+                    } else if (line.startsWith("double overlapPercent")) {
+                        return "double overlapPercent = " + preferences.overlapPercent + ";";
                     } else if (line.startsWith("baseDirectory")) {
-                        return "baseDirectory = \"" + tilesCSVdirectory.replace("\\", "\\\\") + "\";";
+                        return "baseDirectory = \"" + preferences.projects.replace("\\", "\\\\") + "\";";
+                    } else if (line.startsWith("imagingModality")) {
+                        return "imagingModality = \"" + preferences.firstScanType + "-tiles\";";
                     } else {
                         return line;
                     }
@@ -464,6 +481,7 @@ class utilityFunctions {
         // Join the lines into a single string
         return String.join(System.lineSeparator(), lines);
     }
+
 
     /**
      * Extracts the file path from the server path string.
