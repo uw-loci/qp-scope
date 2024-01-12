@@ -61,7 +61,8 @@ class QP_scope implements QuPathExtension {
         def qpScope1 = new MenuItem("Start qp_scope")
         // TODO: tooltip
         qpScope1.setOnAction(e -> {
-            // TODO: check preferences for all necessary entries
+            // TODO: check preferences for all necessary entries, and check for micromanager running+version
+            // search java app with a subprocesses for MicroManager +version number
             QP_scope_GUI.createGUI1()
         })
 

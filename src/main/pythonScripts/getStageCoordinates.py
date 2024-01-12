@@ -1,17 +1,10 @@
 import sys
 
-# Function to log messages
-def log_message(message):
-    with open('D:/log.txt', 'a') as log_file:
-        print(message, file=log_file, flush=True)
-
-log_message("Python script started.")
-
-# Check if the first command-line argument is None
-if len(sys.argv) >= 2:
-    first_argument = sys.argv[1]
-    if first_argument is None:
-        log_message("The first argument is None.")
+# Check if any command-line arguments were provided
+if len(sys.argv) == 1:
+    # No arguments were passed, print default coordinates
+    print('12345', '54321')
 else:
-    log_message("No arguments were provided.")
-print('12345', '54321')
+    # Arguments were passed, print an error message to standard error
+    print("Error: Unexpected arguments received.", file=sys.stderr)
+    sys.exit(1)  # Optionally exit with a non-zero status to indicate an error

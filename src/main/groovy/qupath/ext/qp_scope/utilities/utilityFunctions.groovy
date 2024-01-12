@@ -147,24 +147,18 @@ class utilityFunctions {
                 Process process = command.execute();
                 logger.info("Executing command: " + command);
                 logger.info("This should get stage coordinates back")
-                // Construct the command
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                String value1
-                String value2
-                while ((line = reader.readLine()) != null) {
-                    // Process the line to retrieve value1 and value2
-                    // For example, if they are printed in a single line separated by space
-                    String[] values = line.split(" ");
-                    value1 = values[0];
-                    value2 = values[1];
-                    // Do something with the values
+                List<String> result = handleProcessOutput(process)
+                if (result != null) {
+                    logger.info("Received coordinates: ${result[0]}, ${result[1]}")
+                    return result
+                } else {
+                    logger.error("Error occurred or no valid output received from the script.")
+                    return null
                 }
-                return [value1, value2]
             } else if (arguments.size() == 2) {
                 // Change the script to 'moveStageToCoordinates.py'
                 File scriptFile = new File(pythonScriptPath);
-                pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
+                pythonScriptPath = new File(scriptFile.parent, "moveStageToCoordinates.py").canonicalPath
             }
 
             String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : "";
@@ -176,18 +170,52 @@ class utilityFunctions {
             // Execute the command
             Process process = command.execute();
 
-            process.waitFor();
+            // Redirect the output and error streams to the logger
+            process.consumeProcessOutput(new StringWriter(), new StringWriter())
 
-            // Read and log standard output
-            process.inputStream.eachLine { line -> logger.info(line) };
+            // Wait for the process to complete
+            process.waitFor()
 
-            // Read and log standard error
-            process.errorStream.eachLine { line -> logger.error(line) };
+            // Log the output and error (or use it as needed)
+            logger.info(process.text) // This logs the standard output
+            logger.error(process.err.text) // This logs the standard error
             return null
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    static List<String> handleProcessOutput(Process process) {
+        BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+        String line;
+        List<String> outputLines = []
+        List<String> errorLines = []
+        String value1 = null
+        String value2 = null
+
+        while ((line = outputReader.readLine()) != null) {
+            outputLines.add(line)
+            // Assuming coordinates are on the first line
+            if (outputLines.size() == 1) {
+                String[] values = line.split(" ");
+                value1 = values[0];
+                value2 = values[1];
+            }
+        }
+
+        while ((line = errorReader.readLine()) != null) {
+            errorLines.add(line)
+        }
+
+        // Check for errors or invalid output
+        if (!errorLines.isEmpty() || value1 == null || value2 == null) {
+            return null;
+        }
+
+        return [value1, value2];
+    }
+
 //    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
 //        try {
 //            def logger = LoggerFactory.getLogger(QuPathGUI.class)
@@ -221,10 +249,10 @@ class utilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [installation   : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
+        return [ pycromanager   : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
                 environment    : "C:\\Anaconda\\envs\\paquo",
-                projects       : "C:\\ImageAnalysis\\slides",
-                tissueDetection: "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy",
+                projects       : "C:\\ImageAnalysis\\QPExtensionTest\\data\\slides",
+                tissueDetection: "DetectTissue.groovy",
                 firstScanType  : "4x_bf",
                 secondScanType : "20x_bf",
                 tileHandling   : "Zip"] //Zip Delete or anything else is ignored
@@ -505,6 +533,10 @@ class utilityFunctions {
     //Convert the QuPath pixel based coordinates for a location into the MicroManager micron based stage coordinates
     static List<Double> QPtoMicroscopeCoordinates(List<Double> qpCoordinates, Double imagePixelSize, Object transformation) {
         //TODO figure out conversion
+        def xUpperLeft = qpCoordinates[0]*imagePixelSize
+        def yUpperLeft = qpCoordinates[1]*imagePixelSize
+
+
         def mmCoordinates = qpCoordinates
         return mmCoordinates
     }

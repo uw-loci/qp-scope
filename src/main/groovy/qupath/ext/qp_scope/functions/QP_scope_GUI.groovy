@@ -39,7 +39,7 @@ class QP_scope_GUI {
 
     // New text fields for Python environment, script path, and sample label
     static TextField virtualEnvField = new TextField(preferences.environment)
-    static TextField pythonScriptField = new TextField(preferences.installation)
+    static TextField pythonScriptField = new TextField(preferences.pycromanager)
     static TextField projectsFolderField = new TextField(preferences.projects)
     static TextField sampleLabelField = new TextField("First_Test")  // New field for sample label
     // GUI3
@@ -83,6 +83,8 @@ class QP_scope_GUI {
             boolean dataCheck = true
             def annotations = QP.getAnnotationObjects()
             // Check if using annotations
+
+            //TODO REPLACE ALL OF THIS WITH TILING
             if (useAnnotationsCheckBox.isSelected()) {
 
                 // Check if annotations are present
