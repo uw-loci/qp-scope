@@ -15,8 +15,10 @@ import qupath.lib.projects.Project
 import qupath.lib.scripting.QP
 
 import java.awt.image.BufferedImage
+
 import java.nio.file.Path
 import java.nio.file.Paths
+
 import java.util.stream.Collectors
 
 import static qupath.lib.scripting.QP.getAnnotationObjects
@@ -33,9 +35,8 @@ class QP_scope_GUI {
     static TextField y1Field = new TextField("")
     static TextField x2Field = new TextField("")
     static TextField y2Field = new TextField("")
-    static TextField scanBox = new TextField("20,25,30,35")
+    static TextField scanBox = new TextField("0,0,5000,5000")
     static preferences = utilityFunctions.getPreferences()
-    static CheckBox useAnnotationsCheckBox = new CheckBox("Use annotations")
 
     // New text fields for Python environment, script path, and sample label
     static TextField virtualEnvField = new TextField(preferences.environment)
@@ -81,36 +82,24 @@ class QP_scope_GUI {
             def boxString = scanBox.getText()
             //Boolean to check whether to proceed with running the microscope data collection
             boolean dataCheck = true
-            def annotations = QP.getAnnotationObjects()
-            // Check if using annotations
+            def pixelSize = preferences.pixelSizeTarget
 
-            //TODO REPLACE ALL OF THIS WITH TILING
-            if (useAnnotationsCheckBox.isSelected()) {
+            // Continue with previous behavior using coordinates
 
-                // Check if annotations are present
-                if (annotations.isEmpty() || [sampleLabel, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
-                    Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
-                    dataCheck = false
-                    return
-                }
-                annotationJsonFileLocation = utilityFunctions.createAnnotationJson(projectsFolderPath, sampleLabel, preferences.firstScanType)
-            } else {
-                // Continue with previous behavior using coordinates
-
-                if (boxString != "") {
-                    def values = boxString.replaceAll("[^0-9.,]", "").split(",")
-                    if (values.length == 4) {
-                        x1 = values[0]
-                        y1 = values[1]
-                        x2 = values[2]
-                        y2 = values[3]
-                    }
-                }
-                if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
-                    Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
-                    dataCheck = false
+            if (boxString != "") {
+                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
+                if (values.length == 4) {
+                    x1 = values[0]
+                    y1 = values[1]
+                    x2 = values[2]
+                    y2 = values[3]
                 }
             }
+            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
+                dataCheck = false
+            }
+
 
             // Check if any value is empty
             if (dataCheck) {
@@ -119,8 +108,26 @@ class QP_scope_GUI {
                 def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
                 def logger = LoggerFactory.getLogger(QuPathGUI.class)
                 logger.info(tempTileDirectory)
-                //Reduce the number of sent args
+
+                Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent();
+                groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
+
+                // Combine the directory with the new filename
+                Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
+                String exportScriptPathString = exportScriptPath.toString().replace("\\", "/");
+                String exportScript = utilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
                 def boundingBox = "{$x1}, {$y1}, {$x2}, {$y2}"
+                //Specifically for the case where there is only a bounding box provided
+                List boundingBoxValues = [x1, y1, x2, y2] // Replace x1, y1, x2, y2 with actual values
+                exportScript = utilityFunctions.boundingBoxReadyTXT(exportScript, boundingBoxValues)
+
+
+                logger.info(exportScript)
+                logger.info(boundingBox)
+                QuPathGUI.getInstance().runScript(null, exportScript);
+
+                //Reduce the number of sent args
+
                 // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
                 List args = [pythonScriptPath,
@@ -180,7 +187,6 @@ class QP_scope_GUI {
 
         // Add new component for Sample Label
         addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
-        addToGrid(pane, new Label('Use annotations in current image?'), useAnnotationsCheckBox, row++)
 
         // Add existing components to the grid
         addToGrid(pane, new Label('X1:'), x1Field, row++)
@@ -193,15 +199,7 @@ class QP_scope_GUI {
         addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
         addToGrid(pane, new Label('PycroManager .py path:'), pythonScriptField, row++)
         addToGrid(pane, new Label('Projects parent folder:'), projectsFolderField, row++)
-        // Listener for the checkbox
-        useAnnotationsCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            x1Field.setDisable(newValue)
-            y1Field.setDisable(newValue)
-            x2Field.setDisable(newValue)
-            y2Field.setDisable(newValue)
-            scanBox.setDisable(newValue)
-            // You can also disable other related fields if necessary
-        })
+
         return pane
     }
 
@@ -438,7 +436,7 @@ class QP_scope_GUI {
             QuPathGUI.getInstance().runScript(null, tissueDetectScript);
             //At this point the tissue should be outlined in an annotation
 
-            String exportScript = utilityFunctions.modifyCSVExportScript(exportScriptPathString, pixelSize, preferences)
+            String exportScript = utilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
             logger.info(exportScript)
             logger.info(exportScriptPathString)
             QuPathGUI.getInstance().runScript(null, exportScript);
@@ -467,6 +465,7 @@ class QP_scope_GUI {
             if (updatePosition) {
                 //TODO get access to current stage coordinates
                 List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                logger.info(currentStageCoordinates_um.toString())
                 transformation = utilityFunctions.updateTransformation(transformation, currentStageCoordinates_um, args)
             }
 

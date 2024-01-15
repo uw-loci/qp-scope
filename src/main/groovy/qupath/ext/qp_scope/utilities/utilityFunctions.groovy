@@ -149,7 +149,7 @@ class utilityFunctions {
                 logger.info("This should get stage coordinates back")
                 List<String> result = handleProcessOutput(process)
                 if (result != null) {
-                    logger.info("Received coordinates: ${result[0]}, ${result[1]}")
+                    logger.info("Received output: ${result.join(', ')}")
                     return result
                 } else {
                     logger.error("Error occurred or no valid output received from the script.")
@@ -262,32 +262,7 @@ class utilityFunctions {
                 frameHeight : "1040",
                 overlapPercent : "0"] //Zip Delete or anything else is ignored
     }
-/**
- * Exports all annotations to a JSON file in the specified JSON subfolder of the current project.
- *
- * @param projectsFolderPath The base path to the projects folder.
- * @param sampleLabel The label of the sample.
- * @param firstScanType The type of the first scan.
- */
-    static String createAnnotationJson(String projectsFolderPath, String sampleLabel, String firstScanType) {
-        // Construct the folder path for storing the JSON file
-        File folder = new File(projectsFolderPath + File.separator + sampleLabel + File.separator + "JSON");
 
-        // Check if the folder exists, and create it if it doesn't
-        if (!folder.exists()) {
-            folder.mkdirs();
-            // This will create the directory including any necessary but nonexistent parent directories.
-        }
-
-        // Construct the full path for the annotation JSON file
-        File annotationJsonFile = new File(folder, firstScanType + sampleLabel + ".geojson");
-        String annotationJsonFileLocation = annotationJsonFile.getPath();
-
-        // Export all annotations to the GeoJSON file
-        QP.exportAllObjectsToGeoJson(annotationJsonFileLocation, "EXCLUDE_MEASUREMENTS", "FEATURE_COLLECTION");
-
-        return annotationJsonFileLocation
-    }
 /**
  * Generates a unique folder name by checking the number of existing folders with a similar name
  * in the current directory, and then appending that number to the folder name.
@@ -452,7 +427,7 @@ class utilityFunctions {
      * @return String representing the modified script.
      * @throws IOException if an I/O error occurs reading from the file.
      */
-    public static String modifyCSVExportScript(String exportScriptPathString, String pixelSize, LinkedHashMap<String, String> preferences) throws IOException {
+    public static String modifyTXTExportScript(String exportScriptPathString, String pixelSize, Map<String, String> preferences, String sampleLabel) throws IOException {
         // Read and modify the script
         List<String> lines = Files.lines(Paths.get(exportScriptPathString), StandardCharsets.UTF_8)
                 .map(line -> {
@@ -469,7 +444,12 @@ class utilityFunctions {
                     } else if (line.startsWith("double overlapPercent")) {
                         return "double overlapPercent = " + preferences.overlapPercent + ";";
                     } else if (line.startsWith("baseDirectory")) {
-                        return "baseDirectory = \"" + preferences.projects.replace("\\", "\\\\") + "\";";
+                        String pathSeparator = System.getProperty("file.separator");
+                        String baseDirectoryPath = preferences.projects + pathSeparator + sampleLabel;
+                        baseDirectoryPath = baseDirectoryPath.replace("\\", "\\\\"); // Handle backslashes for Windows paths
+                        String newLine = "baseDirectory = \"" + baseDirectoryPath + "\";";
+                        logger.info("Replacing baseDirectory line with: " + newLine);
+                        return newLine;
                     } else if (line.startsWith("imagingModality")) {
                         return "imagingModality = \"" + preferences.firstScanType + "-tiles\";";
                     } else {
@@ -481,6 +461,39 @@ class utilityFunctions {
         // Join the lines into a single string
         return String.join(System.lineSeparator(), lines);
     }
+
+    /**
+     * Modifies a Groovy script content by setting the 'createTiles' variable to false and updating
+     * the 'boundingBoxStageCoordinates_um' variable with provided bounding box values.
+     *
+     * @param scriptContent The content of the script to be modified as a multi-line string.
+     * @param boundingBox A list containing the bounding box coordinates (x1, y1, x2, y2).
+     * @return A string representing the modified script content.
+     */
+    public static String boundingBoxReadyTXT(String scriptContent, List boundingBox) {
+        // Convert bounding box list to a string
+        String boundingBoxStr = boundingBox.join(", ")
+
+        // Split the script content into lines
+        List<String> lines = scriptContent.split(System.lineSeparator())
+
+        // Modify the script lines
+        List<String> modifiedLines = lines.stream()
+                .map(line -> {
+                    if (line.trim().startsWith("createTiles")) {
+                        return "createTiles = false";
+                    } else if (line.trim().startsWith("boundingBoxStageCoordinates_um")) {
+                        return "boundingBoxStageCoordinates_um = [" + boundingBoxStr + "]";
+                    } else {
+                        return line;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        // Join the modified lines into a single string
+        return String.join(System.lineSeparator(), modifiedLines);
+    }
+
 
 
     /**

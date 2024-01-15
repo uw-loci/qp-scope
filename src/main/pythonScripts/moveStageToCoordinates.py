@@ -9,7 +9,7 @@ if len(sys.argv) == 3:
         print(f"X: {X}, Y: {Y}")
     except ValueError:
         print("Invalid arguments. Both X and Y must be doubles.", file=sys.stderr)
-        sys.exit(1)
+        #sys.exit(1)
 else:
     print("Expected two arguments, X and Y as doubles", file=sys.stderr)
-    sys.exit(1)
+    #sys.exit(1)
