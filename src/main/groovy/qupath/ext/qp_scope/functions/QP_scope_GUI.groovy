@@ -373,12 +373,6 @@ class QP_scope_GUI {
             }
             String imageName = QP.getCurrentImageName()
 
-            // Determine the pixel size based on imageName
-            if (imageName.contains("3600")) {
-                pixelSize = "2.0"
-            } else if (imageName.contains("7200")) {
-                pixelSize = "1.0"
-            }
 
             // Expect the classifier file path to be in a specific location
             // get the classifier from the groovyScripts folder, which should be "next to" the pythonScripts folder
@@ -450,6 +444,7 @@ class QP_scope_GUI {
             // the transformation consists of an X-shift in stage microns, a Y-shift in stage microns, and a magnification
             def viewer = QuPathGUI.getInstance().getViewer()
             viewer.centerImage()
+            viewer.getOverlayOptions().setShowNames(true)
             def x= viewer.getCenterPixelX()
             def y= viewer.getCenterPixelY()
             def frameWidth = (preferences.frameWidth as Double)
@@ -459,6 +454,7 @@ class QP_scope_GUI {
             def FOVAnnotation = PathObjects.createAnnotationObject(tileROI)
             FOVAnnotation = PathObjectTools.transformObject(FOVAnnotation,transformation, true)
             QP.addObject(FOVAnnotation)
+            FOVAnnotation.setName("MOVE ME AND THE LIVE VIEW UNTIL THE VIEWS MATCH!\n     Tissue edge might be easiest.")
             boolean gui4Success = stageToQuPathAlignmentGUI1()
             if (!gui4Success) {
                 // User cancelled GUI4, so end GUI3 and do not proceed
