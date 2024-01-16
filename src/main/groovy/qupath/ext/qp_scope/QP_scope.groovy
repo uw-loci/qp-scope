@@ -58,7 +58,7 @@ class QP_scope implements QuPathExtension {
         def menu = qupath.getMenu("Extensions>${name}", true)
 
         // First menu item
-        def qpScope1 = new MenuItem("Input bounding box - first scan type")
+        def qpScope1 = new MenuItem("First scan - Use bounding box")
         // TODO: tooltip
         qpScope1.setOnAction(e -> {
             // TODO: check preferences for all necessary entries, and check for micromanager running+version
@@ -67,7 +67,7 @@ class QP_scope implements QuPathExtension {
         })
 
         // Second menu item
-        def qpScope2 = new MenuItem("Use current image to detect tissue location - first scan type")
+        def qpScope2 = new MenuItem("First scan type - Use current image")
         // TODO: tooltip
         qpScope2.setOnAction(e -> {
             // TODO: check preferences for all necessary entries
@@ -75,7 +75,7 @@ class QP_scope implements QuPathExtension {
         })
 
         // Third menu item - "Use current image as macro view"
-        def qpScope3 = new MenuItem("Scan non \'Tissue\' annotations - second scan type")
+        def qpScope3 = new MenuItem("Second scan type - Scan non \'Tissue\' annotations ")
         // TODO: tooltip
         qpScope3.setOnAction(e -> {
             QP_scope_GUI.secondModalityGUI()

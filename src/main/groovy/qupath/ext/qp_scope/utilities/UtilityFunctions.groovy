@@ -2,6 +2,7 @@ package qupath.ext.qp_scope.utilities
 
 
 import org.slf4j.LoggerFactory
+import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.commands.ProjectCommands
 import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.images.ImageData
@@ -9,7 +10,8 @@ import qupath.lib.images.servers.ImageServerProvider
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectIO
 import qupath.lib.projects.Projects
-import qupath.ext.qp_scope.utilities.minorFunctions
+import qupath.ext.basicstitching.stitching.StitchingImplementations
+
 import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -21,9 +23,9 @@ import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class utilityFunctions {
+class UtilityFunctions {
 
-    static final logger = LoggerFactory.getLogger(utilityFunctions.class)
+    static final logger = LoggerFactory.getLogger(UtilityFunctions.class)
 
 
     static boolean addImageToProject(File stitchedImagePath, Project project) {
@@ -109,6 +111,36 @@ class utilityFunctions {
         return project
     }
 
+    /**
+     * Performs image stitching and updates the QuPath project with the stitched image.
+     *
+     * @param stitchingImplementations An instance or reference to the stitching implementations.
+     * @param projectsFolderPath The path to the projects folder.
+     * @param sampleLabel The label for the sample.
+     * @param scanTypeWithIndex The scan type with an appended index for uniqueness.
+     * @param qupathGUI The QuPath GUI instance for updating the project.
+     * @param currentQuPathProject The current QuPath project to be updated.
+     * @return The path to the stitched image.
+     */
+    static String stitchImagesAndUpdateProject(StitchingImplementations stitchingImplementations,
+                                                       String projectsFolderPath, String sampleLabel,
+                                                       String scanTypeWithIndex, QuPathGUI qupathGUI,
+                                                       Project currentQuPathProject) {
+
+        String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
+        //TODO Need to check if stitching is successful, provide error
+        String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
+                projectsFolderPath + File.separator + sampleLabel,
+                stitchedImageOutputFolder, "J2K_LOSSY",
+                0, 1, scanTypeWithIndex)
+        File stitchedImagePath = new File(stitchedImagePathStr)
+        addImageToProject(stitchedImagePath, currentQuPathProject)
+
+        qupathGUI.setProject(currentQuPathProject)
+        qupathGUI.refreshProject()
+
+        return stitchedImagePathStr
+    }
     /**
      * Executes a Python script using a specified Python executable within a virtual environment.
      * This method is designed to be compatible with Windows, Linux, and macOS.
@@ -202,32 +234,7 @@ class utilityFunctions {
         return [value1, value2]
     }
 
-//    static void runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
-//        try {
-//            def logger = LoggerFactory.getLogger(QuPathGUI.class)
-//            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
-//
-//
-//
-//            String args = arguments.collect { "\"$it\"" }.join(' ')
-//
-//            // Construct the command
-//            String command = "\"${pythonExecutable}\" -u \"${pythonScriptPath}\" ${args}"
-//            logger.info("Executing command: ${command}")
-//
-//            // Execute the command
-//            Process process = command.execute()
-//            process.waitFor()
-//
-//            // Read and log standard output
-//            process.inputStream.eachLine { line -> logger.info(line) }
-//
-//            // Read and log standard error
-//            process.errorStream.eachLine { line -> logger.error(line) }
-//        } catch (Exception e) {
-//            e.printStackTrace()
-//        }
-//    }
+
 
 
     static Map<String, String> getPreferences() {
@@ -358,7 +365,7 @@ class utilityFunctions {
         // Handle backslashes for Windows paths
         String imagingBasePath = "${baseDirectoryPath}${File.separator}${preferences.firstScanType}"
 
-        String uniqueFolderName = minorFunctions.getUniqueFolderName(imagingBasePath)
+        String uniqueFolderName = MinorFunctions.getUniqueFolderName(imagingBasePath)
 
         // Extract the numeric part from the folder name using a regex pattern
         Pattern pattern = Pattern.compile('(\\d+)$') // Using single quotes for regex

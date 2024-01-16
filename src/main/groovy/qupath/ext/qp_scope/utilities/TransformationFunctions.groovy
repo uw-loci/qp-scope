@@ -1,6 +1,8 @@
 package qupath.ext.qp_scope.utilities
 
 import org.slf4j.LoggerFactory
+import qupath.ext.qp_scope.functions.QP_scope_GUI
+import qupath.lib.gui.QuPathGUI
 import qupath.lib.objects.PathObject
 
 import java.awt.geom.AffineTransform
@@ -8,8 +10,8 @@ import java.awt.geom.Point2D
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class transformationFunctions {
-    static final logger = LoggerFactory.getLogger(transformationFunctions.class)
+class TransformationFunctions {
+    static final logger = LoggerFactory.getLogger(TransformationFunctions.class)
 
     //Convert the QuPath pixel based coordinates for a location into the MicroManager micron based stage coordinates
 
@@ -132,7 +134,7 @@ class transformationFunctions {
     }
 
 
-    static List<Object> getTopCenterTile(Collection<PathObject> detections) {
+    static PathObject getTopCenterTile(Collection<PathObject> detections) {
         // Filter out null detections and sort by Y-coordinate
         List<PathObject> sortedDetections = detections.findAll { it != null }
                 .sort { it.getROI().getCentroidY() }
@@ -150,10 +152,10 @@ class transformationFunctions {
         // Select the top tile closest to the median X-coordinate
         PathObject topCenterTile = topTiles.min { Math.abs(it.getROI().getCentroidX() - medianX) }
 
-        return [topCenterTile.getROI().getCentroidX(), topCenterTile.getROI().getCentroidY(), topCenterTile]
+        return topCenterTile
     }
 
-    static List<Object> getLeftCenterTile(Collection<PathObject> detections) {
+    static PathObject getLeftCenterTile(Collection<PathObject> detections) {
         // Filter out null detections and sort by X-coordinate
         List<PathObject> sortedDetections = detections.findAll { it != null }
                 .sort { it.getROI().getCentroidX() }
@@ -171,7 +173,32 @@ class transformationFunctions {
         // Select the left tile closest to the median Y-coordinate
         PathObject leftCenterTile = leftTiles.min { Math.abs(it.getROI().getCentroidY() - medianY) }
 
-        return [leftCenterTile.getROI().getCentroidX(), leftCenterTile.getROI().getCentroidY(), leftCenterTile]
+        return leftCenterTile
     }
+
+/**
+ * Sets up an AffineTransform for the QuPath project based on pixel size and slide orientation,
+ * and performs an initial stage alignment validation.
+ *
+ * @param pixelSize The size of the pixels in the image.
+ * @param isSlideFlipped A boolean indicating if the slide is flipped.
+ * @param preferences A map containing user preferences and settings.
+ * @param qupathGUI The QuPath GUI instance used for executing GUI-related operations.
+ * @return An AffineTransform object set up based on the provided parameters, or null if the user cancels the operation.
+ */
+    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, Map preferences, QuPathGUI qupathGUI) {
+        AffineTransform transformation = new AffineTransform() // Start with the identity matrix
+        double scale =  (preferences.pixelSizeFirstScanType as Double) / pixelSize
+        double scaleY = isSlideFlipped ? -scale : scale // Invert the Y axis if flip is true
+
+        transformation.scale(scale, scaleY)
+
+        boolean gui4Success = QP_scope_GUI.stageToQuPathAlignmentGUI1()
+        if (!gui4Success) {
+            return null // End function early if the user cancels
+        }
+        return transformation
+    }
+
 
 }

@@ -10,8 +10,8 @@ import java.nio.file.Paths
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class minorFunctions {
-    static final logger = LoggerFactory.getLogger(minorFunctions.class)
+class MinorFunctions {
+    static final logger = LoggerFactory.getLogger(MinorFunctions.class)
 
     static void showAlertDialog(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING)
