@@ -16,10 +16,6 @@ double overlapPercent = 10
 baseDirectory = "to be replaced"
 imagingModality = "4x-bf"
 
-//Potentially store tiles as they are created
-newTiles = []
-
-
 //Ensure the folder to store the csv exists
 tilePath = buildFilePath(baseDirectory, imagingModality)
 mkdirs(tilePath)

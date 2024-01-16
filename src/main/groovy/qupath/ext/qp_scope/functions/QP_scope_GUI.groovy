@@ -8,12 +8,19 @@ import javafx.stage.Modality
 import org.slf4j.LoggerFactory
 import qupath.ext.basicstitching.stitching.stitchingImplementations
 import qupath.ext.qp_scope.utilities.utilityFunctions
+import qupath.ext.qp_scope.utilities.minorFunctions
+import qupath.ext.qp_scope.utilities.transformationFunctions
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.gui.scripting.QPEx
+import qupath.lib.objects.PathObjectTools
+import qupath.lib.objects.PathObjects
 import qupath.lib.projects.Project
+import qupath.lib.regions.ImagePlane
+import qupath.lib.roi.RectangleROI
 import qupath.lib.scripting.QP
 
+import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 
 import java.nio.file.Path
@@ -50,7 +57,7 @@ class QP_scope_GUI {
     static TextField pixelSizeField = new TextField(preferences.pixelSizeSource) // Default empty
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
-    static void createGUI1() {
+    static void boundingBoxInputGUI() {
         // Create the dialog
         def dlg = new Dialog<ButtonType>()
         dlg.initModality(Modality.APPLICATION_MODAL)
@@ -58,7 +65,7 @@ class QP_scope_GUI {
         //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
 
         // Set the content
-        dlg.getDialogPane().setContent(createContent())
+        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -77,12 +84,11 @@ class QP_scope_GUI {
             def y1 = y1Field.getText()
             def x2 = x2Field.getText()
             def y2 = y2Field.getText()
-            def annotationJsonFileLocation = null
             // Handle full bounding box input
             def boxString = scanBox.getText()
             //Boolean to check whether to proceed with running the microscope data collection
             boolean dataCheck = true
-            def pixelSize = preferences.pixelSizeTarget
+            def pixelSize = preferences.pixelSizeFirstScanType
 
             // Continue with previous behavior using coordinates
 
@@ -104,17 +110,17 @@ class QP_scope_GUI {
             // Check if any value is empty
             if (dataCheck) {
                 Project currentQuPathProject = utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
-                def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
+                def scanTypeWithIndex = minorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
                 def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
                 def logger = LoggerFactory.getLogger(QuPathGUI.class)
                 logger.info(tempTileDirectory)
 
-                Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent();
+                Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent()
                 groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 
                 // Combine the directory with the new filename
                 Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
-                String exportScriptPathString = exportScriptPath.toString().replace("\\", "/");
+                String exportScriptPathString = exportScriptPath.toString().replace("\\", "/")
                 String exportScript = utilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
                 def boundingBox = "{$x1}, {$y1}, {$x2}, {$y2}"
                 //Specifically for the case where there is only a bounding box provided
@@ -124,9 +130,7 @@ class QP_scope_GUI {
 
                 logger.info(exportScript)
                 logger.info(boundingBox)
-                QuPathGUI.getInstance().runScript(null, exportScript);
-
-                //Reduce the number of sent args
+                QuPathGUI.getInstance().runScript(null, exportScript)
 
                 // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
@@ -134,7 +138,6 @@ class QP_scope_GUI {
                              projectsFolderPath,
                              sampleLabel,
                              scanTypeWithIndex,
-                             annotationJsonFileLocation,
                              boundingBox]
                 //TODO can we create non-blocking python code
                 utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
@@ -179,7 +182,7 @@ class QP_scope_GUI {
         }
     }
 
-    private static GridPane createContent() {
+    private static GridPane createBoundingBoxInputGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)
@@ -210,20 +213,20 @@ class QP_scope_GUI {
     // Overloaded addToGrid method for a single Node
     // TODO fix hardcoding of 2 and 1
     private static void addToGrid(GridPane pane, Node node, int rowIndex) {
-        pane.add(node, 0, rowIndex, 2, 1); // The node spans 2 columns
+        pane.add(node, 0, rowIndex, 2, 1) // The node spans 2 columns
     }
 
-    static void createGUI2() {
+    static void secondModalityGUI() {
         //TODO check if in a project?
         def logger = LoggerFactory.getLogger(QuPathGUI.class)
         // Create the dialog
         def dlg = new Dialog<ButtonType>()
         dlg.initModality(Modality.APPLICATION_MODAL)
         dlg.setTitle("Collect image data from an annotated subset of your current image.")
-        dlg.setHeaderText("Create annotations within your image, then click Okay to proceed with a second collection within those areas.");
+        dlg.setHeaderText("Create annotations within your image, then click Okay to proceed with a second collection within those areas.")
 
         // Set the content
-        dlg.getDialogPane().setContent(createContent2())
+        dlg.getDialogPane().setContent(createSecondModalityGUI())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -240,11 +243,10 @@ class QP_scope_GUI {
             def pythonScriptPath = pythonScriptField.getText()
             def projectsFolderPath = projectsFolderField.getText()
 
-            def annotationJsonFileLocation = null
 
             //Boolean to check whether to proceed with running the microscope data collection
             logger.info("getting annotation objects")
-            def annotations = QP.getAnnotationObjects()
+            def annotations = getAnnotationObjects()
 
             // Check if annotations are present
             if (annotations.isEmpty() || [sampleLabel, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
@@ -254,14 +256,14 @@ class QP_scope_GUI {
             }
 
 
-            def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
+            def scanTypeWithIndex = minorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
             def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
             logger.info("Scan type with index: " + scanTypeWithIndex)
             logger.info(tempTileDirectory)
-            logger.info("Creating json")
-            annotationJsonFileLocation = utilityFunctions.createAnnotationJson(projectsFolderPath, sampleLabel, scanTypeWithIndex)
 
-            List args = [pythonScriptPath, projectsFolderPath, sampleLabel, scanTypeWithIndex, annotationJsonFileLocation]
+
+
+            List args = [pythonScriptPath, projectsFolderPath, sampleLabel, scanTypeWithIndex]
             //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
             //utilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
@@ -310,7 +312,7 @@ class QP_scope_GUI {
 
 
     //Create the second interface window for performing higher resolution or alternate modality scans
-    private static GridPane createContent2() {
+    private static GridPane createSecondModalityGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)
@@ -329,42 +331,36 @@ class QP_scope_GUI {
         return pane
     }
 
-    static void createGUI3() {
+    /**********************************
+     * Starting point for an overview or "macro" image
+     */
+    static void macroImageInputGUI() {
         // Create the dialog
-        def dlg = new Dialog<ButtonType>()
-        dlg.initModality(Modality.APPLICATION_MODAL)
-        dlg.setTitle("Macro View Configuration")
-        dlg.setHeaderText("Configure settings for macro view.")
-
-        // Set the content
-        dlg.getDialogPane().setContent(createContent3())
-
-        // Add Okay and Cancel buttons
-        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+        def dlg = createMacroImageInputDialog()
 
         // Define response validation
         dlg.setResultConverter(dialogButton -> {
             if (dialogButton == ButtonType.OK) {
                 if (!isValidInput(x1Field.getText()) || !isValidInput(y1Field.getText())) {
                     Dialogs.showWarningNotification("Invalid Input", "Please enter valid numeric values for coordinates.")
-                    return null; // Prevent dialog from closing
+                    return null // Prevent dialog from closing
                 }
             }
-            return dialogButton;
-        });
+            return dialogButton
+        })
 
         // Show the dialog and capture the response
-        Optional<ButtonType> result = dlg.showAndWait();
+        Optional<ButtonType> result = dlg.showAndWait()
         def logger = LoggerFactory.getLogger(QuPathGUI.class)
         // Handling the response
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields and checkbox
-            String xCoordinate = x1Field.getText();
-            String yCoordinate = y1Field.getText();
-            String pixelSize = pixelSizeField.getText();
-            boolean isSlideFlipped = slideFlippedCheckBox.isSelected();
-            boolean arePixelsNonIsotropic = nonIsotropicCheckBox.isSelected();
-            String groovyScriptPath = groovyScriptField.getText();
+            String xCoordinate = x1Field.getText()
+            String yCoordinate = y1Field.getText()
+            String pixelSize = pixelSizeField.getText()
+            boolean isSlideFlipped = slideFlippedCheckBox.isSelected()
+            boolean arePixelsNonIsotropic = nonIsotropicCheckBox.isSelected()
+            String groovyScriptPath = groovyScriptField.getText()
             def sampleLabel = sampleLabelField.getText()
             def virtualEnvPath = virtualEnvField.getText()
             def pythonScriptPath = pythonScriptField.getText()
@@ -375,42 +371,42 @@ class QP_scope_GUI {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
-            String imageName = QP.getCurrentImageName();
+            String imageName = QP.getCurrentImageName()
 
             // Determine the pixel size based on imageName
             if (imageName.contains("3600")) {
-                pixelSize = "2.0";
+                pixelSize = "2.0"
             } else if (imageName.contains("7200")) {
-                pixelSize = "1.0";
+                pixelSize = "1.0"
             }
 
             // Expect the classifier file path to be in a specific location
             // get the classifier from the groovyScripts folder, which should be "next to" the pythonScripts folder
-            Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent();
+            Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent()
             groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 
             // Combine the directory with the new filename
-            Path jsonFilePath = groovyScriptDirectory.resolve("Tissue-lowres.json");
+            Path jsonFilePath = groovyScriptDirectory.resolve("Tissue-lowres.json")
             Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
             // Convert Path back to String and fix slashes to not be escape chars
-            String jsonFilePathString = jsonFilePath.toString().replace("\\", "/");
-            String exportScriptPathString = exportScriptPath.toString().replace("\\", "/");
+            String jsonFilePathString = jsonFilePath.toString().replace("\\", "/")
+            String exportScriptPathString = exportScriptPath.toString().replace("\\", "/")
 
             //Create the QuPath project
             Project currentQuPathProject = utilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
-            def scanTypeWithIndex = utilityFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
+            def scanTypeWithIndex = minorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
             def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
 
 
             //Get the current image open in QuPath and add it to the project
             def serverPath = QP.getCurrentImageData().getServerPath()
 
-            String macroImagePath = utilityFunctions.extractFilePath(serverPath);
+            String macroImagePath = minorFunctions.extractFilePath(serverPath)
 
             if (macroImagePath != null) {
-                logger.info("Extracted file path: " + macroImagePath);
+                logger.info("Extracted file path: " + macroImagePath)
             } else {
-                logger.info("File path could not be extracted.");
+                logger.info("File path could not be extracted.")
             }
 
             //open the newly created project
@@ -433,80 +429,110 @@ class QP_scope_GUI {
             String tissueDetectScript = utilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonFilePathString)
             //logger.info(tissueDetectScript)
             // Run the modified script
-            QuPathGUI.getInstance().runScript(null, tissueDetectScript);
+            QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             //At this point the tissue should be outlined in an annotation
 
             String exportScript = utilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
             logger.info(exportScript)
             logger.info(exportScriptPathString)
-            QuPathGUI.getInstance().runScript(null, exportScript);
+            QuPathGUI.getInstance().runScript(null, exportScript)
 
             //////////////////////////////////////
             //Dialog chain to validate stage location
             //////////////////////////////////////
-            // the transformation consists of an X-shift in stage microns, a Y-shift in stage microns, and a pixelSize
-            def transformation = [0, 0, pixelSize as double]
-            boolean gui4Success = createGUI4();
+            //create a basic affine transformation, add the scaling information and a possible Y axis flip
+            AffineTransform transformation = new AffineTransform() //start with the identity matrix
+            double scale =  (preferences.pixelSizeFirstScanType as Double) / (pixelSize as Double)
+            double scaleY = isSlideFlipped ? -scale : scale // Invert the Y axis if flip is true
+
+            transformation.scale(scale, scaleY)
+
+            // the transformation consists of an X-shift in stage microns, a Y-shift in stage microns, and a magnification
+            def viewer = QuPathGUI.getInstance().getViewer()
+            viewer.centerImage()
+            def x= viewer.getCenterPixelX()
+            def y= viewer.getCenterPixelY()
+            def frameWidth = (preferences.frameWidth as Double)
+            def frameHeight= (preferences.frameHeight as Double)
+            def tileROI = new RectangleROI(x-frameWidth/2, y-frameHeight/2, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
+            logger.info("initial position of tile at $x $y")
+            def FOVAnnotation = PathObjects.createAnnotationObject(tileROI)
+            FOVAnnotation = PathObjectTools.transformObject(FOVAnnotation,transformation, true)
+            QP.addObject(FOVAnnotation)
+            boolean gui4Success = stageToQuPathAlignmentGUI1()
             if (!gui4Success) {
                 // User cancelled GUI4, so end GUI3 and do not proceed
-                return;
+                return
             }
-            // Execute Python command to move stage
+            // Get the current stage coordinates to figure out the translation from the first alignment.
+            List coordinatesQP = [FOVAnnotation.getROI().getBoundsX(), FOVAnnotation.getROI().getBoundsY()]
+            logger.info("user adjusted position of tile at $coordinatesQP")
+            List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+            transformation = transformationFunctions.updateTransformation(transformation, coordinatesQP as List<String>, currentStageCoordinates_um)
+
             def detections = QP.getDetectionObjects()
-            def topCenterTileXY = utilityFunctions.getTopCenterTile(detections)
+            def topCenterTileXY = transformationFunctions.getTopCenterTile(detections)
             QP.selectObjects(topCenterTileXY[2])
-            List args = [topCenterTileXY[0], topCenterTileXY[1]]
+
+            //Transform the QuPath coordinates into stage coordinates
+            def QPPixelCoordinates = [topCenterTileXY[0] as Double, topCenterTileXY[1] as Double]
+
+            List expectedStageXYPositionMicrons = transformationFunctions.QPtoMicroscopeCoordinates(QPPixelCoordinates, transformation)
+
             QuPathGUI.getInstance().getViewer().setCenterPixelLocation(topCenterTileXY[2].getROI().getCentroidX(), topCenterTileXY[2].getROI().getCentroidY())
-            //TODO run python script to move the stage to the middle X value of the lowest Y value
-            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+
+            //Move the stage to the middle X value of the lowest Y value (center of top row of tile positions)
+            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons)
             //Validate the position that was moved to or update with an adjusted position
-            boolean updatePosition = createGUI5()
+            boolean updatePosition = stageToQuPathAlignmentGUI2()
 
             if (updatePosition) {
                 //TODO get access to current stage coordinates
-                List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
                 logger.info(currentStageCoordinates_um.toString())
-                transformation = utilityFunctions.updateTransformation(transformation, currentStageCoordinates_um, args)
+                transformation = transformationFunctions.updateTransformation(transformation, expectedStageXYPositionMicrons as List<String>, currentStageCoordinates_um )
             }
+            //returns [x, y, Object]
+            def leftCenterTileXY = transformationFunctions.getLeftCenterTile(detections)
 
-            def leftCenterTileXY = utilityFunctions.getLeftCenterTile(detections)
             QP.selectObjects(leftCenterTileXY[2])
-            args = [leftCenterTileXY[0], leftCenterTileXY[1]]
+            QPPixelCoordinates = [leftCenterTileXY[0], leftCenterTileXY[1]]
+            expectedStageXYPositionMicrons = transformationFunctions.QPtoMicroscopeCoordinates(QPPixelCoordinates as List<Double>,transformation)
             QuPathGUI.getInstance().getViewer().setCenterPixelLocation(leftCenterTileXY[2].getROI().getCentroidX(), leftCenterTileXY[2].getROI().getCentroidY())
-            //TODO run python script to move the stage to the a tile position with the lowest X value, mid Y value
-            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+
+            //move the stage to the a tile position with the lowest X value, mid Y value
+
+            utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons)
             //Once again, validate the position or update
-            updatePosition = createGUI5()
+            updatePosition = stageToQuPathAlignmentGUI2()
             if (updatePosition) {
                 //TODO get access to current stage coordinates
 
-                List currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-                transformation = utilityFunctions.updateTransformation(transformation, currentStageCoordinates_um, args)
+                currentStageCoordinates_um = utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                transformation = transformationFunctions.updateTransformation(transformation, expectedStageXYPositionMicrons as List<String>, currentStageCoordinates_um )
+                //TODO Make this all an infinite loop if the sample can't be located correctly?
             }
 
             // Additional code for annotations
             def annotations = getAnnotationObjects().findAll { it.getPathClass() == QP.getPathClass('Tissue') }
             if (annotations.size() != 1) {
-                Dialogs.showWarningNotification("Error!", "Can only handle 1 annotation at the moment!");
-                return;
+                Dialogs.showWarningNotification("Error!", "Can only handle 1 annotation at the moment!")
+                return
             }
 
-            def x1 = annotations[0].getROI().getBoundsX()
-            def y1 = annotations[0].getROI().getBoundsY()
-            def x2 = annotations[0].getROI().getBoundsWidth()
-            def y2 = annotations[0].getROI().getBoundsHeight()
-            // TODO Check if any value is empty
-
-            //Send the QuPath pixel coordinates for the bounding box along with the pixel size and upper left coordinates of the tissue
-            def boundingBox = utilityFunctions.transformBoundingBox(x1, y1, x2, y2, pixelSize, xCoordinate, yCoordinate, isSlideFlipped)
+            //TODO update TileConfiguration.txt with stage values in microns
+            logger.info("export script path string $tempTileDirectory")
+            def tileconfigFolders = transformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
+            for (folder in tileconfigFolders){
+                logger.info("modified TileConfiguration at $folder")
+            }
 
             // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
 
-            args = [pythonScriptPath,
+            def args = [pythonScriptPath,
                     projectsFolderPath,
                     sampleLabel,
-                    scanTypeWithIndex,
-                    boundingBox]
+                    scanTypeWithIndex]
             //TODO can we create non-blocking python code
             utilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
@@ -549,13 +575,24 @@ class QP_scope_GUI {
         }
     }
 
+
+    private static Dialog<ButtonType> createMacroImageInputDialog() {
+        def dlg = new Dialog<ButtonType>()
+        dlg.initModality(Modality.APPLICATION_MODAL)
+        dlg.setTitle("Macro View Configuration")
+        dlg.setHeaderText("Configure settings for macro view.")
+        dlg.getDialogPane().setContent(createMacroImageInputGUI())
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+        return dlg
+    }
+
     // Helper method to check if input is numeric
     private static boolean isValidInput(String input) {
-        return input.matches("\\d*");
+        return input.matches("\\d*")
     }
 
 
-    private static GridPane createContent3() {
+    private static GridPane createMacroImageInputGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)
@@ -568,12 +605,12 @@ class QP_scope_GUI {
         addToGrid(pane, new Label('PycroManager control file:'), pythonScriptField, row++)
         addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
 
-        //addToGrid(pane, new Label('Slide flipped:'), slideFlippedCheckBox, row++)
+        addToGrid(pane, new Label('Slide flipped:'), slideFlippedCheckBox, row++)
         addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
         // Add new components for pixel size and non-isotropic pixels checkbox on the same line
-        HBox pixelSizeBox = new HBox(10);
-        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox);
-        addToGrid(pane, pixelSizeBox, row++);
+        HBox pixelSizeBox = new HBox(10)
+        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
+        addToGrid(pane, pixelSizeBox, row++)
         // Add new components for "Upper left XY coordinate"
         //Label upperLeftLabel = new Label("Upper left XY coordinate")
         //pane.add(upperLeftLabel, 0, row); // Span multiple columns if needed
@@ -585,56 +622,56 @@ class QP_scope_GUI {
         return pane
     }
 
-    static boolean createGUI4() {
-        Dialog<ButtonType> dlg = new Dialog<>();
-        dlg.initModality(Modality.NONE);
-        dlg.setTitle("Identify Location");
-        dlg.setHeaderText("Please identify a location of interest in the Live view in uManager and draw an unclassified rectangle in QuPath that matches that FOV.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
+    static boolean stageToQuPathAlignmentGUI1() {
+        Dialog<ButtonType> dlg = new Dialog<>()
+        dlg.initModality(Modality.NONE)
+        dlg.setTitle("Identify Location")
+        dlg.setHeaderText("Please identify a location of interest in the Live view in uManager and draw an unclassified rectangle in QuPath that matches that FOV.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!")
         // Add buttons to the dialog
-        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
 
-        Optional<ButtonType> result;
-        boolean validRectangle = false;
+        Optional<ButtonType> result
+        boolean validRectangle = false
 
         while (!validRectangle) {
             // Show the dialog and wait for the user response
-            result = dlg.showAndWait();
+            result = dlg.showAndWait()
 
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 // Check for expected rectangle
                 List expectedRectangles = getAnnotationObjects().stream()
                         .filter(a -> a.getPathClass() == null && a.getROI() instanceof qupath.lib.roi.RectangleROI)
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toList())
 
                 if (expectedRectangles.size() != 1) {
                     // Use utilityFunctions to show a warning
-                    utilityFunctions.showAlertDialog("There needs to be exactly one unclassified rectangle.");
+                    minorFunctions.showAlertDialog("There needs to be exactly one unclassified rectangle.")
                 } else {
-                    validRectangle = true;
+                    validRectangle = true
                 }
             } else {
                 // User cancelled or closed the dialog
-                return false;
+                return false
             }
         }
         return true
     }
 
 
-    static boolean createGUI5() {
-        List<String> choices = Arrays.asList("Yes", "Use adjusted position");
-        ChoiceDialog<String> dialog = new ChoiceDialog<>("Yes", choices);
-        dialog.initModality(Modality.NONE);
-        dialog.setTitle("Position Confirmation");
-        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!");
+    static boolean stageToQuPathAlignmentGUI2() {
+        List<String> choices = Arrays.asList("Yes", "Use adjusted position")
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("Yes", choices)
+        dialog.initModality(Modality.NONE)
+        dialog.setTitle("Position Confirmation")
+        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!")
 
-        Optional<String> result = dialog.showAndWait();
+        Optional<String> result = dialog.showAndWait()
         if (result.isPresent()) {
-            return "Use adjusted position".equals(result.get());
+            return "Use adjusted position".equals(result.get())
         }
 
         // If no choice is made (e.g., dialog is closed), you can decide to return false or handle it differently
-        return false;
+        return false
     }
 
 }

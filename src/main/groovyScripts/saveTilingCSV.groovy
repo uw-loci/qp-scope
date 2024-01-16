@@ -41,13 +41,13 @@ tilePath = buildFilePath(baseDirectory, "20x-tiles")
 mkdirs(tilePath)
 
 //CSV will be only two columns with the following header
-String header = "x_pos,y_pos";
+String header = "x_pos,y_pos"
 
 annotations.eachWithIndex { a, i ->
 
-    predictedTileCount = 0; //Numbering tiles based on the tiles that would have been created from the bounding box
-    actualTileCount = 0;  //Tile objects created and saved to CSV - tiles not overlapping the annotation are excluded
-    xy = [];
+    predictedTileCount = 0 //Numbering tiles based on the tiles that would have been created from the bounding box
+    actualTileCount = 0  //Tile objects created and saved to CSV - tiles not overlapping the annotation are excluded
+    xy = []
     yline = 0
     roiA = a.getROI()
     //generate a bounding box to create tiles within
@@ -133,9 +133,9 @@ tilePath = buildFilePath(baseDirectory, "mp-tiles")
 mkdirs(tilePath)
 
 annotations.eachWithIndex { a, i ->
-    predictedTileCount = 0; //Numbering tiles based on the tiles that would have been created from the bounding box
-    actualTileCount = 0; //Tile objects created and saved to CSV - tiles not overlapping the annotation are excluded
-    xy = [];
+    predictedTileCount = 0 //Numbering tiles based on the tiles that would have been created from the bounding box
+    actualTileCount = 0 //Tile objects created and saved to CSV - tiles not overlapping the annotation are excluded
+    xy = []
     yline = 0
     roiA = a.getROI()
     //generate a bounding box to create tiles within
@@ -156,7 +156,7 @@ annotations.eachWithIndex { a, i ->
                 newAnno.getMeasurementList().putMeasurement("TileNumber", actualTileCount)
                 newTiles << newAnno
                 xy << [x, y]
-                actualTileCount++;
+                actualTileCount++
                 //print predictedTileCount + " good "+x
             } else {
                 print x
@@ -199,4 +199,4 @@ import qupath.lib.regions.ImagePlane
 import qupath.lib.roi.RectangleROI
 
 import static qupath.lib.gui.scripting.QPEx.getQuPath
-import static qupath.lib.scripting.QP.*;
+import static qupath.lib.scripting.QP.*

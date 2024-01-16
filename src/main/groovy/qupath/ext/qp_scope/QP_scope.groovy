@@ -33,8 +33,8 @@ class QP_scope implements QuPathExtension {
      * @return The description of the extension.
      */
     @Override
-    public String getDescription() {
-        return "Control a microscope!";
+    String getDescription() {
+        return "Control a microscope!"
     }
 
     /**
@@ -43,8 +43,8 @@ class QP_scope implements QuPathExtension {
      * @return The name of the extension.
      */
     @Override
-    public String getName() {
-        return "qp_scope";
+    String getName() {
+        return "qp_scope"
     }
 
     private void addMenuItem(QuPathGUI qupath) {
@@ -58,27 +58,27 @@ class QP_scope implements QuPathExtension {
         def menu = qupath.getMenu("Extensions>${name}", true)
 
         // First menu item
-        def qpScope1 = new MenuItem("Start qp_scope")
+        def qpScope1 = new MenuItem("Input bounding box - first scan type")
         // TODO: tooltip
         qpScope1.setOnAction(e -> {
             // TODO: check preferences for all necessary entries, and check for micromanager running+version
             // search java app with a subprocesses for MicroManager +version number
-            QP_scope_GUI.createGUI1()
+            QP_scope_GUI.boundingBoxInputGUI()
         })
 
         // Second menu item
-        def qpScope2 = new MenuItem("Second scan on existing annotations")
+        def qpScope2 = new MenuItem("Use current image to detect tissue location - first scan type")
         // TODO: tooltip
         qpScope2.setOnAction(e -> {
             // TODO: check preferences for all necessary entries
-            QP_scope_GUI.createGUI2()
+            QP_scope_GUI.macroImageInputGUI()
         })
 
         // Third menu item - "Use current image as macro view"
-        def qpScope3 = new MenuItem("Use current image as macro view")
+        def qpScope3 = new MenuItem("Scan non \'Tissue\' annotations - second scan type")
         // TODO: tooltip
         qpScope3.setOnAction(e -> {
-            QP_scope_GUI.createGUI3()
+            QP_scope_GUI.secondModalityGUI()
         })
 
         // Add the menu items to the menu
