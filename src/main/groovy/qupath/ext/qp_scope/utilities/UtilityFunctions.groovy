@@ -140,7 +140,7 @@ class UtilityFunctions {
                 0, 1, annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
-        String adjustedFileName = sampleLabel + (annotationName.equals("Bounds") ? "" : annotationName) + stitchedImagePath.name
+        String adjustedFileName = sampleLabel+ '_' + scanTypeWithIndex + '_'+ (annotationName.equals("Bounds") ? "" : annotationName)
         File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
 
         // Rename the stitched image file
