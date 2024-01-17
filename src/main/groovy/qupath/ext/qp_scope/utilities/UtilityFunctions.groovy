@@ -7,6 +7,7 @@ import qupath.lib.gui.commands.ProjectCommands
 import qupath.lib.gui.dialogs.Dialogs
 import qupath.lib.images.ImageData
 import qupath.lib.images.servers.ImageServerProvider
+import qupath.lib.images.writers.ome.OMEPyramidWriter
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectIO
 import qupath.lib.projects.Projects
@@ -112,35 +113,54 @@ class UtilityFunctions {
     }
 
     /**
-     * Performs image stitching and updates the QuPath project with the stitched image.
+     * Performs image stitching, renames the stitched image, and updates the QuPath project with the renamed image.
+     * The new name of the stitched image is based on the sample label, annotation name, and the original image name.
+     * If the annotation name is "Bounds", it is omitted from the new file name.
      *
-     * @param stitchingImplementations An instance or reference to the stitching implementations.
-     * @param projectsFolderPath The path to the projects folder.
-     * @param sampleLabel The label for the sample.
-     * @param scanTypeWithIndex The scan type with an appended index for uniqueness.
-     * @param qupathGUI The QuPath GUI instance for updating the project.
-     * @param currentQuPathProject The current QuPath project to be updated.
-     * @return The path to the stitched image.
+     * @param projectsFolderPath The path where the project is located and where the stitched image will be saved.
+     * @param sampleLabel The label for the sample, used as part of the new file name.
+     * @param scanTypeWithIndex The scan type with an appended index for uniqueness, used in stitching process.
+     * @param annotationName The name of the annotation, used as part of the new file name unless it is "Bounds".
+     * @param qupathGUI The QuPath GUI instance used for updating the project.
+     * @param currentQuPathProject The current QuPath project to which the stitched image will be added.
+     * @param compression The type of compression to use for stitching (default is "J2K_LOSSY").
+     * @return The path to the renamed stitched image.
      */
-    static String stitchImagesAndUpdateProject(StitchingImplementations stitchingImplementations,
-                                                       String projectsFolderPath, String sampleLabel,
-                                                       String scanTypeWithIndex, QuPathGUI qupathGUI,
-                                                       Project currentQuPathProject) {
+    static String stitchImagesAndUpdateProject(String projectsFolderPath, String sampleLabel,
+                                               String scanTypeWithIndex, String annotationName, QuPathGUI qupathGUI,
+                                               Project currentQuPathProject,
+                                               String compression = "J2K_LOSSY") {
 
         String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-        //TODO Need to check if stitching is successful, provide error
-        String stitchedImagePathStr = stitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
-                projectsFolderPath + File.separator + sampleLabel,
-                stitchedImageOutputFolder, "J2K_LOSSY",
-                0, 1, scanTypeWithIndex)
-        File stitchedImagePath = new File(stitchedImagePathStr)
-        addImageToProject(stitchedImagePath, currentQuPathProject)
+        String tileImageInputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
 
+
+        String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
+                tileImageInputFolder, stitchedImageOutputFolder, compression,
+                0, 1, annotationName)
+
+        File stitchedImagePath = new File(stitchedImagePathStr)
+        String adjustedFileName = sampleLabel + (annotationName.equals("Bounds") ? "" : annotationName) + stitchedImagePath.name
+        File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
+
+        // Rename the stitched image file
+        if (stitchedImagePath.renameTo(adjustedFilePath)) {
+            stitchedImagePathStr = adjustedFilePath.absolutePath
+        }
+
+        // Add the (possibly renamed) image to the project
+        addImageToProject(adjustedFilePath, currentQuPathProject)
+        def matchingImage = currentQuPathProject.getImageList().find { image ->
+            new File(image.getImageName()).name == adjustedFilePath.name
+        }
+
+        qupathGUI.openImageEntry(matchingImage)
         qupathGUI.setProject(currentQuPathProject)
         qupathGUI.refreshProject()
 
         return stitchedImagePathStr
     }
+
     /**
      * Executes a Python script using a specified Python executable within a virtual environment.
      * This method is designed to be compatible with Windows, Linux, and macOS.
@@ -186,16 +206,18 @@ class UtilityFunctions {
 
             // Execute the command
             Process process = command.execute()
-
-            // Redirect the output and error streams to the logger
-            process.consumeProcessOutput(new StringWriter(), new StringWriter())
-
-            // Wait for the process to complete
+            // Read the full output from the process
             process.waitFor()
+            String output = process.in.text
+            String errorOutput = process.err.text
 
-            // Log the output and error (or use it as needed)
-            logger.info(process.text) // This logs the standard output
-            logger.error(process.err.text) // This logs the standard error
+            if (output) {
+                logger.info("Received output: \n$output")
+            }
+            if (errorOutput) {
+                logger.error("Error output: \n$errorOutput")
+            }
+
             return null
         } catch (Exception e) {
             e.printStackTrace()
@@ -254,7 +276,9 @@ class UtilityFunctions {
                 pixelSizeSecondScanType: "0.5",
                 frameWidth             : "1392",
                 frameHeight            : "1040",
-                overlapPercent         : "0"] //Zip Delete or anything else is ignored
+                overlapPercent         : "0",
+                compression             : "J2K_LOSSY", //may want entire dropdown menu in preferences
+        ] //Zip Delete or anything else is ignored
     }
 
 

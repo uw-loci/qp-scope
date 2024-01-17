@@ -58,7 +58,7 @@ class QP_scope implements QuPathExtension {
         def menu = qupath.getMenu("Extensions>${name}", true)
 
         // First menu item
-        def qpScope1 = new MenuItem("First scan - Use bounding box")
+        def qpScope1 = new MenuItem("First scan type - Use bounding box")
         // TODO: tooltip
         qpScope1.setOnAction(e -> {
             // TODO: check preferences for all necessary entries, and check for micromanager running+version
