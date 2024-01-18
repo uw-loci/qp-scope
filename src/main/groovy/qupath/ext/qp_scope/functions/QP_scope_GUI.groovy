@@ -36,27 +36,31 @@ import static qupath.lib.scripting.QP.project
 
 class QP_scope_GUI {
     static final logger = LoggerFactory.getLogger(QP_scope_GUI.class)
-    // Existing text fields
+    // GUI elements
     static TextField x1Field = new TextField("")
     static TextField y1Field = new TextField("")
     static TextField x2Field = new TextField("")
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("0,0,5000,5000")
     static preferences = UtilityFunctions.getPreferences()
-
-    // New text fields for Python environment, script path, and sample label
     static TextField virtualEnvField = new TextField(preferences.environment)
     static TextField pythonScriptField = new TextField(preferences.pycromanager)
     static TextField projectsFolderField = new TextField(preferences.projects)
-    static TextField sampleLabelField = new TextField("First_Test")  // New field for sample label
-    // GUI3
+    static TextField sampleLabelField = new TextField("First_Test")
+    static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
     static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy")
-    // Default empty
-    static TextField pixelSizeField = new TextField(preferences.pixelSizeSource) // Default empty
+
+    static TextField pixelSizeField = new TextField(preferences.pixelSizeSource)
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
-    static void boundingBoxInputGUI() {
+
+
+        /**********************************
+     * Starting point for an overview or "macro" image
+     */
+
+    static void testGUI() {
         // Create the dialog
         def dlg = new Dialog<ButtonType>()
         dlg.initModality(Modality.APPLICATION_MODAL)
@@ -108,111 +112,31 @@ class QP_scope_GUI {
 
             // Check if any value is empty
             if (dataCheck) {
+                Map scriptPaths = calculateScriptPaths(pythonScriptPath)
+                String jsonTissueClassfierPathString = scriptPaths.jsonTissueClassfierPathString
                 QuPathGUI qupathGUI = QPEx.getQuPath()
+
+                //create a projectDetails map with four values that will be needed later, all related to project creation.
                 Map projectDetails = createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
                 Project currentQuPathProject = projectDetails.currentQuPathProject as Project
                 String tempTileDirectory = projectDetails.tempTileDirectory
-                String scanTypeWithIndex = projectDetails.scanTypeWithIndex
-                Map scriptPaths = calculateScriptPaths(pythonScriptPath)
-                String exportScriptPathString = scriptPaths.exportScriptPathString
 
-                // Modify and run the export script with bounding box
-                String exportScript = UtilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
+                String groovyScriptPath = "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts\\DetectTissue.groovy"
+                String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
+                //logger.info(tissueDetectScript)
+                // Run the modified script
+                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
 
+                //String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
+                //logger.info(tissueDetectScript)
+                // Run the modified script
+                groovyScriptPath = "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts\\SimpleTest.groovy"
+                tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
 
-                Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent()
-                groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
-
-                // Combine the directory with the new filename
-                Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
-
-                def boundingBox = "{$x1}, {$y1}, {$x2}, {$y2}"
-                //Specifically for the case where there is only a bounding box provided
-                List boundingBoxValues = [x1, y1, x2, y2] // Replace x1, y1, x2, y2 with actual values
-                exportScript = UtilityFunctions.boundingBoxReadyTXT(exportScript, boundingBoxValues)
-
-
-                logger.info(exportScript)
-                logger.info(boundingBox)
-                QuPathGUI.getInstance().runScript(null, exportScript)
-                // Handle image stitching and update project
-                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                        sampleLabel, scanTypeWithIndex, "bounds", qupathGUI, currentQuPathProject,
-                        preferences.compression)
-
-                // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
-
-                List args = [projectsFolderPath,
-                             sampleLabel,
-                             scanTypeWithIndex,
-                             boundingBox]
-                //TODO can we create non-blocking python code
-                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-
-
-                //String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-                //TODO Need to check if stitching is successful, provide error
-                //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
-                //TODO add output folder to stitchCore
-                //String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
-
-
-                //UtilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
-
-                //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.firstScanType + sampleLabel + ".ome.tif"
-                //UtilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
-
-                //open the newly created project
-                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
-
-
-                //qupathGUI.setProject(currentQuPathProject)
-                //Open the stitched image in the project and refresh the project
-                //File stitchedImagePath = new File(stitchedImagePathStr)
-                qupathGUI.openImageEntry(currentQuPathProject.getImageList().find { image ->
-                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
-                })
-                qupathGUI.refreshProject()
-                //Check if the tiles should be deleted from the collection folder
-                if (preferences.tileHandling == "Delete")
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                if (preferences.tileHandling == "Zip") {
-                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                }
-                //}
+                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             }
         }
     }
-
-    private static GridPane createBoundingBoxInputGUI() {
-        GridPane pane = new GridPane()
-        pane.setHgap(10)
-        pane.setVgap(10)
-        def row = 0
-
-        // Add new component for Sample Label
-        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
-
-        // Add existing components to the grid
-        addToGrid(pane, new Label('X1:'), x1Field, row++)
-        addToGrid(pane, new Label('Y1:'), y1Field, row++)
-        addToGrid(pane, new Label('X2:'), x2Field, row++)
-        addToGrid(pane, new Label('Y2:'), y2Field, row++)
-        addToGrid(pane, new Label('Full bounding box:'), scanBox, row++)
-
-        // Add components for Python environment and script path
-        addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
-        addToGrid(pane, new Label('PycroManager .py path:'), pythonScriptField, row++)
-        addToGrid(pane, new Label('Projects parent folder:'), projectsFolderField, row++)
-
-        return pane
-    }
-
-
-        /**********************************
-     * Starting point for an overview or "macro" image
-     */
     static void macroImageInputGUI() {
         // Create the dialog
         def dlg = createMacroImageInputDialog()
@@ -230,7 +154,7 @@ class QP_scope_GUI {
 
         // Show the dialog and capture the response
         Optional<ButtonType> result = dlg.showAndWait()
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+
         // Handling the response
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields and checkbox
@@ -250,11 +174,10 @@ class QP_scope_GUI {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
-            String imageName = QP.getCurrentImageName()
+            //String imageName = QP.getCurrentImageName()
 
             Map scriptPaths = calculateScriptPaths(pythonScriptPath)
-            String jsonFilePathString = scriptPaths.jsonFilePathString
-            String exportScriptPathString = scriptPaths.exportScriptPathString
+            String jsonTissueClassfierPathString = scriptPaths.jsonTissueClassfierPathString
             QuPathGUI qupathGUI = QPEx.getQuPath()
 
             //create a projectDetails map with four values that will be needed later, all related to project creation.
@@ -263,34 +186,42 @@ class QP_scope_GUI {
             String tempTileDirectory = projectDetails.tempTileDirectory
 
 
-            String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonFilePathString)
+            String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
             //logger.info(tissueDetectScript)
             // Run the modified script
             QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             //At this point the tissue should be outlined in an annotation
+            def annotations = getAnnotationObjects().findAll{it.getPathClass().toString().equals("Tissue")}
+            Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
+                                        projectDetails.scanTypeWithIndex.toString(),
+                                        frameWidthMicrons,
+                                        frameHeightMicrons,
+                                        preferences.overlapPercent as Double,
+                    null,
+                              true,
+                                        annotations)
+//            String exportScript = UtilityFunctions.modifyTXTExportScript(scriptPaths.exportScriptPathString, pixelSize, preferences, sampleLabel)
+//            logger.info(exportScript)
+//            QuPathGUI.getInstance().runScript(null, exportScript)
 
-            String exportScript = UtilityFunctions.modifyTXTExportScript(exportScriptPathString, pixelSize, preferences, sampleLabel)
-            logger.info(exportScript)
-            logger.info(exportScriptPathString)
-            QuPathGUI.getInstance().runScript(null, exportScript)
-
-            //////////////////////////////////////
+            /////////////////////////////////////////
             //Dialog chain to validate stage location
-            //////////////////////////////////////
+            /////////////////////////////////////////
             //create a basic affine transformation, add the scaling information and a possible Y axis flip
+            //Then create a dialog that asks the user to select a single detection tile
             AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSize as Double, isSlideFlipped, preferences, qupathGUI)
-
+            //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
+            if (transformation == null){
+                return
+            }
 
             PathObject expectedTile = getSelectedObject()
             def detections = QP.getDetectionObjects()
             def topCenterTileXY = TransformationFunctions.getTopCenterTile(detections)
             def leftCenterTileXY = TransformationFunctions.getLeftCenterTile(detections)
-            // Additional code for annotations
-            def annotations = getAnnotationObjects().findAll { it.getPathClass() == QP.getPathClass('Tissue') }
-//            if (annotations.size() != 1) {
-//                Dialogs.showWarningNotification("Error!", "Can only handle 1 annotation at the moment!")
-//                return
-//            }
+
 
             // Get the current stage coordinates to figure out the translation from the first alignment.
             List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()]
@@ -355,6 +286,132 @@ class QP_scope_GUI {
         }
     }
 
+    /******************************************************
+    *Starting point for creating a tiling grid from a bounding box using stage coordinates as inputs
+    *********************************************************/
+    static void boundingBoxInputGUI() {
+        // Create the dialog
+        def dlg = new Dialog<ButtonType>()
+        dlg.initModality(Modality.APPLICATION_MODAL)
+        dlg.setTitle("qp_scope")
+        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
+
+        // Set the content
+        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+
+        // Add Okay and Cancel buttons
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+
+        // Show the dialog and capture the response
+        def result = dlg.showAndWait()
+
+        // Handling the response
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Retrieve values from text fields
+            def sampleLabel = sampleLabelField.getText()
+            def virtualEnvPath = virtualEnvField.getText()
+            def pythonScriptPath = pythonScriptField.getText()
+            def projectsFolderPath = projectsFolderField.getText()
+            def x1 = x1Field.getText()
+            def y1 = y1Field.getText()
+            def x2 = x2Field.getText()
+            def y2 = y2Field.getText()
+            // Handle full bounding box input
+            def boxString = scanBox.getText()
+            //Boolean to check whether to proceed with running the microscope data collection
+            boolean dataCheck = true
+            def pixelSize = preferences.pixelSizeFirstScanType
+
+            // Continue with previous behavior using coordinates
+
+            if (boxString != "") {
+                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
+                if (values.length == 4) {
+                    x1 = values[0]
+                    y1 = values[1]
+                    x2 = values[2]
+                    y2 = values[3]
+                }
+            }
+            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
+                dataCheck = false
+            }
+
+
+            // Check if any value is empty
+            if (dataCheck) {
+                QuPathGUI qupathGUI = QPEx.getQuPath()
+                Map projectDetails = createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
+                Project currentQuPathProject = projectDetails.currentQuPathProject as Project
+                String tempTileDirectory = projectDetails.tempTileDirectory
+                String scanTypeWithIndex = projectDetails.scanTypeWithIndex
+                Map scriptPaths = calculateScriptPaths(pythonScriptPath)
+
+                //Specifically for the case where there is only a bounding box provided
+                List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
+                Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+                Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+                UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory, scanTypeWithIndex,
+                        frameWidthMicrons,
+                        frameHeightMicrons,
+                        preferences.overlapPercent as Double,
+                        boundingBoxValues,
+                false)
+
+                //Send the scanning command to the microscope
+
+                List args = [projectsFolderPath,
+                             sampleLabel,
+                             scanTypeWithIndex,
+                             "[$x1, $y1, $x2, $y2]"]
+                //TODO can we create non-blocking python code
+                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+
+                // Handle image stitching and update project
+                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+                        sampleLabel, scanTypeWithIndex, "bounds", qupathGUI, currentQuPathProject,
+                        preferences.compression)
+                qupathGUI.openImageEntry(currentQuPathProject.getImageList().find { image ->
+                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
+                })
+                qupathGUI.refreshProject()
+                //Check if the tiles should be deleted from the collection folder
+                if (preferences.tileHandling == "Delete")
+                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                if (preferences.tileHandling == "Zip") {
+                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                }
+                //}
+            }
+        }
+    }
+
+    private static GridPane createBoundingBoxInputGUI() {
+        GridPane pane = new GridPane()
+        pane.setHgap(10)
+        pane.setVgap(10)
+        def row = 0
+
+        // Add new component for Sample Label
+        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+
+        // Add existing components to the grid
+        addToGrid(pane, new Label('X1:'), x1Field, row++)
+        addToGrid(pane, new Label('Y1:'), y1Field, row++)
+        addToGrid(pane, new Label('X2:'), x2Field, row++)
+        addToGrid(pane, new Label('Y2:'), y2Field, row++)
+        addToGrid(pane, new Label('Full bounding box:'), scanBox, row++)
+
+        // Add components for Python environment and script path
+        addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
+        addToGrid(pane, new Label('PycroManager .py path:'), pythonScriptField, row++)
+        addToGrid(pane, new Label('Projects parent folder:'), projectsFolderField, row++)
+
+        return pane
+    }
+
 
     static void secondModalityGUI() {
         //TODO check if in a project?
@@ -379,25 +436,37 @@ class QP_scope_GUI {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields
             def sampleLabel = sampleLabelField.getText()
+            def classFilter = classFilterField.getText().split(',').collect { it.trim() }
             def virtualEnvPath = virtualEnvField.getText()
             def pythonScriptPath = pythonScriptField.getText()
             def projectsFolderPath = projectsFolderField.getText()
 
-
+            //SETUP: collect variables
+            String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
+            String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
+            Project<BufferedImage> currentQuPathProject = getProject()
             //Boolean to check whether to proceed with running the microscope data collection
             logger.info("getting annotation objects")
             def annotations = getAnnotationObjects()
+            annotations = annotations.findAll{classFilter.contains(it.getPathClass().toString())}
 
-            // Check if annotations are present
+            // Check if we have sufficient information to proceed
             if (annotations.isEmpty() || [sampleLabel, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
-
                 return
             }
 
+            Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
+                    scanTypeWithIndex,
+                    frameWidthMicrons,
+                    frameHeightMicrons,
+                    preferences.overlapPercent as Double,
+                    null,
+                    true,
+                    annotations)
 
-            def scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
-            def tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
             logger.info("Scan type with index: " + scanTypeWithIndex)
             logger.info(tempTileDirectory)
 
@@ -408,18 +477,23 @@ class QP_scope_GUI {
                              scanTypeWithIndex,
                              annotation.getName()]
                 //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
+                //Progress bar that updates by checking target folder for new images?
                 UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
                 //UtilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
                 logger.info("Finished Python Command")
                 String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
                 //TODO Need to check if stitching is successful, provide error
                 //TODO get pixel size from somewhere???
-
-                //stitchingImplementations.stitchCore(stitchingType, folderPath, compressionType, pixelSize, downsample, matchingString)
+                //TODO BEGIN SECOND COLLECTION WHILE FIRST IS STITCHING
                 logger.info("Begin stitching")
-                String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file", projectsFolderPath + File.separator + sampleLabel, stitchedImageOutputFolder, "J2K_LOSSY", 0, 1, scanTypeWithIndex)
+                String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
+                        projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex,
+                        stitchedImageOutputFolder,
+                        "J2K_LOSSY",
+                        0,
+                        1,
+                        annotation.getName())
                 logger.info("Get project")
-                Project<BufferedImage> currentQuPathProject = getProject()
 
                 //UtilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
 
@@ -439,8 +513,6 @@ class QP_scope_GUI {
                 qupathGUI.refreshProject()
                 //Open the first image
                 //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
-                qupathGUI.openImageEntry(matchingImage)
-
 
                 //Check if the tiles should be deleted from the collection folder
                 if (preferences.tileHandling == "Delete")
@@ -618,6 +690,7 @@ class QP_scope_GUI {
 
         // Add new component for Sample Label
         addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+        addToGrid(pane, new Label('Annotation classes to image:'), classFilterField, row++)
 
 
         // Add components for Python environment and script path
@@ -633,11 +706,11 @@ class QP_scope_GUI {
         Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent()
         groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 
-        Path jsonFilePath = groovyScriptDirectory.resolve("Tissue-lowres.json")
+        Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("Tissue-lowres.json")
         Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
 
         return [
-                jsonFilePathString: jsonFilePath.toString().replace("\\", "/"),
+                jsonTissueClassfierPathString: jsonTissueClassfierPath.toString().replace("\\", "/"),
                 exportScriptPathString: exportScriptPath.toString().replace("\\", "/")
         ]
     }

@@ -5,14 +5,22 @@ import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.commands.ProjectCommands
 import qupath.lib.gui.dialogs.Dialogs
+import qupath.lib.gui.scripting.QPEx
+import qupath.lib.gui.tools.GuiTools
 import qupath.lib.images.ImageData
+import qupath.lib.objects.PathObject
+import qupath.lib.regions.ImagePlane
+import qupath.lib.roi.RectangleROI
+import qupath.lib.roi.interfaces.ROI
+import qupath.lib.scripting.QP
 import qupath.lib.images.servers.ImageServerProvider
 import qupath.lib.images.writers.ome.OMEPyramidWriter
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectIO
 import qupath.lib.projects.Projects
+import qupath.lib.objects.PathObjects
 import qupath.ext.basicstitching.stitching.StitchingImplementations
-
+import qupath.lib.gui.images.stores.ImageRegionStoreFactory
 import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -53,12 +61,18 @@ class UtilityFunctions {
 
         // Set a particular image type
         def imageData = entry.readImageData()
-        imageData.setImageType(ImageData.ImageType.BRIGHTFIELD_H_DAB)
-        entry.saveImageData(imageData)
-
         // Write a thumbnail if we can
         var img = ProjectCommands.getThumbnailRGB(imageData.getServer())
         entry.setThumbnail(img)
+        // Set a particular image type automatically (based on /qupath/lib/gui/QuPathGUI.java#L2847)
+        // https://forum.image.sc/t/creating-project-from-command-line/45608/24
+        def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(QuPathGUI.getTileCacheSizeBytes());
+        def imageType = GuiTools.estimateImageType(imageData.getServer(), imageRegionStore.getThumbnail(imageData.getServer(), 0, 0, true));
+        imageData.setImageType(imageType)
+        //imageData.setImageType(ImageData.ImageType.BRIGHTFIELD_H_DAB)
+        entry.saveImageData(imageData)
+
+
 
         // Add an entry name (the filename)
         entry.setImageName(stitchedImagePath.getName())
@@ -115,12 +129,12 @@ class UtilityFunctions {
     /**
      * Performs image stitching, renames the stitched image, and updates the QuPath project with the renamed image.
      * The new name of the stitched image is based on the sample label, annotation name, and the original image name.
-     * If the annotation name is "Bounds", it is omitted from the new file name.
+     * If the annotation name is "bounds", it is omitted from the new file name.
      *
      * @param projectsFolderPath The path where the project is located and where the stitched image will be saved.
      * @param sampleLabel The label for the sample, used as part of the new file name.
      * @param scanTypeWithIndex The scan type with an appended index for uniqueness, used in stitching process.
-     * @param annotationName The name of the annotation, used as part of the new file name unless it is "Bounds".
+     * @param annotationName The name of the annotation, used as part of the new file name unless it is "bounds".
      * @param qupathGUI The QuPath GUI instance used for updating the project.
      * @param currentQuPathProject The current QuPath project to which the stitched image will be added.
      * @param compression The type of compression to use for stitching (default is "J2K_LOSSY").
@@ -140,7 +154,7 @@ class UtilityFunctions {
                 0, 1, annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
-        String adjustedFileName = sampleLabel+ '_' + scanTypeWithIndex + '_'+ (annotationName.equals("Bounds") ? "" : annotationName)
+        String adjustedFileName = sampleLabel+ '_' + scanTypeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)
         File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
 
         // Rename the stitched image file
@@ -287,6 +301,7 @@ class UtilityFunctions {
      *
      * @param folderPath The path to the folder containing the tiles to be deleted.
      */
+
     static void deleteTilesAndFolder(String folderPath) {
 
         try {
@@ -374,94 +389,154 @@ class UtilityFunctions {
         return String.join(System.lineSeparator(), lines)
     }
 
-    /**
-     * Modifies the specified export script by updating the pixel size source and the base directory, and returns the modified script as a string.
-     *
-     * @param exportScriptPathString The path to the export script file.
-     * @param pixelSize The new pixel size to set in the script.
-     * @param tilesCSVdirectory The new base directory to set in the script.
-     * @return String representing the modified script.
-     * @throws IOException if an I/O error occurs reading from the file.
-     */
-    static String modifyTXTExportScript(String exportScriptPathString, String pixelSize, Map<String, String> preferences, String sampleLabel) throws IOException {
-        // Access necessary folder locations to ensure Groovy script saves files correctly
-        String baseDirectoryPath = "${preferences.projects}${File.separator}${sampleLabel}".replace("\\", "\\\\")
-        // Handle backslashes for Windows paths
-        String imagingBasePath = "${baseDirectoryPath}${File.separator}${preferences.firstScanType}"
-
-        String uniqueFolderName = MinorFunctions.getUniqueFolderName(imagingBasePath)
-
-        // Extract the numeric part from the folder name using a regex pattern
-        Pattern pattern = Pattern.compile('(\\d+)$') // Using single quotes for regex
-        Matcher matcher = pattern.matcher(uniqueFolderName)
-        String numericPart = matcher.find() ? matcher.group(1) : '1' // Default to '1' if no numeric part is found
 
 
-        String imagingModalityValue = "${preferences.firstScanType}_${numericPart}"
+/**
+ * Performs tiling and saves configuration based on either bounding box coordinates or existing annotations.
+ *
+ * @param baseDirectory The base directory where the tiles will be saved.
+ * @param imagingModality The type of imaging modality used, e.g., '4x-bf'.
+ * @param frameWidth_um The width of each tile in micrometers.
+ * @param frameHeight_um The height of each tile in micrometers.
+ * @param overlapPercent The percent overlap between adjacent tiles.
+ * @param boundingBoxCoordinates The coordinates for the bounding box if provided, otherwise null.
+ * @param createTiles Flag to determine if tiles should be created.
+ */
+    static void performTilingAndSaveConfiguration(String modalityIndexFolder,
+                                                  String imagingModality,
+                                                  double frameWidth_um,
+                                                  double frameHeight_um,
+                                                  double overlapPercent,
+                                                  List<Double> boundingBoxCoordinates = [],
+                                                  boolean createTiles = true,
+                                                  Collection<PathObject> annotations = []) {
 
-        List<String> lines = Files.lines(Paths.get(exportScriptPathString), StandardCharsets.UTF_8)
-                .map(line -> {
-                    if (line.startsWith("double pixelSizeSource")) {
-                        return "double pixelSizeSource = " + pixelSize + ";"
-                    } else if (line.startsWith("double pixelSizeTarget")) {
-                        return "double pixelSizeTarget = " + preferences.pixelSizeFirstScanType + ";"
-                    } else if (line.startsWith("double frameWidth")) {
-                        double frameWidth = Double.parseDouble(preferences.frameWidth) / Double.parseDouble(pixelSize) * Double.parseDouble(preferences.pixelSizeFirstScanType)
-                        return "double frameWidth = " + frameWidth + ";"
-                    } else if (line.startsWith("double frameHeight")) {
-                        double frameHeight = Double.parseDouble(preferences.frameHeight) / Double.parseDouble(pixelSize) * Double.parseDouble(preferences.pixelSizeFirstScanType)
-                        return "double frameHeight = " + frameHeight + ";"
-                    } else if (line.startsWith("double overlapPercent")) {
-                        return "double overlapPercent = " + preferences.overlapPercent + ";"
-                    } else if (line.startsWith("baseDirectory")) {
+        QP.mkdirs(modalityIndexFolder)
 
-                        String newLine = "baseDirectory = \"" + baseDirectoryPath + "\";"
-                        logger.info("Replacing baseDirectory line with: " + newLine)
-                        return newLine
-                    } else if (line.startsWith("imagingModality")) {
+        if (boundingBoxCoordinates) {
+            // Tiling logic when bounding box coordinates are provided
+            def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")
+            QP.mkdirs(tilePath)
+            // Extract coordinates from the bounding box
+            double bBoxX = boundingBoxCoordinates[0]
+            double bBoxY = boundingBoxCoordinates[1]
+            double x2 = boundingBoxCoordinates[2]
+            double y2 = boundingBoxCoordinates[3]
+            double bBoxW = x2 - bBoxX
+            double bBoxH = y2 - bBoxY
+            // Create an ROI for the bounding box
+            def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
+            // Create tile configuration based on the bounding box
+            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth_um, frameHeight_um, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+        } else {
+            // Tiling logic for existing annotations
+            ImageData imageData = QPEx.getQuPath().getImageData()
+            def hierarchy = imageData.getHierarchy()
+            QP.clearDetections()
+            // Retrieve all annotations
 
-                        return "imagingModality = \"" + imagingModalityValue + "\";"
-                    } else {
-                        return line
-                    }
-                })
-                .collect(Collectors.toList())
+            // Naming each annotation based on its centroid coordinates
+            annotations.each { annotation ->
+                annotation.setName("${(int) annotation.getROI().getCentroidX()}_${(int) annotation.getROI().getCentroidY()}")
+            }
 
-        // Join the lines into a single string
-        return String.join(System.lineSeparator(), lines)
+            // Locking the annotations to prevent changes during processing
+            QP.getAnnotationObjects().each { it.setLocked(true) }
+
+            // Iterate over each annotation to create tile configuration
+            annotations.each { annotation ->
+                ROI annotationROI = annotation.getROI()
+                double bBoxX = annotationROI.getBoundsX()
+                double bBoxY = annotationROI.getBoundsY()
+                double bBoxH = annotationROI.getBoundsHeight()
+                double bBoxW = annotationROI.getBoundsWidth()
+                String annotationName = annotation.getName()
+                // Create folder for each annotation's tiles
+                def tilePath = QP.buildFilePath(modalityIndexFolder, annotationName)
+                QP.mkdirs(tilePath)
+                // Create tile configuration for each annotation
+                createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth_um, frameHeight_um, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+            }
+        }
     }
 
+/**
+ * Creates tile configuration for a given region of interest and saves it as a TileConfiguration.txt file.
+ * This function either processes a specific ROI or the entire bounding box.
+ *
+ * @param bBoxX The X-coordinate of the top-left corner of the bounding box or ROI.
+ * @param bBoxY The Y-coordinate of the top-left corner of the bounding box or ROI.
+ * @param bBoxW The width of the bounding box or ROI.
+ * @param bBoxH The height of the bounding box or ROI.
+ * @param frameWidth The width of each tile.
+ * @param frameHeight The height of each tile.
+ * @param overlapPercent The percent overlap between tiles.
+ * @param tilePath The path where the TileConfiguration.txt file will be saved.
+ * @param annotationROI (Optional) The specific ROI to be tiled, null if tiling the entire bounding box.
+ * @param imagingModality The type of imaging modality used, e.g., '4x-bf'.
+ * @param createTiles Flag to determine if tile objects should be created in QuPath.
+ */
+    static void createTileConfiguration(double bBoxX,
+                                        double bBoxY,
+                                        double bBoxW,
+                                        double bBoxH,
+                                        double frameWidth,
+                                        double frameHeight,
+                                        double overlapPercent,
+                                        String tilePath,
+                                        ROI annotationROI,
+                                        String imagingModality,
+                                        boolean createTiles = true) {
+        int predictedTileCount = 0
+        int actualTileCount = 0
+        List xy = []
+        int yline = 0
+        List newTiles = []
+        double x = bBoxX
+        double y = bBoxY
+        // Calculate step size for X and Y based on frame size and overlap
+        double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
+        double yStep = frameHeight - (overlapPercent / 100 * frameHeight)
 
-    /**
-     * Modifies a Groovy script content by setting the 'createTiles' variable to false and updating
-     * the 'boundingBoxStageCoordinates_um' variable with provided bounding box values.
-     *
-     * @param scriptContent The content of the script to be modified as a multi-line string.
-     * @param boundingBox A list containing the bounding box coordinates (x1, y1, x2, y2).
-     * @return A string representing the modified script content.
-     */
-    static String boundingBoxReadyTXT(String scriptContent, List boundingBox) {
-        // Convert bounding box list to a string
-        String boundingBoxStr = boundingBox.join(", ")
+        // Loop through Y-axis
+        while (y < bBoxY + bBoxH) {
+            // Loop through X-axis with conditional direction for serpentine tiling
+            while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
+                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
+                // Check if tile intersects the given ROI or bounding box
+                if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
+                    PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
+                    tileDetection.setName(predictedTileCount.toString())
+                    tileDetection.measurements.put("TileNumber", actualTileCount)
+                    newTiles << tileDetection
+                    xy << [x, y]
+                    actualTileCount++
+                }
+                // Adjust X for next tile
+                x = (yline % 2 == 0) ? x + xStep : x - xStep
+                predictedTileCount++
+            }
+            // Adjust Y for next line and reset X
+            y += yStep
+            x = (yline % 2 == 0) ? x - xStep : x + xStep
+            yline++
+        }
 
-        // Split the script content into lines
-        List<String> lines = scriptContent.split(System.lineSeparator())
-
-        // Modify the script lines
-        List<String> modifiedLines = lines.stream()
-                .map(line -> {
-                    if (line.trim().startsWith("createTiles")) {
-                        return "createTiles = false"
-                    } else if (line.trim().startsWith("boundingBoxStageCoordinates_um")) {
-                        return "boundingBoxStageCoordinates_um = [" + boundingBoxStr + "]"
-                    } else {
-                        return line
-                    }
-                })
-                .collect(Collectors.toList())
-
-        // Join the modified lines into a single string
-        return String.join(System.lineSeparator(), modifiedLines)
+        // Writing TileConfiguration.txt file
+        String header = "dim = 2\n"
+        new File(QP.buildFilePath(tilePath, "TileConfiguration.txt")).withWriter { fw ->
+            fw.writeLine(header)
+            xy.eachWithIndex { coords, index ->
+                String line = "${index}.tif; ; (${coords[0]}, ${coords[1]})"
+                fw.writeLine(line)
+            }
+        }
+        // Add new tiles to the image if specified
+        if (createTiles) {
+            QP.getCurrentHierarchy().addObjects(newTiles)
+            QP.fireHierarchyUpdate()
+        }
     }
+
 
 }

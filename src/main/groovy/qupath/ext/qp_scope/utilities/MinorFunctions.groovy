@@ -3,12 +3,19 @@ package qupath.ext.qp_scope.utilities
 import javafx.scene.control.Alert
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
+import qupath.lib.gui.QuPathGUI
+import qupath.lib.projects.Project
+import qupath.lib.projects.ProjectImageEntry
+import qupath.lib.scripting.QP
 
+import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
+import static qupath.lib.scripting.QP.getProject
 
 class MinorFunctions {
     static final logger = LoggerFactory.getLogger(MinorFunctions.class)
@@ -50,29 +57,6 @@ class MinorFunctions {
         return newPath.getFileName().toString()
     }
 
-    private static int getNextImagingModalityIndex(String baseDirectoryPath, String firstScanType) {
-        File directory = new File(baseDirectoryPath)
-        if (!directory.exists() || !directory.isDirectory()) {
-            return 1 // If directory doesn't exist or isn't a directory, start with index 1
-        }
-
-        // Filter directories that match the pattern and find the highest index
-        int maxIndex = Arrays.stream(directory.listFiles())
-                .filter(File::isDirectory)
-                .map(File::getName)
-                .filter(name -> name.startsWith(firstScanType + "_"))
-                .map(name -> {
-                    try {
-                        return Integer.parseInt(name.substring(name.lastIndexOf('_') + 1))
-                    } catch (NumberFormatException e) {
-                        return 0 // If the part after '_' is not a number, return 0
-                    }
-                })
-                .max(Integer::compare)
-                .orElse(0) // If no matching directories, start with index 1
-
-        return maxIndex + 1 // Increment the index for the next modality
-    }
     /**
      * Extracts the file path from the server path string.
      *
@@ -102,5 +86,6 @@ class MinorFunctions {
             return 0.0
         }
     }
+
 
 }

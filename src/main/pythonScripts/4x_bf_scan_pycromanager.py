@@ -44,6 +44,9 @@ if len(sys.argv) == 5:
     sampleLabel = sys.argv[2]
     imageType = sys.argv[3]
     subregion = sys.argv[4]
+        # Check if subregion is in the format of a bounding box
+    if '[' in subregion and ']' in subregion:
+        subregion = "bounds"
 else:
     # Assign default values
     projectsFolderPath = r"C:\ImageAnalysis\QPExtensionTest\data\slides"

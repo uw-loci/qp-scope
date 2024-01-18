@@ -57,7 +57,7 @@ class QP_scope implements QuPathExtension {
         // Get or create the menu
         def menu = qupath.getMenu("Extensions>${name}", true)
 
-        // First menu item
+        // Bounding box as input
         def qpScope1 = new MenuItem("First scan type - Use bounding box")
         // TODO: tooltip
         qpScope1.setOnAction(e -> {
@@ -66,7 +66,7 @@ class QP_scope implements QuPathExtension {
             QP_scope_GUI.boundingBoxInputGUI()
         })
 
-        // Second menu item
+        // Macro or overview image as input
         def qpScope2 = new MenuItem("First scan type - Use current image")
         // TODO: tooltip
         qpScope2.setOnAction(e -> {
@@ -74,17 +74,23 @@ class QP_scope implements QuPathExtension {
             QP_scope_GUI.macroImageInputGUI()
         })
 
-        // Third menu item - "Use current image as macro view"
+        // Third menu item - "Second scan modality"
         def qpScope3 = new MenuItem("Second scan type - Scan non \'Tissue\' annotations ")
         // TODO: tooltip
         qpScope3.setOnAction(e -> {
             QP_scope_GUI.secondModalityGUI()
         })
-
+        // Fourth menu item - "Use current image as macro view"
+        def qpScope4 = new MenuItem("Dummy menu option for troubleshooting")
+        // TODO: tooltip
+        qpScope4.setOnAction(e -> {
+            QP_scope_GUI.testGUI()
+        })
         // Add the menu items to the menu
         menu.getItems() << qpScope1
         menu.getItems() << qpScope2
         menu.getItems() << qpScope3
+        menu.getItems() << qpScope4
     }
 
 
