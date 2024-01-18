@@ -1,6 +1,6 @@
 package qupath.ext.qp_scope.utilities
 
-
+import javafx.application.Platform
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.commands.ProjectCommands
@@ -148,7 +148,7 @@ class UtilityFunctions {
         String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
         String tileImageInputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
 
-
+        logger.info("Calling stitchCore with $tileImageInputFolder")
         String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
                 tileImageInputFolder, stitchedImageOutputFolder, compression,
                 0, 1, annotationName)
@@ -161,17 +161,18 @@ class UtilityFunctions {
         if (stitchedImagePath.renameTo(adjustedFilePath)) {
             stitchedImagePathStr = adjustedFilePath.absolutePath
         }
+        Platform.runLater {
+            logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
+            // Add the (possibly renamed) image to the project
+            addImageToProject(adjustedFilePath, currentQuPathProject)
+            def matchingImage = currentQuPathProject.getImageList().find { image ->
+                new File(image.getImageName()).name == adjustedFilePath.name
+            }
 
-        // Add the (possibly renamed) image to the project
-        addImageToProject(adjustedFilePath, currentQuPathProject)
-        def matchingImage = currentQuPathProject.getImageList().find { image ->
-            new File(image.getImageName()).name == adjustedFilePath.name
+            qupathGUI.openImageEntry(matchingImage)
+            qupathGUI.setProject(currentQuPathProject)
+            qupathGUI.refreshProject()
         }
-
-        qupathGUI.openImageEntry(matchingImage)
-        qupathGUI.setProject(currentQuPathProject)
-        qupathGUI.refreshProject()
-
         return stitchedImagePathStr
     }
 
@@ -284,7 +285,7 @@ class UtilityFunctions {
                 tissueDetection        : "DetectTissue.groovy",
                 firstScanType          : "4x_bf",
                 secondScanType         : "20x_bf",
-                tileHandling           : "Zip",
+                tileHandling           : "none", //"Zip" or "Delete" are functional, anything else does nothing
                 pixelSizeSource        : "7.2",
                 pixelSizeFirstScanType : "1.105",
                 pixelSizeSecondScanType: "0.5",

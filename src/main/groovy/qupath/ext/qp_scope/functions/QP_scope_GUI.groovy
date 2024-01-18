@@ -17,7 +17,7 @@ import qupath.lib.objects.PathObject
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectImageEntry
 import qupath.lib.scripting.QP
-
+import java.util.concurrent.Semaphore
 import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 
@@ -472,61 +472,65 @@ class QP_scope_GUI {
             logger.info("Scan type with index: " + scanTypeWithIndex)
             logger.info(tempTileDirectory)
 
-            //TODO NEEDS MASSIVE FIXIN'
+// A semaphore to control the stitching process
+            Semaphore stitchingSemaphore = new Semaphore(1)
+
+
             for (annotation in annotations) {
+                String annotationName = annotation.getName()
                 List args = [projectsFolderPath,
                              sampleLabel,
                              scanTypeWithIndex,
-                             annotation.getName()]
+                             annotationName]
                 //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
                 //Progress bar that updates by checking target folder for new images?
                 UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
                 //UtilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
-                logger.info("Finished Python Command")
-                String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-                //TODO Need to check if stitching is successful, provide error
-                //TODO get pixel size from somewhere???
-                //TODO BEGIN SECOND COLLECTION WHILE FIRST IS STITCHING
-                logger.info("Begin stitching")
-                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                        sampleLabel, scanTypeWithIndex as String, annotation.getName(),
-                        qupathGUI, currentQuPathProject, preferences.compression)
-                logger.info(stitchedImagePathStr)
-//                String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
-//                        projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex,
-//                        stitchedImageOutputFolder,
-//                        "J2K_LOSSY",
-//                        0,
-//                        1,
-//                        annotation.getName())
-//                logger.info("Get project")
-//
-//                //UtilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
-//
-//                //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.secondScanType + sampleLabel + ".ome.tif"
-//                File stitchedImagePath = new File(stitchedImagePathStr)
-//                UtilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
-//
-//                //open the newly created project
-//                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
-//                def qupathGUI = QPEx.getQuPath()
-//
-//                //qupathGUI.setProject(currentQuPathProject)
-//                //Find the existing images - there should only be one since the project was just created
-//                def matchingImage = currentQuPathProject.getImageList().find { image ->
-//                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
-//                }
-//                qupathGUI.refreshProject()
-                //Open the first image
-                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
+                logger.info("Finished Python Command for $annotationName")
+                // Start a new thread for stitching
+                Thread.start {
+                    try {
+                        // Acquire a permit before starting stitching
+                        stitchingSemaphore.acquire()
 
-                //Check if the tiles should be deleted from the collection folder
-                if (preferences.tileHandling == "Delete")
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                if (preferences.tileHandling == "Zip") {
-                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                        logger.info("Begin stitching")
+                        String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+                                sampleLabel, scanTypeWithIndex as String, annotationName,
+                                qupathGUI, currentQuPathProject, preferences.compression)
+                        logger.info(stitchedImagePathStr)
+
+
+                    } catch (InterruptedException e) {
+                        logger.error("Stitching thread interrupted", e)
+                    } finally {
+                        // Release the semaphore for the next stitching process
+                        stitchingSemaphore.release()
+                    }
                 }
+//                //TODO Need to check if stitching is successful, provide error
+//                //TODO get pixel size from somewhere???
+//                //TODO BEGIN SECOND COLLECTION WHILE FIRST IS STITCHING
+//                logger.info("Begin stitching")
+//                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+//                        sampleLabel, scanTypeWithIndex as String, annotation.getName(),
+//                        qupathGUI, currentQuPathProject, preferences.compression)
+//                logger.info(stitchedImagePathStr)
+//
+//                //Check if the tiles should be deleted from the collection folder
+//                if (preferences.tileHandling == "Delete")
+//                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+//                if (preferences.tileHandling == "Zip") {
+//                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+//                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+//                }
+            }
+            // Post-stitching tasks like deleting or zipping tiles
+            //Check if the tiles should be deleted from the collection folder
+            if (preferences.tileHandling == "Delete")
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            if (preferences.tileHandling == "Zip") {
+                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
             }
         }
     }
