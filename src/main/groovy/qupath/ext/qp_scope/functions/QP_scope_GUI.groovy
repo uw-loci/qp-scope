@@ -372,9 +372,10 @@ class QP_scope_GUI {
                 String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
                         sampleLabel, scanTypeWithIndex, "bounds", qupathGUI, currentQuPathProject,
                         preferences.compression)
-                qupathGUI.openImageEntry(currentQuPathProject.getImageList().find { image ->
-                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
-                })
+                logger.info(stitchedImagePathStr)
+//                qupathGUI.openImageEntry(currentQuPathProject.getImageList().find { image ->
+//                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
+//                })
                 qupathGUI.refreshProject()
                 //Check if the tiles should be deleted from the collection folder
                 if (preferences.tileHandling == "Delete")
@@ -442,6 +443,7 @@ class QP_scope_GUI {
             def projectsFolderPath = projectsFolderField.getText()
 
             //SETUP: collect variables
+            QuPathGUI qupathGUI = QPEx.getQuPath()
             String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.secondScanType)
             String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
             Project<BufferedImage> currentQuPathProject = getProject()
@@ -486,31 +488,35 @@ class QP_scope_GUI {
                 //TODO get pixel size from somewhere???
                 //TODO BEGIN SECOND COLLECTION WHILE FIRST IS STITCHING
                 logger.info("Begin stitching")
-                String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
-                        projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex,
-                        stitchedImageOutputFolder,
-                        "J2K_LOSSY",
-                        0,
-                        1,
-                        annotation.getName())
-                logger.info("Get project")
-
-                //UtilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
-
-                //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.secondScanType + sampleLabel + ".ome.tif"
-                File stitchedImagePath = new File(stitchedImagePathStr)
-                UtilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
-
-                //open the newly created project
-                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
-                def qupathGUI = QPEx.getQuPath()
-
-                //qupathGUI.setProject(currentQuPathProject)
-                //Find the existing images - there should only be one since the project was just created
-                def matchingImage = currentQuPathProject.getImageList().find { image ->
-                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
-                }
-                qupathGUI.refreshProject()
+                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+                        sampleLabel, scanTypeWithIndex as String, annotation.getName(),
+                        qupathGUI, currentQuPathProject, preferences.compression)
+                logger.info(stitchedImagePathStr)
+//                String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
+//                        projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex,
+//                        stitchedImageOutputFolder,
+//                        "J2K_LOSSY",
+//                        0,
+//                        1,
+//                        annotation.getName())
+//                logger.info("Get project")
+//
+//                //UtilityFunctions.showAlertDialog("Wait and complete stitching in other version of QuPath")
+//
+//                //String stitchedImagePathStr = stitchedImageOutputFolder + File.separator + preferences.secondScanType + sampleLabel + ".ome.tif"
+//                File stitchedImagePath = new File(stitchedImagePathStr)
+//                UtilityFunctions.addImageToProject(stitchedImagePath, currentQuPathProject)
+//
+//                //open the newly created project
+//                //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#setProject(qupath.lib.projects.Project)
+//                def qupathGUI = QPEx.getQuPath()
+//
+//                //qupathGUI.setProject(currentQuPathProject)
+//                //Find the existing images - there should only be one since the project was just created
+//                def matchingImage = currentQuPathProject.getImageList().find { image ->
+//                    (new File(image.getImageName()).name == new File(stitchedImagePathStr).name)
+//                }
+//                qupathGUI.refreshProject()
                 //Open the first image
                 //https://qupath.github.io/javadoc/docs/qupath/lib/gui/QuPathGUI.html#openImageEntry(qupath.lib.projects.ProjectImageEntry)
 
