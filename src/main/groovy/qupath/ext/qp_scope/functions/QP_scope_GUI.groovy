@@ -49,7 +49,7 @@ class QP_scope_GUI {
     static TextField sampleLabelField = new TextField("First_Test")
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
-    static TextField groovyScriptField = new TextField("C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts/DetectTissue.groovy")
+    static TextField groovyScriptField = new TextField(preferences.extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
     static TextField pixelSizeField = new TextField(preferences.pixelSizeSource)
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
@@ -176,7 +176,7 @@ class QP_scope_GUI {
             }
             //String imageName = QP.getCurrentImageName()
 
-            Map scriptPaths = calculateScriptPaths(pythonScriptPath)
+            Map scriptPaths = calculateScriptPaths(groovyScriptPath)
             String jsonTissueClassfierPathString = scriptPaths.jsonTissueClassfierPathString
             QuPathGUI qupathGUI = QPEx.getQuPath()
 
@@ -225,8 +225,13 @@ class QP_scope_GUI {
 
             // Get the current stage coordinates to figure out the translation from the first alignment.
             List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()]
+            if (!coordinatesQP){
+                logger.error("Need coordinates.")
+                return
+            }
             logger.info("user adjusted position of tile at $coordinatesQP")
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+            logger.info("Obtained stage coordinates: $currentStageCoordinates_um")
             transformation = TransformationFunctions.updateTransformation(transformation, coordinatesQP as List<String>, currentStageCoordinates_um)
 
 
@@ -712,8 +717,8 @@ class QP_scope_GUI {
         return pane
     }
 
-    private static Map<String, String> calculateScriptPaths(String pythonScriptPath) {
-        Path groovyScriptDirectory = Paths.get(pythonScriptPath).getParent()
+    private static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
+        Path groovyScriptDirectory = Paths.get(groovyScriptPath).getParent()
         groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 
         Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("Tissue-lowres.json")
