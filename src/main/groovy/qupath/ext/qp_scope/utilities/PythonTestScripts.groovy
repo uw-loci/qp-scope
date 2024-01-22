@@ -7,15 +7,14 @@ class PythonTestScripts {
 """
 import sys
 
+print('12345', '54321')
 # Check if any command-line arguments were provided
-if len(sys.argv) == 1:
+
+for arg in sys.argv:
+    # Print each argument on a separate line
+    print(arg)
     # No arguments were passed, print default coordinates
-    print('12345', '54321')
-else:
-    # Arguments were passed, print an error message to standard error
-    print("Error: Unexpected arguments received.", file=sys.stderr)
-    print('12345', '54321')
-    sys.exit(1)  # Optionally exit with a non-zero status to indicate an error"""
+"""
 
         return getStageCoordinatesTest
     }
@@ -35,10 +34,10 @@ if len(sys.argv) == 3:
         print(f"X: {X}, Y: {Y}")
     except ValueError:
         print("Invalid arguments. Both X and Y must be doubles.", file=sys.stderr)
-        #sys.exit(1)
+        sys.exit(1)
 else:
     print("Expected two arguments, X and Y as doubles", file=sys.stderr)
-    #sys.exit(1)
+    sys.exit(1)
 
 """
         return sendStageCoordinatesTest

@@ -1,6 +1,7 @@
 package qupath.ext.qp_scope.utilities
 
 import javafx.application.Platform
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.commands.ProjectCommands
@@ -204,7 +205,7 @@ class UtilityFunctions {
                     return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
                 }
                 // Construct the command
-                String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + arguments
+                String command = "\"" + pythonExecutable + "\" -u \"" + getStageScriptPath + "\" " + arguments
                 // Execute the command
                 Process process = command.execute()
                 logger.info("Executing command: " + command)
@@ -301,7 +302,10 @@ class UtilityFunctions {
  * @param arguments A list of arguments to pass to the python script.
  * @return The output from the Python script execution, or null in case of an error.
  */
+
     static runTestPythonScript(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+        Logger logger2 = LoggerFactory.getLogger(QuPathGUI.class);
+        logger2.warn("Default script not found, running test script for $pythonScriptPath")
         String pythonScript = "";
         logger.info("calling runtestpythoncommand on $pythonScriptPath")
         // Determine which test script to use based on the file name
