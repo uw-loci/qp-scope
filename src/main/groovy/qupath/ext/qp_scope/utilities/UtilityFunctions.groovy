@@ -32,6 +32,8 @@ import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+import qupath.ext.qp_scope.utilities.PythonTestScripts
+
 class UtilityFunctions {
 
     static final logger = LoggerFactory.getLogger(UtilityFunctions.class)
@@ -161,7 +163,7 @@ class UtilityFunctions {
         if (stitchedImagePath.renameTo(adjustedFilePath)) {
             stitchedImagePathStr = adjustedFilePath.absolutePath
         }
-           .runLater {
+       Platform.runLater {
             logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
             // Add the (possibly renamed) image to the project
             addImageToProject(adjustedFilePath, currentQuPathProject)
@@ -181,18 +183,26 @@ class UtilityFunctions {
      * This method is designed to be compatible with Windows, Linux, and macOS.
      *
      * @param anacondaEnvPath The path to the Python virtual environment.
-     * @param pythonScriptPath The path to the Python script to be executed.
+     * @param pythonScriptPath The path to the Python script in Preferences to run the microscope.
      * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
      */
     static runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
         try {
+
             String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
+
+            File scriptFile = new File(pythonScriptPath)
 
             // Adjust the pythonScriptPath based on arguments
             if (arguments == null) {
                 // Change the script to 'getStageCoordinates.py'
-                File scriptFile = new File(pythonScriptPath)
-                pythonScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath()
+
+                def getStageScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath()
+                logger.info("calling runPythonCommand on $getStageScriptPath")
+                if (!(new File(getStageScriptPath).exists())) {
+                    // If the file does not exist, call runTestPythonScript
+                    return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
+                }
                 // Construct the command
                 String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + arguments
                 // Execute the command
@@ -208,11 +218,14 @@ class UtilityFunctions {
                     return null
                 }
             } else if (arguments.size() == 2) {
-                // Change the script to 'moveStageToCoordinates.py'
-                File scriptFile = new File(pythonScriptPath)
+                //If only two arguments are passed, we assume that a command needs to be sent to move the stage.
                 pythonScriptPath = new File(scriptFile.parent, "moveStageToCoordinates.py").canonicalPath
             }
-
+            logger.info("calling runPythonCommand on $pythonScriptPath")
+            if (!(new File(pythonScriptPath).exists())) {
+                // If the file does not exist, call runTestPythonScript
+                return runTestPythonScript(anacondaEnvPath, pythonScriptPath, arguments)
+            }
             String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : ""
 
             // Construct the command
@@ -262,13 +275,114 @@ class UtilityFunctions {
         while ((line = errorReader.readLine()) != null) {
             errorLines.add(line)
         }
+        // Capture and log the process exit code
+        int exitCode = process.waitFor();
+        logger.info("Process exit code: " + exitCode);
 
+        // Log any error output from the process
+        if (!errorLines.isEmpty()) {
+            logger.error("Error output from Python script: \n" + String.join("\n", errorLines));
+        }
         // Check for errors or invalid output
         if (!errorLines.isEmpty() || value1 == null || value2 == null) {
             return null
         }
 
         return [value1, value2]
+    }
+
+
+/**
+ * Executes a test Python script based on the provided script path. This method selects
+ * an appropriate test script and runs it using the Python interpreter at the specified path.
+ *
+ * @param anacondaEnvPath The path to the Python virtual environment.
+ * @param pythonScriptPath The path to the Python script, used to determine which test script to run.
+ * @param arguments A list of arguments to pass to the python script.
+ * @return The output from the Python script execution, or null in case of an error.
+ */
+    static runTestPythonScript(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+        String pythonScript = "";
+        logger.info("calling runtestpythoncommand on $pythonScriptPath")
+        // Determine which test script to use based on the file name
+        String scriptName = new File(pythonScriptPath).getName();
+
+        if (scriptName.equalsIgnoreCase("getStageCoordinates.py")) {
+            pythonScript = PythonTestScripts.pyTestGetStageCoordinates();
+        } else if (scriptName.equalsIgnoreCase("moveStageToCoordinates.py")) {
+            pythonScript = PythonTestScripts.pyTestSendStageCoordinates();
+        } else if (scriptName.equalsIgnoreCase("4x_bf_scan_pycromanager.py")) {
+            pythonScript = PythonTestScripts.pyFauxMicroscopeAcquisition();
+        }
+
+        // Execute the selected Python script
+        try {
+            // Command to start Python interpreter
+            logger.info("Running test replacement python command for $pythonScriptPath ")
+            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
+            ProcessBuilder processBuilder = new ProcessBuilder(pythonExecutable, "-u", "-");
+            Process process = processBuilder.start();
+
+            // Write the Python script to the process's standard input
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+
+            if (arguments != null && !arguments.isEmpty()) {
+                String argsString = arguments.stream()
+                        .map(arg -> "\"" + arg.toString().replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
+                        .collect(Collectors.joining(", "));
+                pythonScript += "\nimport sys\nsys.argv.extend([" + argsString + "])";
+            }
+
+
+            writer.write(pythonScript);
+            writer.flush();
+            writer.close();
+            if (scriptName.equalsIgnoreCase("getStageCoordinates.py")) {
+                logger.info("entering getStageCoordinates code block")
+                logger.info(pythonScript)
+                // Use handleProcessOutput for getStageCoordinates.py
+                List<String> result = handleProcessOutput(process);
+                if (result != null) {
+                    logger.info("Received output: ${result.join(', ')}");
+                    return result;
+                } else {
+                    logger.error("Error occurred or no valid output received from the script.");
+                    return null;
+                }
+            } else {
+                // Read process output
+                BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                StringBuilder output = new StringBuilder();
+                String line;
+                while ((line = outputReader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+
+                StringBuilder errorOutput = new StringBuilder();
+                while ((line = errorReader.readLine()) != null) {
+                    errorOutput.append(line).append("\n");
+                }
+
+                int exitCode = process.waitFor();
+                logger.info("Exit code: " + exitCode);
+
+                if (!errorOutput.toString().isEmpty()) {
+                    logger.error("Error output: \n" + errorOutput.toString());
+                }
+
+                if (exitCode != 0) {
+                    logger.error("Error output: \n" + errorOutput.toString());
+                    return null;
+                }
+                return output.toString();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 
@@ -279,10 +393,10 @@ class UtilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [pycromanager           : "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\4x_bf_scan_pycromanager.py",
-                environment            : "C:\\Users\\lociuser\\miniconda3\\envs\\spath",
-                projects               : "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides",
-                extensionPath           : "C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope",
+        return [pycromanager           : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
+                environment            : "C:\\Anaconda\\envs\\paquo",
+                projects               : "C:\\ImageAnalysis\\QPExtensionTest\\data\\slides",
+                extensionPath          : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope",
                 tissueDetection        : "DetectTissue.groovy",
                 firstScanType          : "4x_bf",
                 secondScanType         : "20x_bf",
