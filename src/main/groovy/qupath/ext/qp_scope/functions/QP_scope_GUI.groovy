@@ -191,6 +191,12 @@ class QP_scope_GUI {
             // Run the modified script
             QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             //At this point the tissue should be outlined in an annotation
+
+            boolean annotationStatusCheck = checkValidAnnotationsGUI()
+            if (!annotationStatusCheck){
+                return
+            }
+
             def annotations = getAnnotationObjects().findAll{it.getPathClass().toString().equals("Tissue")}
             Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
             Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
@@ -633,6 +639,18 @@ class QP_scope_GUI {
         return true
     }
 
+
+    static boolean checkValidAnnotationsGUI() {
+        Dialog<ButtonType> dlg = new Dialog<>()
+        dlg.initModality(Modality.NONE)
+        dlg.setTitle("Validate annotation boundaries")
+        dlg.setHeaderText("Check the existing annotations to make sure what you want to image exists within an annotation. \n Delete, edit, or manually create any changes you would want at this stage, then click OK.")
+        // Add buttons to the dialog
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+        Optional<ButtonType> result = dlg.showAndWait()
+        return result.isPresent() && result.get() == ButtonType.OK
+
+    }
 
     static stageToQuPathAlignmentGUI2() {
         List<String> choices = Arrays.asList("Yes", "Use adjusted position")

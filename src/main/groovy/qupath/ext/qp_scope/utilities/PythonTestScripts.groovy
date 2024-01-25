@@ -1,5 +1,10 @@
 package qupath.ext.qp_scope.utilities
 
+/*
+ * String versions of the test scripts that can be bundled with the plugin, and be targeted/run when the file paths
+ * provided by the user do not point to valid locations.
+ */
+
 class PythonTestScripts {
 
     static String pyTestGetStageCoordinates() {
