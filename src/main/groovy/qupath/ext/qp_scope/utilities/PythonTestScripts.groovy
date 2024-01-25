@@ -47,7 +47,6 @@ else:
 """
         return sendStageCoordinatesTest
     }
-//TODO : fix the file copy speed using subprocess copy instead of py-shutil
     static String pyFauxMicroscopeAcquisition(){
 
         String microscopeAcquisitionTest =
