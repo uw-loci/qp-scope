@@ -585,7 +585,7 @@ class UtilityFunctions {
                 QP.mkdirs(tilePath)
 
                 // Create tile configuration for each annotation, bBox values are in pixels
-                createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth_um, frameHeight_um, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+                createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
         }
     }
