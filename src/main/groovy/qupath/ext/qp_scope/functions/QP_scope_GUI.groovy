@@ -205,9 +205,6 @@ class QP_scope_GUI {
                     null,
                               true,
                                         annotations)
-//            String exportScript = UtilityFunctions.modifyTXTExportScript(scriptPaths.exportScriptPathString, pixelSize, preferences, sampleLabel)
-//            logger.info(exportScript)
-//            QuPathGUI.getInstance().runScript(null, exportScript)
 
             /////////////////////////////////////////
             //Dialog chain to validate stage location
@@ -356,7 +353,7 @@ class QP_scope_GUI {
                 Project currentQuPathProject = projectDetails.currentQuPathProject as Project
                 String tempTileDirectory = projectDetails.tempTileDirectory
                 String scanTypeWithIndex = projectDetails.scanTypeWithIndex
-                Map scriptPaths = calculateScriptPaths(pythonScriptPath)
+                //Map scriptPaths = calculateScriptPaths(pythonScriptPath)
 
                 //Specifically for the case where there is only a bounding box provided
                 List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
@@ -671,6 +668,7 @@ class QP_scope_GUI {
 
      @return A boolean indicating if the position was validated successfully and the updated transformation.
      */
+
     private static Map<String, Object> handleStageAlignment(PathObject tileXY, QuPathGUI qupathGUI,
                                                             String virtualEnvPath, String pythonScriptPath,
                                                             AffineTransform transformation) {
@@ -678,7 +676,8 @@ class QP_scope_GUI {
         // Transform the QuPath coordinates into stage coordinates
         def QPPixelCoordinates = [tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY()]
         List expectedStageXYPositionMicrons = TransformationFunctions.QPtoMicroscopeCoordinates(QPPixelCoordinates, transformation)
-
+        logger.info("QuPath pixel coordinates: $QPPixelCoordinates")
+        logger.info("Transformed into stage coordinates: $expectedStageXYPositionMicrons")
         // Move the stage to the new coordinates
         UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons)
         qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
@@ -688,7 +687,7 @@ class QP_scope_GUI {
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-            transformation = TransformationFunctions.initialTransformation(transformation, expectedStageXYPositionMicrons as List<String>, currentStageCoordinates_um)
+            transformation = TransformationFunctions.initialTransformation(transformation, QPPixelCoordinates as List<String>, currentStageCoordinates_um)
         }
 
         // Prepare the results to be returned
