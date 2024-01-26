@@ -496,6 +496,8 @@ class QP_scope_GUI {
                              scanTypeWithIndex,
                              annotationName]
                 //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
+                //TODO Need to check if stitching is successful, provide error
+
                 //Progress bar that updates by checking target folder for new images?
                 UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
                 //UtilityFunctions.runPythonCommand(virtualEnvPath,  "C:\\ImageAnalysis\\python\\py_dummydoc.py", args)
@@ -520,22 +522,7 @@ class QP_scope_GUI {
                         stitchingSemaphore.release()
                     }
                 }
-//                //TODO Need to check if stitching is successful, provide error
-//                //TODO get pixel size from somewhere???
-//                //TODO BEGIN SECOND COLLECTION WHILE FIRST IS STITCHING
-//                logger.info("Begin stitching")
-//                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-//                        sampleLabel, scanTypeWithIndex as String, annotation.getName(),
-//                        qupathGUI, currentQuPathProject, preferences.compression)
-//                logger.info(stitchedImagePathStr)
-//
-//                //Check if the tiles should be deleted from the collection folder
-//                if (preferences.tileHandling == "Delete")
-//                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-//                if (preferences.tileHandling == "Zip") {
-//                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-//                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-//                }
+
             }
             // Post-stitching tasks like deleting or zipping tiles
             //Check if the tiles should be deleted from the collection folder

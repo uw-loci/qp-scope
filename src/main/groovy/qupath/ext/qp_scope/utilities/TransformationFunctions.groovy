@@ -113,111 +113,48 @@ class TransformationFunctions {
         }
     }
 
-/**
- * Updates an AffineTransform based on the difference between coordinates in QPath and microscope stage.
- * It applies the existing transformation to the QPath coordinates and then adjusts the transformation
- * to align these with the given microscope stage coordinates.
- *
- * @param transformation The current AffineTransform object.
- * @param coordinatesQP  List of QPath coordinates (as Strings) to be transformed.
- * @param coordinatesMM  List of microscope stage coordinates (as Strings) for alignment.
- * @return An updated AffineTransform object that reflects the necessary shift to align QPath coordinates
- *         with microscope stage coordinates after scaling.
- */
+
 //TODO adjust for situations where the macro image is flipped
-
-//    static AffineTransform initialTransformation(AffineTransform transformation, List<String> coordinatesQP, List<String> coordinatesMM) {
-//        // Convert coordinatesQP and coordinatesMM elements from String to Double
-//        double xQP = coordinatesQP[0].toDouble()
-//        double yQP = coordinatesQP[1].toDouble()
-//        double xMM = coordinatesMM[0].toDouble()
-//        double yMM = coordinatesMM[1].toDouble()
-//
-//        // Invert the Y-coordinate for the QP coordinates
-//        yQP = -yQP; // Modify this line based on which system's Y-axis you decide to invert
-//
-//        // Apply the existing transformation to the QP coordinates
-//        Point2D.Double transformedPointQP = new Point2D.Double()
-//        transformation.transform(new Point2D.Double(xQP, yQP), transformedPointQP)
-//        logger.info("Initial transformation - QP point: ${transformedPointQP.x} ${transformedPointQP.y}")
-//
-//        // Attempt to invert the transformation
-//        try {
-//            Point2D.Double stagePointInQP = new Point2D.Double(xMM, yMM)
-//            transformation.inverseTransform(stagePointInQP, stagePointInQP)
-//
-//            // Calculate the additional translation needed
-//            double additionalXShift = stagePointInQP.x - transformedPointQP.x
-//            double additionalYShift = stagePointInQP.y - transformedPointQP.y
-//
-//            logger.info("Additional xShift: $additionalXShift")
-//            logger.info("Additional yShift: $additionalYShift")
-//
-//            // Create a new AffineTransform that includes this additional translation
-//            AffineTransform updatedTransformation = new AffineTransform(transformation)
-//            updatedTransformation.translate(additionalXShift, additionalYShift)
-//
-//            // Check if the transformed QP coordinates match the MM coordinates
-//            Point2D.Double checkTransformedQP = new Point2D.Double(xQP, yQP)
-//            updatedTransformation.transform(checkTransformedQP, checkTransformedQP)
-//            logger.info("Transformed QP coordinates with updated transformation: ${checkTransformedQP.x}, ${checkTransformedQP.y}")
-//            logger.info("Expected MM coordinates: $xMM, $yMM")
-//            double TOLERANCE = 10
-//            if (Math.abs(checkTransformedQP.x - xMM) < TOLERANCE && Math.abs(checkTransformedQP.y - yMM) < TOLERANCE) {
-//                logger.info("Success: Transformed QP coordinates match MM coordinates within tolerance.")
-//            } else {
-//                logger.warn("Mismatch: Transformed QP coordinates do not match MM coordinates within tolerance.")
-//            }
-//
-//            return updatedTransformation
-//
-//        } catch (NoninvertibleTransformException e) {
-//            logger.error("Transformation is non-invertible: ", e)
-//            return null;
-//        }
-//    }
-
-
+    /**
+     * Calculates an affine transformation based on scaling and translation.
+     *
+     * @param scalingTransform The AffineTransform object representing the scaling.
+     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
+     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
+     * @return An AffineTransform object representing the combined scaling and translation.
+     */
     static AffineTransform initialTransformation(AffineTransform scalingTransform, List<String> qpCoordinatesList, List<String> stageCoordinatesList) {
-        // Convert input lists to List<Double>, handling both String and Double inputs
-        List<Double> qpCoordinates = qpCoordinatesList.stream()
-                .map(coordinate -> Double.parseDouble(coordinate.toString()))
-                .collect(Collectors.toList());
-        List<Double> stageCoordinates = stageCoordinatesList.stream()
-                .map(coordinate -> Double.parseDouble(coordinate.toString()))
-                .collect(Collectors.toList());
+        // Parse the coordinate strings to double
+        double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
+        double[] mmPoint = stageCoordinatesList.collect { it.toDouble() } as double[]
 
-        logger.info("Starting calculation of initial AffineTransform");
-        logger.info("Initial scaling transformation: " + scalingTransform);
-        logger.info("QuPath coordinates (input): " + qpCoordinates);
-        logger.info("Stage coordinates (target): " + stageCoordinates);
+        logger.info("Parsed qpPoint: ${qpPoint}")
+        logger.info("Parsed mmPoint: ${mmPoint}")
 
-        // Apply scaling and Y-axis inversion to QuPath coordinates
-        Point2D.Double transformedQP = new Point2D.Double(qpCoordinates.get(0) * scalingTransform.getScaleX(),
-                qpCoordinates.get(1) * scalingTransform.getScaleY());
-        logger.info("QuPath coordinates after scaling: [" + transformedQP.x + ", " + transformedQP.y + "]");
+        // Applying the scaling transform to qpPoint
+        Point2D.Double scaledQpPoint = new Point2D.Double()
+        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint)
 
-        // Invert the Y-axis
-        transformedQP.y = -transformedQP.y;
-        logger.info("QuPath coordinates after Y-axis inversion: [" + transformedQP.x + ", " + transformedQP.y + "]");
+        logger.info("Scaled qpPoint: ${scaledQpPoint}")
 
-        // Calculate translation
-        double translateX = stageCoordinates.get(0) - transformedQP.x;
-        double translateY = stageCoordinates.get(1) - transformedQP.y;
-        logger.info("Calculated translation: [" + translateX + ", " + translateY + "]");
+        // Calculate the translation vector
+        double tx = mmPoint[0] - scaledQpPoint.x
+        double ty = mmPoint[1] - scaledQpPoint.y
 
-        // Create a new AffineTransform with scaling, Y-axis inversion, and translation
-        AffineTransform newTransform = new AffineTransform(scalingTransform);
-        newTransform.translate(translateX, translateY);
-        logger.info("New AffineTransform: " + newTransform);
+        logger.info("Calculated translation: tx = ${tx}, ty = ${ty}")
 
-        // Apply the new transformation to the QuPath coordinates to verify the result
-        Point2D.Double verifiedPoint = new Point2D.Double();
-        newTransform.transform(new Point2D.Double(qpCoordinates.get(0), qpCoordinates.get(1)), verifiedPoint);
-        logger.info("Transformed QuPath coordinates using new AffineTransform: [" + verifiedPoint.x + ", " + verifiedPoint.y + "]");
-        logger.info("Expected Stage coordinates: " + stageCoordinates);
+        // Create a new AffineTransform for the translation
+        AffineTransform translationTransform = new AffineTransform()
+        translationTransform.translate(tx, ty)
 
-        return newTransform;
+        // Combine the scaling and translation transforms
+        AffineTransform transform = new AffineTransform()
+        transform.concatenate(scalingTransform)
+        transform.concatenate(translationTransform)
+
+        logger.info("Final AffineTransform: ${transform}")
+
+        return transform
     }
 
 
