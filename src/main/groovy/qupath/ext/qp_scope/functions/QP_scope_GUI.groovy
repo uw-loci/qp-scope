@@ -17,6 +17,8 @@ import qupath.lib.objects.PathObject
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectImageEntry
 import qupath.lib.scripting.QP
+
+import java.awt.geom.Point2D
 import java.util.concurrent.Semaphore
 import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
@@ -112,30 +114,25 @@ class QP_scope_GUI {
 
             // Check if any value is empty
             if (dataCheck) {
-                Map scriptPaths = calculateScriptPaths(pythonScriptPath)
-                String jsonTissueClassfierPathString = scriptPaths.jsonTissueClassfierPathString
-                QuPathGUI qupathGUI = QPEx.getQuPath()
+                AffineTransform scalingTransform = AffineTransform.getScaleInstance(0.153472, -0.153472) // Example scaling transform
+                List<String> qpCoordinatesList = ["2003.3333740234375", "1094.4444580078125"] // Example qpCoordinates
+                List<String> stageCoordinatesList = ["-12490.77", "-1936.179"] // Example stageCoordinates
 
-                //create a projectDetails map with four values that will be needed later, all related to project creation.
-                Map projectDetails = createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
-                Project currentQuPathProject = projectDetails.currentQuPathProject as Project
-                String tempTileDirectory = projectDetails.tempTileDirectory
+                AffineTransform transform = TransformationFunctions.initialTransformation(scalingTransform, qpCoordinatesList, stageCoordinatesList)
+                println("AffineTransform: " + transform)
+                // Apply the transformation to the original qpCoordinates and validate the output
+                double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
+                Point2D.Double transformedPoint = applyTransformation(transform, qpPoint)
+                logger.info("Transformed qpPoint using the AffineTransform: ${transformedPoint}")
 
-                String groovyScriptPath = "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts\\DetectTissue.groovy"
-                String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
-                //logger.info(tissueDetectScript)
-                // Run the modified script
-                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
-
-                //String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
-                //logger.info(tissueDetectScript)
-                // Run the modified script
-                groovyScriptPath = "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\groovyScripts\\SimpleTest.groovy"
-                tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSize, jsonTissueClassfierPathString)
-
-                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             }
         }
+    }
+    static Point2D.Double applyTransformation(AffineTransform transform, double[] point) {
+        Point2D.Double originalPoint = new Point2D.Double(point[0], point[1])
+        Point2D.Double transformedPoint = new Point2D.Double()
+        transform.transform(originalPoint, transformedPoint)
+        return transformedPoint
     }
     static void macroImageInputGUI() {
         // Create the dialog

@@ -123,8 +123,17 @@ class TransformationFunctions {
      * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
      * @return An AffineTransform object representing the combined scaling and translation.
      */
+    /**
+     * Calculates an affine transformation based on scaling and translation.
+     *
+     * @param scalingTransform The AffineTransform object representing the scaling.
+     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
+     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
+     * @return An AffineTransform object representing the combined scaling and translation.
+     */
     static AffineTransform initialTransformation(AffineTransform scalingTransform, List<String> qpCoordinatesList, List<String> stageCoordinatesList) {
         // Parse the coordinate strings to double
+        logger.info("input scaling transform $scalingTransform")
         double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
         double[] mmPoint = stageCoordinatesList.collect { it.toDouble() } as double[]
 
@@ -137,20 +146,15 @@ class TransformationFunctions {
 
         logger.info("Scaled qpPoint: ${scaledQpPoint}")
 
-        // Calculate the translation vector
+        // Calculate the translation vector, adjusted for scaling
         double tx = mmPoint[0] - scaledQpPoint.x
         double ty = mmPoint[1] - scaledQpPoint.y
 
         logger.info("Calculated translation: tx = ${tx}, ty = ${ty}")
 
-        // Create a new AffineTransform for the translation
-        AffineTransform translationTransform = new AffineTransform()
-        translationTransform.translate(tx, ty)
-
-        // Combine the scaling and translation transforms
-        AffineTransform transform = new AffineTransform()
-        transform.concatenate(scalingTransform)
-        transform.concatenate(translationTransform)
+        // Create the combined transform (scaling and translation)
+        AffineTransform transform = new AffineTransform(scalingTransform)
+        transform.translate(tx / scalingTransform.getScaleX(), ty / scalingTransform.getScaleY())
 
         logger.info("Final AffineTransform: ${transform}")
 
