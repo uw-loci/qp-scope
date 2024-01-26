@@ -238,8 +238,10 @@ class QP_scope_GUI {
             logger.info("user adjusted position of tile at $coordinatesQP")
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
             logger.info("Obtained stage coordinates: $currentStageCoordinates_um")
-            transformation = TransformationFunctions.updateTransformation(transformation, coordinatesQP as List<String>, currentStageCoordinates_um)
-
+            logger.info("QuPath coordinates for selected tile: $coordinatesQP")
+            logger.info("affine transform before initial alignment: $transformation")
+            transformation = TransformationFunctions.initialTransformation(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>)
+            logger.info("affine transform after initial alignment: $transformation")
 
 
             // Handle stage alignment for top center tile
@@ -702,7 +704,7 @@ class QP_scope_GUI {
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-            transformation = TransformationFunctions.updateTransformation(transformation, expectedStageXYPositionMicrons as List<String>, currentStageCoordinates_um)
+            transformation = TransformationFunctions.initialTransformation(transformation, expectedStageXYPositionMicrons as List<String>, currentStageCoordinates_um)
         }
 
         // Prepare the results to be returned
