@@ -114,16 +114,19 @@ class QP_scope_GUI {
 
             // Check if any value is empty
             if (dataCheck) {
-                AffineTransform scalingTransform = AffineTransform.getScaleInstance(0.153472, -0.153472) // Example scaling transform
-                List<String> qpCoordinatesList = ["2003.3333740234375", "1094.4444580078125"] // Example qpCoordinates
-                List<String> stageCoordinatesList = ["-12490.77", "-1936.179"] // Example stageCoordinates
-
-                AffineTransform transform = TransformationFunctions.initialTransformation(scalingTransform, qpCoordinatesList, stageCoordinatesList)
-                println("AffineTransform: " + transform)
-                // Apply the transformation to the original qpCoordinates and validate the output
-                double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
-                Point2D.Double transformedPoint = applyTransformation(transform, qpPoint)
-                logger.info("Transformed qpPoint using the AffineTransform: ${transformedPoint}")
+//                AffineTransform scalingTransform = AffineTransform.getScaleInstance(0.153472, -0.153472) // Example scaling transform
+//                List<String> qpCoordinatesList = ["2003.3333740234375", "1094.4444580078125"] // Example qpCoordinates
+//                List<String> stageCoordinatesList = ["-12490.77", "-1936.179"] // Example stageCoordinates
+//
+//                AffineTransform transform = TransformationFunctions.initialTransformation(scalingTransform, qpCoordinatesList, stageCoordinatesList)
+//                println("AffineTransform: " + transform)
+//                // Apply the transformation to the original qpCoordinates and validate the output
+//                double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
+//                Point2D.Double transformedPoint = applyTransformation(transform, qpPoint)
+//                logger.info("Transformed qpPoint using the AffineTransform: ${transformedPoint}")
+                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-13316, -5027.2])
+                sleep(5000)
+                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-11893, -1227.2])
 
             }
         }
