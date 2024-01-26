@@ -214,7 +214,9 @@ class TransformationFunctions {
     static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, Map preferences, QuPathGUI qupathGUI) {
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
         double scale =  (preferences.pixelSizeFirstScanType as Double) / pixelSize
-        double scaleY = isSlideFlipped ? -scale : scale // Invert the Y axis if flip is true
+        double scaleY = isSlideFlipped ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
+        //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
+        //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
 
         transformation.scale(scale, scaleY)
 
