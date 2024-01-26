@@ -43,7 +43,7 @@ class QP_scope_GUI {
     static TextField y1Field = new TextField("")
     static TextField x2Field = new TextField("")
     static TextField y2Field = new TextField("")
-    static TextField scanBox = new TextField("0,0,5000,5000")
+    static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = UtilityFunctions.getPreferences()
     static TextField virtualEnvField = new TextField(preferences.environment)
     static TextField pythonScriptField = new TextField(preferences.pycromanager)
