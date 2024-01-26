@@ -360,8 +360,8 @@ class QP_scope_GUI {
 
                 //Specifically for the case where there is only a bounding box provided
                 List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
-                Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
-                Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+                Double frameWidthMicrons = (preferences.frameWidth as Double) * (preferences.pixelSizeFirstScanType as Double)
+                Double frameHeightMicrons = (preferences.frameHeight as Double)  * (preferences.pixelSizeFirstScanType as Double)
                 UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory, scanTypeWithIndex,
                         frameWidthMicrons,
                         frameHeightMicrons,
@@ -467,13 +467,13 @@ class QP_scope_GUI {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
-
-            Double frameWidthMicrons = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
-            Double frameHeightMicrons = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            //Convert the camera frame width/height into pixels in the image we are working on.
+            Double frameWidthQPpixels = (preferences.frameWidth as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
+            Double frameHeightQPpixels = (preferences.frameHeight as Double) / (preferences.pixelSizeSource as Double) * (preferences.pixelSizeFirstScanType as Double)
             UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                     scanTypeWithIndex,
-                    frameWidthMicrons,
-                    frameHeightMicrons,
+                    frameWidthQPpixels,
+                    frameHeightQPpixels,
                     preferences.overlapPercent as Double,
                     null,
                     true,

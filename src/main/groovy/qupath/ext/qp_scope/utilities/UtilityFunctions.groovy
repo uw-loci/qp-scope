@@ -516,38 +516,47 @@ class UtilityFunctions {
  *
  * @param baseDirectory The base directory where the tiles will be saved.
  * @param imagingModality The type of imaging modality used, e.g., '4x-bf'.
- * @param frameWidth_um The width of each tile in micrometers.
- * @param frameHeight_um The height of each tile in micrometers.
+ * @param frameWidth The width of each tile in either pixels (annotations) or microns (bounding box).
+ * @param frameHeight The height of each tile in in either pixels (annotations) or microns (bounding box).
  * @param overlapPercent The percent overlap between adjacent tiles.
- * @param boundingBoxCoordinates The coordinates for the bounding box if provided, otherwise null.
+ * @param boundingBoxCoordinates The coordinates for the bounding box on the microscope stage in microns if provided, otherwise null.
  * @param createTiles Flag to determine if tiles should be created.
  */
     static void performTilingAndSaveConfiguration(String modalityIndexFolder,
                                                   String imagingModality,
-                                                  double frameWidth_um,
-                                                  double frameHeight_um,
+                                                  double frameWidth,
+                                                  double frameHeight,
                                                   double overlapPercent,
                                                   List<Double> boundingBoxCoordinates = [],
                                                   boolean createTiles = true,
                                                   Collection<PathObject> annotations = []) {
 
         QP.mkdirs(modalityIndexFolder)
-
+        boolean buffer = true
         if (boundingBoxCoordinates) {
             // Tiling logic when bounding box coordinates are provided
             def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")
             QP.mkdirs(tilePath)
-            // Extract coordinates from the bounding box
+            // Extract coordinates from the bounding box, all in microns
             double bBoxX = boundingBoxCoordinates[0]
             double bBoxY = boundingBoxCoordinates[1]
             double x2 = boundingBoxCoordinates[2]
             double y2 = boundingBoxCoordinates[3]
             double bBoxW = x2 - bBoxX
             double bBoxH = y2 - bBoxY
+            //Create a half frame bounds around the area of interest
+            if (buffer) {
+                bBoxX = bBoxX - frameWidth / 2
+                bBoxY = bBoxY - frameHeight/2
+                //One extra full frame, since half frame on each side.
+                bBoxH = bBoxH + frameHeight
+                bBoxW = bBoxW + frameWidth
+
+            }
             // Create an ROI for the bounding box
             def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
-            // Create tile configuration based on the bounding box
-            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth_um, frameHeight_um, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+            // Create tile configuration based on the bounding box, bBox value are in microns
+            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
         } else {
             // Tiling logic for existing annotations
             ImageData imageData = QPEx.getQuPath().getImageData()
@@ -560,7 +569,7 @@ class UtilityFunctions {
                 annotation.setName("${(int) annotation.getROI().getCentroidX()}_${(int) annotation.getROI().getCentroidY()}")
             }
 
-            // Locking the annotations to prevent changes during processing
+            // Locking the annotations to prevent changes after processing
             QP.getAnnotationObjects().each { it.setLocked(true) }
 
             // Iterate over each annotation to create tile configuration
@@ -574,7 +583,8 @@ class UtilityFunctions {
                 // Create folder for each annotation's tiles
                 def tilePath = QP.buildFilePath(modalityIndexFolder, annotationName)
                 QP.mkdirs(tilePath)
-                // Create tile configuration for each annotation
+
+                // Create tile configuration for each annotation, bBox values are in pixels
                 createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth_um, frameHeight_um, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
         }

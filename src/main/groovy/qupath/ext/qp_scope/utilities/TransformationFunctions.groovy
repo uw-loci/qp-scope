@@ -115,14 +115,7 @@ class TransformationFunctions {
 
 
 //TODO adjust for situations where the macro image is flipped
-    /**
-     * Calculates an affine transformation based on scaling and translation.
-     *
-     * @param scalingTransform The AffineTransform object representing the scaling.
-     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
-     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
-     * @return An AffineTransform object representing the combined scaling and translation.
-     */
+
     /**
      * Calculates an affine transformation based on scaling and translation.
      *

@@ -78,14 +78,5 @@ class MinorFunctions {
             return null // No match found
         }
     }
-    static double parseDoubleSafely(String str) {
-        try {
-            return str?.trim()?.toDouble() ?: 0.0
-        } catch (NumberFormatException e) {
-            logger.error("NumberFormatException in parsing string to double: ${e.message}")
-            return 0.0
-        }
-    }
-
 
 }
