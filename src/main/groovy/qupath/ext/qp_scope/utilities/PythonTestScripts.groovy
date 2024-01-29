@@ -55,6 +55,14 @@ import os
 import sys
 import shutil
 import glob
+from multiprocessing import Pool
+
+def copy_file(file, dest_dir):
+    try:
+        shutil.copy(file, dest_dir)
+        print(f"Copied {file} to {dest_dir}")
+    except Exception as e:
+        print(f"Error copying file {file}: {e}")
 
 def copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion):
     
@@ -80,12 +88,9 @@ def copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion):
         print(f"No .tif files found in {TILES_LOCATION}")
         return False
 
-    for file in tif_files:
-        try:
-            print(file)
-            shutil.copy(file, dest_dir)
-        except Exception as e:
-            print(f"Error copying file {file}: {e}")
+    # Use multiprocessing to copy files in parallel
+    with Pool() as pool:
+        pool.starmap(copy_file, [(file, dest_dir) for file in tif_files])
 
     return True
 
@@ -97,9 +102,7 @@ if len(sys.argv) == 5:
     sampleLabel = sys.argv[2]
     imageType = sys.argv[3]
     subregion = sys.argv[4]
-        # Check if subregion is in the format of a bounding box
-    if '[' in subregion and ']' in subregion:
-        subregion = "bounds"
+
 else:
     # Assign default values
     projectsFolderPath = r"C:\\ImageAnalysis\\QPExtensionTest\\data\\slides"
@@ -118,6 +121,7 @@ if not success:
     print("File copying did not complete successfully.")
 else:
     print("File copying completed successfully.")
+
 
 """
         return microscopeAcquisitionTest
