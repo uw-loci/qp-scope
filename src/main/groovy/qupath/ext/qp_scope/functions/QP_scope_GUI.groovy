@@ -113,7 +113,9 @@ class QP_scope_GUI {
 
 
             // Check if any value is empty
+
             if (dataCheck) {
+                QuPathGUI qupathGUI = QPEx.getQuPath()
 //                AffineTransform scalingTransform = AffineTransform.getScaleInstance(0.153472, -0.153472) // Example scaling transform
 //                List<String> qpCoordinatesList = ["2003.3333740234375", "1094.4444580078125"] // Example qpCoordinates
 //                List<String> stageCoordinatesList = ["-12490.77", "-1936.179"] // Example stageCoordinates
@@ -124,9 +126,34 @@ class QP_scope_GUI {
 //                double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
 //                Point2D.Double transformedPoint = applyTransformation(transform, qpPoint)
 //                logger.info("Transformed qpPoint using the AffineTransform: ${transformedPoint}")
-                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-13316, -5027.2])
-                sleep(5000)
-                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-11893, -1227.2])
+//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-13316, -5027.2])
+//                sleep(5000)
+//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-11893, -1227.2])
+                def qp_test_coords_1 = [2216.9667073567707, 1094.4444580078125]
+                def stage_test_coords_1 = [-11797.03, -1374.9]
+                def qp_test_coords_2 = [2003.3333740234375, 1573.277791341146]
+                def stage_test_coords_2  = [-13371, -4819.9]
+                def qp_test_coords_3 = [2110.150040690104, 1972.3055691189236]
+                def stage_test_coords_3  = [-11873.289, -8163.269]
+                def qp_test_coords_4 = [1896.516707356771, 1972.3055691189236]
+                def stage_test_coords_4  = [-11856.86, -8028.46]
+                AffineTransform transformation = new AffineTransform() // Start with the identity matrix
+                //double scale =  (preferences.pixelSizeFirstScanType as Double) / (pixelSize as Double)
+                double scale =  (pixelSize as Double)/ (preferences.pixelSizeFirstScanType as Double)
+                //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
+                //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
+
+                transformation.scale(scale, -scale)
+                transformation = TransformationFunctions.initialTransformation(transformation,
+                        qp_test_coords_1 as List<String>,
+                        stage_test_coords_1 as List<String>)
+                logger.info("transformation is $transformation")
+                def output_stage_1 = TransformationFunctions.QPtoMicroscopeCoordinates(qp_test_coords_1, transformation)
+                def output_stage_2 = TransformationFunctions.QPtoMicroscopeCoordinates(qp_test_coords_2, transformation)
+                logger.info("Converted $qp_test_coords_1 to $output_stage_1")
+                logger.info ("expected value was: $stage_test_coords_1")
+                logger.info("Converted $qp_test_coords_2 to $output_stage_2")
+                logger.info("expected value was: $stage_test_coords_2")
 
             }
         }
