@@ -397,7 +397,7 @@ class UtilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [pycromanager           : "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\4x_bf_scan_pycromanager.py",
+        return [pycromanager           : "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py",
                 environment            : "C:\\Users\\lociuser\\miniconda3\\envs\\spath",
                 projects               : "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides",
                 extensionPath           : "C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope",
@@ -583,7 +583,14 @@ class UtilityFunctions {
                 // Create folder for each annotation's tiles
                 def tilePath = QP.buildFilePath(modalityIndexFolder, annotationName)
                 QP.mkdirs(tilePath)
-
+                //Create a half frame bounds around the area of interest
+                if (buffer) {
+                    bBoxX = bBoxX - frameWidth / 2
+                    bBoxY = bBoxY - frameHeight/2
+                    //One extra full frame, since half frame on each side.
+                    bBoxH = bBoxH + frameHeight
+                    bBoxW = bBoxW + frameWidth
+                }
                 // Create tile configuration for each annotation, bBox values are in pixels
                 createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
