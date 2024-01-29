@@ -401,7 +401,7 @@ class QP_scope_GUI {
                 List args = [projectsFolderPath,
                              sampleLabel,
                              scanTypeWithIndex,
-                             "[$x1, $y1, $x2, $y2]"]
+                             "bounds"]
                 //TODO can we create non-blocking python code
                 UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
