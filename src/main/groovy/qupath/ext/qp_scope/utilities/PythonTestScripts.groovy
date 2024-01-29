@@ -94,34 +94,37 @@ def copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion):
 
     return True
 
-print("Python script started.")
+def main():
+    print("Python script started.")
+    
+    if len(sys.argv) == 5:
+        projectsFolderPath = sys.argv[1]
+        sampleLabel = sys.argv[2]
+        imageType = sys.argv[3]
+        subregion = sys.argv[4]
+        if '[' in subregion and ']' in subregion:
+            subregion = "bounds"
+    else:
+        # Assign default values
+        projectsFolderPath = r"C:\\ImageAnalysis\\QPExtensionTest\\data\\slides"
+        sampleLabel = "First_Test"
+        imageType = "4x_bf_1"
+        subregion = "2914_1730"
 
-# Check if sufficient arguments are provided, else use default values
-if len(sys.argv) == 5:
-    projectsFolderPath = sys.argv[1]
-    sampleLabel = sys.argv[2]
-    imageType = sys.argv[3]
-    subregion = sys.argv[4]
+    print(f"Projects Folder Path: {projectsFolderPath}")
+    print(f"Sample Label: {sampleLabel}")
+    print(f"Image Type: {imageType}")
+    print(f"Subregion: {subregion}")
 
-else:
-    # Assign default values
-    projectsFolderPath = r"C:\\ImageAnalysis\\QPExtensionTest\\data\\slides"
-    sampleLabel = "First_Test"
-    imageType = "4x_bf_1"
-    subregion = "2914_1730"
+    success = copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion)
 
-print(f"Projects Folder Path: {projectsFolderPath}")
-print(f"Sample Label: {sampleLabel}")
-print(f"Image Type: {imageType}")
-print(f"Subregion: {subregion}")
+    if not success:
+        print("File copying did not complete successfully.")
+    else:
+        print("File copying completed successfully.")
 
-success = copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion)
-
-if not success:
-    print("File copying did not complete successfully.")
-else:
-    print("File copying completed successfully.")
-
+if __name__ == '__main__':
+    main()
 
 """
         return microscopeAcquisitionTest

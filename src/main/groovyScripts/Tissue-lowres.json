@@ -4,11 +4,11 @@
     "inputPadding": 0,
     "inputResolution": {
       "pixelWidth": {
-        "value": 8.0,
+        "value": 115.2,
         "unit": "µm"
       },
       "pixelHeight": {
-        "value": 8.0,
+        "value": 115.2,
         "unit": "µm"
       },
       "zSpacing": {
@@ -46,8 +46,8 @@
       "ops": [
         {
           "type": "op.filters.gaussian",
-          "sigmaX": 1.0,
-          "sigmaY": 1.0
+          "sigmaX": 2.0,
+          "sigmaY": 2.0
         },
         {
           "type": "op.threshold.constant",
