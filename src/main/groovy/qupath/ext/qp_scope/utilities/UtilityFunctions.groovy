@@ -40,94 +40,7 @@ class UtilityFunctions {
     static final logger = LoggerFactory.getLogger(UtilityFunctions.class)
 
 
-    static boolean addImageToProject(File stitchedImagePath, Project project) {
 
-        def imagePath = stitchedImagePath.toURI().toString()
-        //logger.info(imagePath)
-
-        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath)
-        //logger.info(support as String)
-        def builder = support.builders.get(0)
-        // Make sure we don't have null
-        if (builder == null) {
-            logger.warn("Image not supported: " + imagePath)
-            return false
-        }
-
-        // Add the image as entry to the project
-        logger.info("Adding: " + imagePath)
-        if (project == null) {
-            logger.warn("Project is null, there must have been a problem creating the project")
-            return false
-        }
-        Object entry = project.addImage(builder)
-
-        // Set a particular image type
-        def imageData = entry.readImageData()
-        // Write a thumbnail if we can
-        var img = ProjectCommands.getThumbnailRGB(imageData.getServer())
-        entry.setThumbnail(img)
-        // Set a particular image type automatically (based on /qupath/lib/gui/QuPathGUI.java#L2847)
-        // https://forum.image.sc/t/creating-project-from-command-line/45608/24
-        def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(QuPathGUI.getTileCacheSizeBytes());
-        def imageType = GuiTools.estimateImageType(imageData.getServer(), imageRegionStore.getThumbnail(imageData.getServer(), 0, 0, true));
-        imageData.setImageType(imageType)
-        //imageData.setImageType(ImageData.ImageType.BRIGHTFIELD_H_DAB)
-        entry.saveImageData(imageData)
-
-
-
-        // Add an entry name (the filename)
-        entry.setImageName(stitchedImagePath.getName())
-        project.syncChanges()
-        return true
-
-    }
-
-    static Project createProjectFolder(String projectsFolderPath, String sampleLabel, String scanType) {
-        //TODO check if a project is open! It probably should not be?
-
-        // Ensure that the projectsFolderPath exists, if it does not, create it.
-        File projectsFolder = new File(projectsFolderPath)
-        if (!projectsFolder.exists()) {
-            projectsFolder.mkdirs()
-        }
-
-        // Within projectsFolderPath, check for a folder named sampleLabel, if it does not exist, create it.
-        File sampleLabelFolder = new File(projectsFolder, sampleLabel)
-        if (!sampleLabelFolder.exists()) {
-            sampleLabelFolder.mkdirs()
-        }
-
-        // Check for a .qpproj file in the sampleLabel folder
-        File[] qpprojFiles = sampleLabelFolder.listFiles({ dir, name -> name.endsWith('.qpproj') } as FilenameFilter)
-        //Create a QuPath project in the sampleLabelFolder, within the projects folder, provided there are no existing .qpproj files
-        Project project = null
-        if (qpprojFiles == null || qpprojFiles.length == 0) {
-            project = Projects.createProject(sampleLabelFolder, BufferedImage.class)
-        } else {
-            //WARNING: This assumes there will be only one file ending in .qpproj
-            // this should USUALLY be a safe assumption
-            if (qpprojFiles.length > 1) {
-                Dialogs.showWarningNotification("Warning!", "Multiple Project files found, may cause unexpected behavior!")
-            }
-
-            project = ProjectIO.loadProject(qpprojFiles[0], BufferedImage.class)
-        }
-
-        if (project == null) {
-            Dialogs.showWarningNotification("Warning!", "Project is null!")
-        }
-        // Within projectsFolderPath, check for a folder with the name "SlideImages", if it does not exist, create it
-        String slideImagesFolderPathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-        File slideImagesFolder = new File(slideImagesFolderPathStr)
-
-        if (!slideImagesFolder.exists()) {
-            slideImagesFolder.mkdirs()
-        }
-
-        return project
-    }
 
     /**
      * Performs image stitching, renames the stitched image, and updates the QuPath project with the renamed image.
@@ -167,7 +80,7 @@ class UtilityFunctions {
        Platform.runLater {
             logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
             // Add the (possibly renamed) image to the project
-            addImageToProject(adjustedFilePath, currentQuPathProject)
+            QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject)
             def matchingImage = currentQuPathProject.getImageList().find { image ->
                 new File(image.getImageName()).name == adjustedFilePath.name
             }

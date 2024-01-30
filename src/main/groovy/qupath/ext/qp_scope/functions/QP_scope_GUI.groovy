@@ -7,6 +7,7 @@ import javafx.scene.layout.HBox
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
 import qupath.ext.basicstitching.stitching.StitchingImplementations
+import qupath.ext.qp_scope.utilities.QPProjectFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
 import qupath.ext.qp_scope.utilities.MinorFunctions
 import qupath.ext.qp_scope.utilities.TransformationFunctions
@@ -202,9 +203,14 @@ class QP_scope_GUI {
             Map scriptPaths = calculateScriptPaths(groovyScriptPath)
             String jsonTissueClassfierPathString = scriptPaths.jsonTissueClassfierPathString
             QuPathGUI qupathGUI = QPEx.getQuPath()
-
+            Map projectDetails
             //create a projectDetails map with four values that will be needed later, all related to project creation.
-            Map projectDetails = createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
+            if (QPEx.getProject() == null) {
+                projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
+            }else{
+                //If the project already exists and an image is open, return that information
+                projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel,preferences)
+            }
             Project currentQuPathProject = projectDetails.currentQuPathProject as Project
             String tempTileDirectory = projectDetails.tempTileDirectory
 
@@ -376,7 +382,7 @@ class QP_scope_GUI {
             // Check if any value is empty
             if (dataCheck) {
                 QuPathGUI qupathGUI = QPEx.getQuPath()
-                Map projectDetails = createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
+                Map projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences)
                 Project currentQuPathProject = projectDetails.currentQuPathProject as Project
                 String tempTileDirectory = projectDetails.tempTileDirectory
                 String scanTypeWithIndex = projectDetails.scanTypeWithIndex
@@ -760,60 +766,6 @@ class QP_scope_GUI {
         ]
     }
 
-    /**
-     * Creates a new QuPath project, adds the current image to it, and opens the project.
-     *
-     * @param projectsFolderPath The path where the project will be located.
-     * @param sampleLabel The label for the sample.
-     * @param preferences User preferences that include settings like scan type.
-     * @return A map containing the
-     * created project
-     * temporary tile directory String
-     * matchingImage ProjectImageEntry
-     * scanTypeWithIndex string
-     */
-    static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI, String projectsFolderPath, String sampleLabel, Map<String,String> preferences) {
-        Project currentQuPathProject = UtilityFunctions.createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
-
-        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
-        String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
-
-        String macroImagePath = null
-        ProjectImageEntry matchingImage = null
-
-        if (QP.getCurrentImageData() != null) {
-            logger.info("current image exists")
-            String serverPath = QP.getCurrentImageData().getServerPath()
-            logger.info(serverPath)
-            macroImagePath = MinorFunctions.extractFilePath(serverPath)
-            logger.info(macroImagePath)
-            if (macroImagePath != null) {
-                logger.info("Extracted file path: $macroImagePath")
-                UtilityFunctions.addImageToProject(new File(macroImagePath), currentQuPathProject)
-                logger.info("image added to project")
-                qupathGUI.setProject(currentQuPathProject)
-                matchingImage = currentQuPathProject.getImageList().find { image ->
-                    new File(image.getImageName()).name == new File(macroImagePath).name
-                }
-                logger.info("open image ")
-                qupathGUI.openImageEntry(matchingImage)
-                qupathGUI.refreshProject()
-            } else {
-                logger.info("File path could not be extracted.")
-            }
-        } else {
-            logger.info("No current image data available.")
-        }
-
-
-
-        return [
-                'matchingImage': matchingImage,
-                'scanTypeWithIndex': scanTypeWithIndex,
-                'currentQuPathProject': currentQuPathProject,
-                'tempTileDirectory': tempTileDirectory
-        ]
-    }
 
 
 
