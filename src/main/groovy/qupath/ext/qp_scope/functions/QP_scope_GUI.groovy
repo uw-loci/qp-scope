@@ -93,7 +93,7 @@ class QP_scope_GUI {
             def boxString = scanBox.getText()
             //Boolean to check whether to proceed with running the microscope data collection
             boolean dataCheck = true
-            def pixelSize = preferences.pixelSizeFirstScanType
+            def pixelSize = preferences.pixelSizeSource
 
             // Continue with previous behavior using coordinates
 
@@ -116,19 +116,7 @@ class QP_scope_GUI {
 
             if (dataCheck) {
                 QuPathGUI qupathGUI = QPEx.getQuPath()
-//                AffineTransform scalingTransform = AffineTransform.getScaleInstance(0.153472, -0.153472) // Example scaling transform
-//                List<String> qpCoordinatesList = ["2003.3333740234375", "1094.4444580078125"] // Example qpCoordinates
-//                List<String> stageCoordinatesList = ["-12490.77", "-1936.179"] // Example stageCoordinates
-//
-//                AffineTransform transform = TransformationFunctions.initialTransformation(scalingTransform, qpCoordinatesList, stageCoordinatesList)
-//                println("AffineTransform: " + transform)
-//                // Apply the transformation to the original qpCoordinates and validate the output
-//                double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
-//                Point2D.Double transformedPoint = applyTransformation(transform, qpPoint)
-//                logger.info("Transformed qpPoint using the AffineTransform: ${transformedPoint}")
-//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-13316, -5027.2])
-//                sleep(5000)
-//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [-11893, -1227.2])
+
                 def qp_test_coords_1 = [2216.9667073567707, 1094.4444580078125]
                 def stage_test_coords_1 = [-11797.03, -1374.9]
                 def qp_test_coords_2 = [2003.3333740234375, 1573.277791341146]
@@ -137,23 +125,31 @@ class QP_scope_GUI {
                 def stage_test_coords_3  = [-11873.289, -8163.269]
                 def qp_test_coords_4 = [1896.516707356771, 1972.3055691189236]
                 def stage_test_coords_4  = [-11856.86, -8028.46]
-                AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-                //double scale =  (preferences.pixelSizeFirstScanType as Double) / (pixelSize as Double)
-                double scale =  (pixelSize as Double)/ (preferences.pixelSizeFirstScanType as Double)
-                //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
-                //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
+                def qp_test_list = [qp_test_coords_1,qp_test_coords_2, qp_test_coords_3, qp_test_coords_4]
+                def stage_test_list = [stage_test_coords_1,stage_test_coords_2, stage_test_coords_3, stage_test_coords_4]
 
-                transformation.scale(scale, -scale)
-                transformation = TransformationFunctions.initialTransformation(transformation,
-                        qp_test_coords_1 as List<String>,
-                        stage_test_coords_1 as List<String>)
-                logger.info("transformation is $transformation")
-                def output_stage_1 = TransformationFunctions.QPtoMicroscopeCoordinates(qp_test_coords_1, transformation)
-                def output_stage_2 = TransformationFunctions.QPtoMicroscopeCoordinates(qp_test_coords_2, transformation)
-                logger.info("Converted $qp_test_coords_1 to $output_stage_1")
-                logger.info ("expected value was: $stage_test_coords_1")
-                logger.info("Converted $qp_test_coords_2 to $output_stage_2")
-                logger.info("expected value was: $stage_test_coords_2")
+                for (int i = 0; i < qp_test_list.size(); i++) {
+                    List<Double> qpTestCoords = qp_test_list[i]
+                    List<Double> stageTestCoords = stage_test_list[i]
+
+                    // Create initial scaling transform
+                    AffineTransform transformation = new AffineTransform()
+                    double scale =  (pixelSize as Double)/ (preferences.pixelSizeFirstScanType as Double)
+                    logger.info("scale is $scale")
+                    transformation.scale(scale, -scale)
+                    logger.info("transformation at this point should be 0.15, 0,0  0, 0.15, 0: $transformation")
+                    // Calculate the transformation for the current pair
+                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, qpTestCoords.collect { it.toString() }, stageTestCoords.collect { it.toString() })
+                    logger.info("Transformation for pair ${i + 1}: $transformation")
+
+                    // Apply the transformation to each test coordinate
+                    qp_test_list.each { qpCoords ->
+                        Point2D.Double transformedPoint = applyTransformation(transformation, qpCoords as double[])
+                        logger.info("Converted $qpCoords to $transformedPoint")
+                        logger.info("Expected value was: ${stage_test_list[qp_test_list.indexOf(qpCoords)]}")
+                    }
+                }
+
 
             }
         }
@@ -241,7 +237,8 @@ class QP_scope_GUI {
             /////////////////////////////////////////
             //create a basic affine transformation, add the scaling information and a possible Y axis flip
             //Then create a dialog that asks the user to select a single detection tile
-            AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSize as Double, isSlideFlipped, preferences, qupathGUI)
+            AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSize as Double, isSlideFlipped, preferences)
+            logger.info("Initial affine transform, scaling only: $transformation")
             //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
             if (transformation == null){
                 return
@@ -264,7 +261,7 @@ class QP_scope_GUI {
             logger.info("Obtained stage coordinates: $currentStageCoordinates_um")
             logger.info("QuPath coordinates for selected tile: $coordinatesQP")
             logger.info("affine transform before initial alignment: $transformation")
-            transformation = TransformationFunctions.initialTransformation(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>)
+            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>)
             logger.info("affine transform after initial alignment: $transformation")
 
 
@@ -717,7 +714,7 @@ class QP_scope_GUI {
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-            transformation = TransformationFunctions.initialTransformation(transformation, QPPixelCoordinates as List<String>, currentStageCoordinates_um)
+            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<String>, currentStageCoordinates_um)
         }
 
         // Prepare the results to be returned
