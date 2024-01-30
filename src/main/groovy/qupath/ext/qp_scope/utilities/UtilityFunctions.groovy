@@ -397,10 +397,18 @@ class UtilityFunctions {
         //If preferences are null or missing, throw an error and close
         //Open to discussion whether scan types should be included here or typed every time, or some other option
         //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [pycromanager           : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
-                environment            : "C:\\Anaconda\\envs\\paquo",
-                projects               : "C:\\ImageAnalysis\\QPExtensionTest\\data\\slides",
-                extensionPath          : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope",
+        return [
+                //pycromanager           : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
+                //environment            : "C:\\Anaconda\\envs\\paquo",
+                //projects               : "C:\\ImageAnalysis\\QPExtensionTest\\data\\slides",
+                //extensionPath          : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope",
+
+                pycromanager           : "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py",
+                environment            : "C:\\Users\\lociuser\\miniconda3\\envs\\spath",
+                projects               : "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides",
+                extensionPath          : "C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope",
+
+
                 tissueDetection        : "DetectTissue.groovy",
                 firstScanType          : "4x_bf",
                 secondScanType         : "20x_bf",
