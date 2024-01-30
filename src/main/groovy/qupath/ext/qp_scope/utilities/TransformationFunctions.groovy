@@ -124,7 +124,7 @@ class TransformationFunctions {
      * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
      * @return An AffineTransform object representing the combined scaling and translation.
      */
-    static AffineTransform initialTransformation(AffineTransform scalingTransform, List<String> qpCoordinatesList, List<String> stageCoordinatesList) {
+    static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform, List<String> qpCoordinatesList, List<String> stageCoordinatesList) {
         // Parse the coordinate strings to double
         logger.info("input scaling transform $scalingTransform")
         double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
@@ -208,9 +208,9 @@ class TransformationFunctions {
  * @param qupathGUI The QuPath GUI instance used for executing GUI-related operations.
  * @return An AffineTransform object set up based on the provided parameters, or null if the user cancels the operation.
  */
-    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, Map preferences, QuPathGUI qupathGUI) {
+    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, Map preferences) {
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-        double scale =  (preferences.pixelSizeFirstScanType as Double) / pixelSize
+        double scale =  pixelSize/(preferences.pixelSizeFirstScanType as Double)
         double scaleY = isSlideFlipped ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
         //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.

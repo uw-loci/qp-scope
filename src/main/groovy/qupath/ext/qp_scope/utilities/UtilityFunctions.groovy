@@ -424,6 +424,7 @@ class UtilityFunctions {
     }
 
 
+
     /**
      * Deletes all the tiles within the provided folder and the folder itself.
      *
