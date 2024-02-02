@@ -4,31 +4,25 @@ import javafx.application.Platform
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
-import qupath.lib.gui.commands.ProjectCommands
-import qupath.lib.gui.dialogs.Dialogs
+
 import qupath.lib.gui.scripting.QPEx
-import qupath.lib.gui.tools.GuiTools
 import qupath.lib.images.ImageData
 import qupath.lib.objects.PathObject
 import qupath.lib.regions.ImagePlane
 import qupath.lib.roi.RectangleROI
 import qupath.lib.roi.interfaces.ROI
 import qupath.lib.scripting.QP
-import qupath.lib.images.servers.ImageServerProvider
-import qupath.lib.images.writers.ome.OMEPyramidWriter
+
 import qupath.lib.projects.Project
-import qupath.lib.projects.ProjectIO
-import qupath.lib.projects.Projects
+
 import qupath.lib.objects.PathObjects
 import qupath.ext.basicstitching.stitching.StitchingImplementations
-import qupath.lib.gui.images.stores.ImageRegionStoreFactory
-import java.awt.image.BufferedImage
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Matcher
-import java.util.regex.Pattern
+
 import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -66,8 +60,12 @@ class UtilityFunctions {
 
         logger.info("Calling stitchCore with $tileImageInputFolder")
         String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
-                tileImageInputFolder, stitchedImageOutputFolder, compression,
-                0, 1, annotationName)
+                tileImageInputFolder,
+                stitchedImageOutputFolder,
+                compression,
+                0,
+                1,
+                annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
         String adjustedFileName = sampleLabel+ '_' + scanTypeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)

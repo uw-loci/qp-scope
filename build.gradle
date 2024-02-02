@@ -1,27 +1,31 @@
 plugins {
     // Main gradle plugin for building a Java library
-    //id 'java-library'
+    id 'java-library'
     // Support writing the extension in Groovy (remove this if you don't want to)
     id 'groovy'
     // To create a shadow/fat jar that bundle up all dependencies
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     // Include this plugin to avoid downloading JavaCPP dependencies for all platforms
     id 'org.bytedeco.gradle-javacpp-platform'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
-//the module name
-ext.moduleName = 'qupath.extension.qp_scope'
 
-//Define the extension version & provide a short description
-version = "0.1.0"
-description = 'A basic QuPath extension for stitching.'
+ext.moduleName = 'qupath.extension.qp-scope'
 
-// TODO: Specify the QuPath version, compatible with the extension.
+
+base {
+    archivesName = rootProject.name
+    version = '0.2.0'
+    description = 'Control a microscope through a Python interface to MicroManager.'
+}
+
+
 // The default 'gradle.ext.qupathVersion' reads this from settings.gradle.
 ext.qupathVersion = gradle.ext.qupathVersion
 
-// TODO: Specify the Java version compatible with the extension
-// Generally 11 for QuPath v0.4.3, but will be 17 for QuPath v0.5.0
+
+// Should be Java 17 for QuPath v0.5.0
 ext.qupathJavaVersion = 17
 
 /**
@@ -38,12 +42,8 @@ ext.qupathJavaVersion = 17
 dependencies {
 
     // Main QuPath user interface jar.
-    // Automatically includes other QuPath jars as sub-dependencies.
+    // Automatically includes other QuPath jars as subdependencies.
     shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
-    //Access to BioFormats extension for writing ome.tif files
-    implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
-    implementation "qupath.ext.basicstitching:BasicStitching:0.1.0"
-
 
     // For logging - the version comes from QuPath's version catalog at
     // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml
@@ -55,8 +55,8 @@ dependencies {
 
     testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     testImplementation libs.junit
+    implementation "qupath.ext.basicstitching:basic-stitching:0.2.0"
 }
-
 
 /*
  * Manifest info
@@ -69,13 +69,26 @@ jar {
     }
 }
 
+/**
+ * Copy necessary attributes, see
+ * - https://github.com/qupath/qupath-extension-template/issues/9
+ * - https://github.com/openjfx/javafx-gradle-plugin#variants
+ */
+configurations.shadow  {
+    def runtimeAttributes = configurations.runtimeClasspath.attributes
+    runtimeAttributes.keySet().each { key ->
+        if (key in [Usage.USAGE_ATTRIBUTE, OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE, MachineArchitecture.ARCHITECTURE_ATTRIBUTE])
+            attributes.attribute(key, runtimeAttributes.getAttribute(key))
+    }
+}
+
 /*
  * Copy the LICENSE file into the jar... if we have one (we should!)
  */
 processResources {
-    from("${projectDir}/LICENSE") {
-        into 'licenses/'
-    }
+  from ("${projectDir}/LICENSE") {
+    into 'licenses/'
+  }
 }
 
 /*
@@ -90,7 +103,7 @@ tasks.register("copyDependencies", Copy) {
 }
 
 /*
- * Ensure Java 11 compatibility, and include sources and javadocs when building.
+ * Ensure Java 17 compatibility, and include sources and javadocs when building.
  */
 java {
     toolchain {
@@ -104,26 +117,26 @@ java {
  * Create javadocs for all modules/packages in one place.
  * Use -PstrictJavadoc=true to fail on error with doclint (which is rather strict).
  */
-tasks.withType(Javadoc).configureEach {
-    options.encoding = 'UTF-8'
-    def strictJavadoc = findProperty('strictJavadoc')
-    if (!strictJavadoc) {
+tasks.withType(Javadoc) {
+	options.encoding = 'UTF-8'
+	def strictJavadoc = findProperty('strictJavadoc')
+	if (!strictJavadoc) {
         options.addStringOption('Xdoclint:none', '-quiet')
-    }
+	}
 }
 
 /*
  * Specify that the encoding should be UTF-8 for source files
  */
 tasks.named('compileJava') {
-    options.encoding = 'UTF-8'
+	options.encoding = 'UTF-8'
 }
 
 /*
  * Avoid 'Entry .gitkeep is a duplicate but no duplicate handling strategy has been set.'
  * when using withSourcesJar()
  */
-tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
+tasks.withType(org.gradle.jvm.tasks.Jar) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
@@ -141,14 +154,18 @@ repositories {
     // Add this if you need access to dependencies only installed locally
     mavenLocal()
 
-    flatDir {
-        dirs 'C:/ImageAnalysis/QPExtensionTest/BasicStitching/build/libs'
-    }
-
     mavenCentral()
 
     // Add scijava - which is where QuPath's jars are hosted
     maven {
         url "https://maven.scijava.org/content/groups/public"
     }
+//    maven {
+//        url "https://maven.scijava.org/content/repositories/releases"
+//    }
+//
+//    maven {
+//        url "https://maven.scijava.org/content/repositories/snapshots"
+//    }
+
 }

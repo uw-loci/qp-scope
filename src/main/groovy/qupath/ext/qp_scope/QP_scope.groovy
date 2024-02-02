@@ -15,7 +15,7 @@ class QP_scope implements QuPathExtension {
     // Setting the variables here is enough for them to be available in the extension
     String name = "Microscopy in QuPath"
     String description = "Interact with a microscope from QuPath via Python interfaces like PycroManager or PyMMCore"
-    Version QuPathVersion = Version.parse("v0.4.4")
+    Version QuPathVersion = Version.parse("v0.5.0")
 
 //	@Override
 //	void installExtension(QuPathGUI qupath) {
@@ -48,7 +48,7 @@ class QP_scope implements QuPathExtension {
     }
 
     private void addMenuItem(QuPathGUI qupath) {
-        def logger = LoggerFactory.getLogger(QuPathGUI.class)
+        def logger = LoggerFactory.getLogger(QP_scope.class)
         // Check for dependencies and QuPath version
         logger.info("QuPath Version")
         logger.info(getQuPathVersion().toString())

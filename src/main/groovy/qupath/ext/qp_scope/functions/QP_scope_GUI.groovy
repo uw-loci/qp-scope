@@ -6,7 +6,6 @@ import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
-import qupath.ext.basicstitching.stitching.StitchingImplementations
 import qupath.ext.qp_scope.utilities.QPProjectFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
 import qupath.ext.qp_scope.utilities.MinorFunctions
