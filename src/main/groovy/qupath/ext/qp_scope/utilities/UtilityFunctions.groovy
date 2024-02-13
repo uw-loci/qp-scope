@@ -1,6 +1,12 @@
 package qupath.ext.qp_scope.utilities
 
 import javafx.application.Platform
+import javafx.scene.Scene
+import javafx.scene.control.Button
+import javafx.scene.control.Label
+import javafx.scene.layout.VBox
+import javafx.stage.Modality
+import javafx.stage.Stage
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
@@ -22,7 +28,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -301,41 +308,6 @@ class UtilityFunctions {
     }
 
 
-
-
-    static Map<String, String> getPreferences() {
-        //TODO add code to access Preferences fields
-        //If preferences are null or missing, throw an error and close
-        //Open to discussion whether scan types should be included here or typed every time, or some other option
-        //TODO fix the installation to be a folder with an expected .py file target? Or keep as .py file target?
-        return [
-                //pycromanager           : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope\\src\\main\\pythonScripts/4x_bf_scan_pycromanager.py",
-                //environment            : "C:\\Anaconda\\envs\\paquo",
-                //projects               : "C:\\ImageAnalysis\\QPExtensionTest\\data\\slides",
-                //extensionPath          : "C:\\ImageAnalysis\\QPExtensionTest\\qp_scope",
-
-                pycromanager           : "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py",
-                environment            : "C:\\Users\\lociuser\\miniconda3\\envs\\spath",
-                projects               : "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides",
-                extensionPath          : "C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope",
-
-
-                tissueDetection        : "DetectTissue.groovy",
-                firstScanType          : "4x_bf",
-                secondScanType         : "20x_bf",
-                tileHandling           : "none", //"Zip" or "Delete" are functional, anything else does nothing
-                pixelSizeSource        : "7.2",
-                pixelSizeFirstScanType : "1.105",
-                pixelSizeSecondScanType: "0.5",
-                frameWidth             : "1392",
-                frameHeight            : "1040",
-                overlapPercent         : "0",
-                compression             : "J2K_LOSSY", //may want entire dropdown menu in preferences
-        ] //Zip Delete or anything else is ignored
-    }
-
-
-
     /**
      * Deletes all the tiles within the provided folder and the folder itself.
      *
@@ -414,6 +386,9 @@ class UtilityFunctions {
      */
     static String modifyTissueDetectScript(String groovyScriptPath, String pixelSize, String jsonFilePathString) throws IOException {
         // Read, modify, and write the script in one go
+        logger.info("GroovyScriptPath $groovyScriptPath")
+        logger.info("pixelSize $pixelSize")
+        logger.info("jsonFilePathString $jsonFilePathString")
         List<String> lines = Files.lines(Paths.get(groovyScriptPath), StandardCharsets.UTF_8)
                 .map(line -> {
                     if (line.startsWith("setPixelSizeMicrons")) {
@@ -595,5 +570,121 @@ class UtilityFunctions {
         }
     }
 
+    //    static boolean checkValidAnnotationsGUI() {
+//        Dialog<ButtonType> dlg = new Dialog<>()
+//        dlg.initModality(Modality.NONE)
+//        int annotationCount = QP.getAnnotationObjects().size()
+//        dlg.setTitle("Validate annotation boundaries")
+//        dlg.setHeaderText("There are $annotationCount Annotations in this image that will be processed. \n ADD, MODIFY or DELETE annotations to select regions to be scanned.")
+//
+//        // Define custom button types
+//        ButtonType collectButton = new ButtonType("Collect $annotationCount regions", ButtonBar.ButtonData.OK_DONE);
+//        ButtonType doNotCollectButton = new ButtonType("Do not collect ANY regions", ButtonBar.ButtonData.CANCEL_CLOSE);
+//
+//        // Add buttons to the dialog
+//        dlg.getDialogPane().getButtonTypes().addAll(collectButton, doNotCollectButton)
+//        Optional<ButtonType> result = dlg.showAndWait()
+//        return result.isPresent() && result.get() == collectButton
+//    }
+
+
+//    static boolean checkValidAnnotationsGUI() {
+//        // Ensure this runs on the JavaFX Application Thread
+//        Platform.runLater(() -> {
+//            Stage stage = new Stage();
+//            stage.initModality(Modality.NONE);
+//            stage.setTitle("Validate annotation boundaries");
+//            stage.alwaysOnTop = true // Ensure the dialog stays on top
+//
+//            VBox layout = new VBox(10);
+//            Label infoLabel = new Label("Checking annotations...");
+//            Button collectButton = new Button("Collect regions");
+//            Button doNotCollectButton = new Button("Do not collect ANY regions");
+//
+//            // Update button action
+//            collectButton.setOnAction(e -> {
+//                // Handle collect action
+//
+//                stage.close();
+//                return true
+//            });
+//
+//            doNotCollectButton.setOnAction(e -> {
+//                // Handle do not collect action
+//                logger.info("Do not collect, cancelled out of dialog.")
+//                stage.close();
+//                return false
+//            });
+//
+//            layout.getChildren().addAll(infoLabel, collectButton, doNotCollectButton);
+//            Scene scene = new Scene(layout, 400, 200);
+//            stage.setScene(scene);
+//
+//            // Scheduled task to update the annotation count
+//            var executor = Executors.newSingleThreadScheduledExecutor();
+//            executor.scheduleAtFixedRate(() -> {
+//                int annotationCount = QP.getAnnotationObjects().size(); // Implement this to get the current annotation count
+//                Platform.runLater(() -> {
+//                    infoLabel.setText("Total Annotation count in image to be processed: $annotationCount \nADD, MODIFY or DELETE annotations to select regions to be scanned.");
+//                    collectButton.setText("Collect " + annotationCount + " regions");
+//                });
+//            }, 0, 500, TimeUnit.MILLISECONDS);
+//
+//            stage.setOnCloseRequest(e -> {
+//                executor.shutdownNow(); // Ensure the executor is stopped when the stage closes
+//            });
+//
+//            stage.showAndWait();
+//        });
+//    }
+
+    static void checkValidAnnotationsGUI(Closure callback) {
+        Platform.runLater(new Runnable() {
+            void run() {
+                Stage stage = new Stage()
+                stage.initModality(Modality.NONE) // Non-blocking
+                stage.title = "Validate annotation boundaries"
+                stage.alwaysOnTop = true // Ensure the dialog stays on top
+
+                VBox layout = new VBox(10)
+                Label infoLabel = new Label("Checking annotations...")
+                Button collectButton = new Button("Collect regions")
+                Button doNotCollectButton = new Button("Do not collect ANY regions")
+
+                collectButton.setOnAction({ e ->
+                    logger.info( "Collect regions selected.")
+                    stage.close()
+                    callback.call(true)
+                    // No explicit cast needed here
+                })
+
+                doNotCollectButton.setOnAction({ e ->
+                    logger.info("Do not collect, cancelled out of dialog.")
+                    stage.close()
+                    callback.call(false)
+                    // No explicit cast needed here
+                })
+                var executor = Executors.newSingleThreadScheduledExecutor();
+                executor.scheduleAtFixedRate(() -> {
+                    Platform.runLater(() -> {
+                        // Assuming QP.getAnnotationObjects() is the correct method to retrieve the current annotations
+                        // This might need to be adjusted based on your actual API for accessing annotations
+                        int annotationCount = QP.getAnnotationObjects().findAll { it.getPathClass()
+                                .toString().equals("Tissue") }.size();
+                        infoLabel.setText("Total Annotation count in image to be processed: " + annotationCount +
+                                "\nADD, MODIFY or DELETE annotations to select regions to be scanned." +
+                                "\nEnsure that any newly created annotations are classified as 'Tissue'");
+                        collectButton.setText("Collect " + annotationCount + " regions");
+                    });
+                }, 0, 500, TimeUnit.MILLISECONDS);
+
+
+                layout.children.addAll(infoLabel, collectButton, doNotCollectButton)
+                Scene scene = new Scene(layout, 400, 200)
+                stage.scene = scene
+                stage.show() // Non-blocking show
+            }
+        })
+    }
 
 }

@@ -52,10 +52,11 @@ dependencies {
 
     // If you aren't using Groovy, this can be removed
     shadow libs.bundles.groovy
-
+    implementation libs.qupath.fxtras
     testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     testImplementation libs.junit
     implementation "qupath.ext.basicstitching:basic-stitching:0.2.0"
+    implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
 }
 
 /*

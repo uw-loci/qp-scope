@@ -3,19 +3,13 @@ package qupath.ext.qp_scope.utilities
 import javafx.scene.control.Alert
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
-import qupath.lib.gui.QuPathGUI
-import qupath.lib.projects.Project
-import qupath.lib.projects.ProjectImageEntry
-import qupath.lib.scripting.QP
 
-import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-import static qupath.lib.scripting.QP.getProject
 
 class MinorFunctions {
     static final logger = LoggerFactory.getLogger(MinorFunctions.class)

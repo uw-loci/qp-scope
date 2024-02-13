@@ -14,9 +14,9 @@ def copy_file(file, dest_dir):
 def copy_tif_files(projectsFolderPath, sampleLabel, imageType, subregion):
     
     if "4x" in imageType:
-        TILES_LOCATION = 'C:/ImageAnalysis/QPExtensionTest/data/sample_tiles/some_4x_data'
+        TILES_LOCATION = 'C:/ImageAnalysis/QPExtension0.5.0/data/sample_tiles/some_4x_data'
     else:
-        TILES_LOCATION = 'C:/ImageAnalysis/QPExtensionTest/data/sample_tiles/some_20x_data'
+        TILES_LOCATION = 'C:/ImageAnalysis/QPExtension0.5.0/data/sample_tiles/some_20x_data'
 
     print(f"Copying .tif files from {TILES_LOCATION} to {projectsFolderPath}/{sampleLabel}/{subregion}")
 
@@ -53,7 +53,7 @@ def main():
             subregion = "bounds"
     else:
         # Assign default values
-        projectsFolderPath = r"C:\ImageAnalysis\QPExtensionTest\data\slides"
+        projectsFolderPath = r"C:\ImageAnalysis\QPExtension0.5.0\data\slides"
         sampleLabel = "First_Test"
         imageType = "4x_bf_1"
         subregion = "2914_1730"

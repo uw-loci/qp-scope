@@ -1,10 +1,12 @@
 package qupath.ext.qp_scope.utilities
 
+import com.sun.javafx.collections.ObservableListWrapper
 import org.slf4j.LoggerFactory
 import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.commands.ProjectCommands
-import qupath.lib.gui.dialogs.Dialogs
+import qupath.fx.dialogs.Dialogs
 import qupath.lib.gui.images.stores.ImageRegionStoreFactory
+import qupath.lib.gui.scripting.QPEx
 import qupath.lib.gui.tools.GuiTools
 import qupath.lib.images.servers.ImageServerProvider
 import qupath.lib.projects.Project
@@ -12,7 +14,7 @@ import qupath.lib.projects.ProjectIO
 import qupath.lib.projects.ProjectImageEntry
 import qupath.lib.projects.Projects
 import qupath.lib.scripting.QP
-
+import qupath.lib.gui.images.stores.DefaultImageRegionStore
 import java.awt.image.BufferedImage
 
 class QPProjectFunctions {
@@ -30,10 +32,11 @@ class QPProjectFunctions {
      * matchingImage ProjectImageEntry
      * scanTypeWithIndex string
      */
-    static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI, String projectsFolderPath, String sampleLabel, Map<String,String> preferences) {
-        Project currentQuPathProject = createProjectFolder(projectsFolderPath, sampleLabel, preferences.firstScanType)
+    static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI, String projectsFolderPath, String sampleLabel, ObservableListWrapper preferences) {
+        String firstScanType = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
+        Project currentQuPathProject = createProjectFolder(projectsFolderPath, sampleLabel, firstScanType)
 
-        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
+        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstScanType)
         String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
 
         String macroImagePath = null
@@ -73,11 +76,11 @@ class QPProjectFunctions {
         ]
     }
 
-    static Map<String, Object> getCurrentProjectInformation(String projectsFolderPath, String sampleLabel, Map<String,String> preferences){
+    static Map<String, Object> getCurrentProjectInformation(String projectsFolderPath, String sampleLabel, ObservableListWrapper preferences){
 
         Project currentQuPathProject = QP.getProject()
-
-        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + preferences.firstScanType)
+        String firstScanType = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
+        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstScanType)
         String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
         ProjectImageEntry matchingImage = QP.getProjectEntry()
 
@@ -113,12 +116,16 @@ class QPProjectFunctions {
 
         // Set a particular image type
         def imageData = entry.readImageData()
+        logger.info(imageData.toString())
         // Write a thumbnail if we can
         var img = ProjectCommands.getThumbnailRGB(imageData.getServer())
         entry.setThumbnail(img)
         // Set a particular image type automatically (based on /qupath/lib/gui/QuPathGUI.java#L2847)
         // https://forum.image.sc/t/creating-project-from-command-line/45608/24
-        def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(QuPathGUI.getTileCacheSizeBytes());
+
+        //def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(QuPathGUI.getTileCacheSizeBytes());
+        //def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(DefaultImageRegionStore.getTileCacheSize());
+        def imageRegionStore = QPEx.getQuPath().getImageRegionStore()
         def imageType = GuiTools.estimateImageType(imageData.getServer(), imageRegionStore.getThumbnail(imageData.getServer(), 0, 0, true));
         imageData.setImageType(imageType)
         //imageData.setImageType(ImageData.ImageType.BRIGHTFIELD_H_DAB)
@@ -158,14 +165,14 @@ class QPProjectFunctions {
             //WARNING: This assumes there will be only one file ending in .qpproj
             // this should USUALLY be a safe assumption
             if (qpprojFiles.length > 1) {
-                Dialogs.showWarningNotification("Warning!", "Multiple Project files found, may cause unexpected behavior!")
+                Dialogs.showErrorNotification("Warning!", "Multiple Project files found, may cause unexpected behavior!")
             }
 
             project = ProjectIO.loadProject(qpprojFiles[0], BufferedImage.class)
         }
 
         if (project == null) {
-            Dialogs.showWarningNotification("Warning!", "Project is null!")
+            Dialogs.showErrorNotification("Warning!", "Project is null!")
         }
         // Within projectsFolderPath, check for a folder with the name "SlideImages", if it does not exist, create it
         String slideImagesFolderPathStr = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"

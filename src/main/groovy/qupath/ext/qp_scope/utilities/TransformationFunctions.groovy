@@ -1,16 +1,14 @@
 package qupath.ext.qp_scope.utilities
 
+import com.sun.javafx.collections.ObservableListWrapper
 import org.slf4j.LoggerFactory
-import qupath.ext.qp_scope.functions.QP_scope_GUI
-import qupath.lib.gui.QuPathGUI
+import qupath.ext.qp_scope.ui.QP_scope_GUI
 import qupath.lib.objects.PathObject
 
 import java.awt.geom.AffineTransform
-import java.awt.geom.NoninvertibleTransformException
 import java.awt.geom.Point2D
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 
 class TransformationFunctions {
     static final logger = LoggerFactory.getLogger(TransformationFunctions.class)
@@ -208,9 +206,12 @@ class TransformationFunctions {
  * @param qupathGUI The QuPath GUI instance used for executing GUI-related operations.
  * @return An AffineTransform object set up based on the provided parameters, or null if the user cancels the operation.
  */
-    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, Map preferences) {
+    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, ObservableListWrapper preferences) {
+
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-        double scale =  pixelSize/(preferences.pixelSizeFirstScanType as Double)
+        double pixelSizeFirstScanType = preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double
+
+        double scale =  pixelSize/(pixelSizeFirstScanType)
         double scaleY = isSlideFlipped ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
         //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.

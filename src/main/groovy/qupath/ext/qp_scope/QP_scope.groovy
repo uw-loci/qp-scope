@@ -1,57 +1,44 @@
 package qupath.ext.qp_scope
 
+import javafx.beans.property.BooleanProperty
+import qupath.lib.gui.scripting.QPEx
+import qupath.lib.scripting.QP
 import javafx.scene.control.MenuItem
 import org.slf4j.LoggerFactory
-import qupath.ext.qp_scope.functions.QP_scope_GUI
+import qupath.ext.qp_scope.ui.QP_scope_GUI
 import qupath.lib.common.Version
 import qupath.lib.gui.QuPathGUI
+import qupath.lib.gui.extensions.GitHubProject
 import qupath.lib.gui.extensions.QuPathExtension
-
+import qupath.ext.qp_scope.ui.AddQPPreferences
 /**
  * Built from the QuPath extension template - an extension to control a microscope through a Python interface
  */
-class QP_scope implements QuPathExtension {
-
+class QP_scope implements QuPathExtension, GitHubProject {
+    def logger = LoggerFactory.getLogger(QP_scope.class)
     // Setting the variables here is enough for them to be available in the extension
-    String name = "Microscopy in QuPath"
-    String description = "Interact with a microscope from QuPath via Python interfaces like PycroManager or PyMMCore"
-    Version QuPathVersion = Version.parse("v0.5.0")
+    private static final String EXTENSION_NAME = "Microscopy in QuPath"
+    private static final String EXTENSION_DESCRIPTION = "Interact with a microscope from QuPath via Python interfaces like PycroManager or PyMMCore"
+    private static final Version EXTENSION_QUPATH_VERSION = Version.parse("v0.5.0");
+    /**
+     * GitHub repo that your extension can be found at.
+     */
+    private static final GitHubRepo EXTENSION_REPOSITORY = GitHubRepo.create(
+            EXTENSION_NAME, "MichaelSNelson", "qp-scope");
 
-//	@Override
-//	void installExtension(QuPathGUI qupath) {
-//		qupath.installActions(ActionTools.getAnnotatedActions(new BSCommands(qupath)))
-//		addMenuItem(qupath)
-//	}
     @Override
     void installExtension(QuPathGUI qupath) {
-        addMenuItem(qupath)
-
-    }
-    /**
-     * Get the description of the extension.
-     *
-     * @return The description of the extension.
-     */
-    @Override
-    String getDescription() {
-        return "Control a microscope!"
+        addMenuItems(qupath)
+        AddQPPreferences preferences = AddQPPreferences.getInstance();
     }
 
-    /**
-     * Get the name of the extension.
-     *
-     * @return The name of the extension.
-     */
-    @Override
-    String getName() {
-        return "qp_scope"
-    }
 
-    private void addMenuItem(QuPathGUI qupath) {
-        def logger = LoggerFactory.getLogger(QP_scope.class)
+    private void addMenuItems(QuPathGUI qupath) {
+
         // Check for dependencies and QuPath version
         logger.info("QuPath Version")
         logger.info(getQuPathVersion().toString())
+
         // TODO: how to check if version is supported?
 
         // Get or create the menu
@@ -66,6 +53,7 @@ class QP_scope implements QuPathExtension {
             QP_scope_GUI.boundingBoxInputGUI()
         })
 
+
         // Macro or overview image as input
         def qpScope2 = new MenuItem("First scan type - Use current image")
         // TODO: tooltip
@@ -74,17 +62,28 @@ class QP_scope implements QuPathExtension {
             QP_scope_GUI.macroImageInputGUI()
         })
 
+        // Disable the menu option that requires an active image, if there is no active image
+        qpScope2.disableProperty().bind(qupath.imageDataProperty().isNull());
+
+
+
         // Third menu item - "Second scan modality"
         def qpScope3 = new MenuItem("Second scan type - Scan non \'Tissue\' annotations ")
         // TODO: tooltip
         qpScope3.setOnAction(e -> {
             QP_scope_GUI.secondModalityGUI()
+
         })
         // Fourth menu item - "Use current image as macro view"
         def qpScope4 = new MenuItem("Dummy menu option for troubleshooting")
         // TODO: tooltip
         qpScope4.setOnAction(e -> {
-            QP_scope_GUI.testGUI()
+            //QP_scope_GUI.testGUI()
+            // Directly toggle the property to test listener reaction
+            def qppreferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
+            logger.info("Toggling enableExtension");
+            def enableExtension = qppreferences.find{it.getName() == "Enable my extension"}
+            enableExtension.setValue(!enableExtension.getValue());
         })
         // Add the menu items to the menu
         menu.getItems() << qpScope1
@@ -93,24 +92,24 @@ class QP_scope implements QuPathExtension {
         menu.getItems() << qpScope4
     }
 
+    @Override
+    public String getName() {
+        return EXTENSION_NAME;
+    }
+
+    @Override
+    public String getDescription() {
+        return EXTENSION_DESCRIPTION;
+    }
+
+    @Override
+    public Version getQuPathVersion() {
+        return EXTENSION_QUPATH_VERSION;
+    }
+
+    @Override
+    public GitHubRepo getRepository() {
+        return EXTENSION_REPOSITORY;
+    }
 
 }
-//@ActionMenu("Extensions")
-//public class BSCommands {
-//
-//	@ActionMenu("BasicStitching")
-//	@ActionDescription("Launch BasicStitching dialog.")
-//	public final Action BSCommand;
-//
-//	/**
-//	 * Constructor.
-//	 *
-//	 * @param qupath
-//	 *            The QuPath GUI.
-//	 */
-//	private BSCommands(QuPathGUI qupath) {
-//		BSMainCommand bsCommand = new BSMainCommand(qupath);
-//		actionBSCommand = new Action(event -> bsCommand.run());
-//	}
-//
-//}
