@@ -261,7 +261,10 @@ class UtilityFunctions {
                     }
 
                     // Check if expected number of files is reached
-                    if (currentFileCount >= QP.getDetectionObjects().size() + 2) {
+                    def currentAnnotationName = args[3]
+                    def annotation = QP.getAnnotationObjects().find{it.getName() == currentAnnotationName}
+                    def expectedFileCount = QP.getCurrentHierarchy().getObjectsForROI(qupath.lib.objects.PathDetectionObject, annotation.getROI()).size() + 2
+                    if (currentFileCount >= expectedFileCount) {
                         future.cancel(true); // Attempt to cancel the running task
                         processCompleted.set(true);
                         scheduledExecutor.shutdown();
