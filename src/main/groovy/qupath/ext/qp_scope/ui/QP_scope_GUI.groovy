@@ -346,7 +346,7 @@ class QP_scope_GUI {
 
                         //TODO can we create non-blocking python code
                         //UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(10, virtualEnvPath, pythonScriptPath, args)
+                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(2, virtualEnvPath, pythonScriptPath, args)
                         if (!pythonCommandSuccessful){
                             logger.info("Python command did not complete successfully")
                             return

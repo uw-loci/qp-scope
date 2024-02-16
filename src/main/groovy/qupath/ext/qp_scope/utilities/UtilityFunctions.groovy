@@ -234,12 +234,13 @@ class UtilityFunctions {
         Future<?> future = executorService.submit(() -> {
             try {
                 // Run the Python command and process the output
-                List<String> result = runPythonCommand(virtualEnvPath, pythonScriptPath, args);
-
-                // Check if the Python script completed successfully based on the result
-                if (result != null) {
-                    processCompleted.set(true);
-                }
+                runPythonCommand(virtualEnvPath, pythonScriptPath, args);
+//                //TODO adjust for return from python command
+//                result = true
+//                // Check if the Python script completed successfully based on the result
+//                if (result != null) {
+//                    processCompleted.set(true);
+//                }
             } catch (Exception e) {
                 logger.error("Error executing Python command: " + e.getMessage());
             }
@@ -264,6 +265,7 @@ class UtilityFunctions {
                     def currentAnnotationName = args[3]
                     def annotation = QP.getAnnotationObjects().find{it.getName() == currentAnnotationName}
                     def expectedFileCount = QP.getCurrentHierarchy().getObjectsForROI(qupath.lib.objects.PathDetectionObject, annotation.getROI()).size() + 2
+
                     if (currentFileCount >= expectedFileCount) {
                         future.cancel(true); // Attempt to cancel the running task
                         processCompleted.set(true);
