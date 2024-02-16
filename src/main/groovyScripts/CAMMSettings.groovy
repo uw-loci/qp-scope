@@ -7,7 +7,7 @@ preferenceSettings = getQuPath().getPreferencePane().getPropertySheet().getItems
 preferenceSettings.find{it.getName() == "PycroManager Script Path"}.setValue("C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py")
 preferenceSettings.find{it.getName() == "Python Environment Path"}.setValue("C:\\Users\\lociuser\\miniconda3\\envs\\spath")
 preferenceSettings.find{it.getName() == "Projects Folder Path"}.setValue("C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides")
-preferenceSettings.find{it.getName() == "Extension Path"}.setValue("C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope")
+preferenceSettings.find{it.getName() == "Extension Path"}.setValue("C:\\Users\\lociuser\\Codes\\MikeN\\qp-scope")
 preferenceSettings.find{it.getName() == "Tissue Detection Script"}.setValue("DetectTissue.groovy")
 preferenceSettings.find{it.getName() == "First Scan Type"}.setValue("4x_bf")
 preferenceSettings.find{it.getName() == "Second Scan Type"}.setValue("20x_bf")

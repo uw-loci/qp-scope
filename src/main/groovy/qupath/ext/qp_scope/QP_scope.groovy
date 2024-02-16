@@ -66,7 +66,6 @@ class QP_scope implements QuPathExtension, GitHubProject {
         qpScope2.disableProperty().bind(qupath.imageDataProperty().isNull());
 
 
-
         // Third menu item - "Second scan modality"
         def qpScope3 = new MenuItem("Second scan type - Scan non \'Tissue\' annotations ")
         // TODO: tooltip

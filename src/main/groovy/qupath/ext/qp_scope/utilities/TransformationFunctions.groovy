@@ -209,7 +209,7 @@ class TransformationFunctions {
     static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, ObservableListWrapper preferences) {
 
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-        double pixelSizeFirstScanType = preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double
+        double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
 
         double scale =  pixelSize/(pixelSizeFirstScanType)
         double scaleY = isSlideFlipped ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage

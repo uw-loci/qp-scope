@@ -23,13 +23,13 @@ import qupath.lib.projects.Project
 
 import qupath.lib.objects.PathObjects
 import qupath.ext.basicstitching.stitching.StitchingImplementations
-
+import java.util.concurrent.*
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -208,6 +208,82 @@ class UtilityFunctions {
         }
 
         return [value1, value2]
+    }
+
+
+
+
+/**
+ * Manages the execution of a Python script within a virtual environment, with timeout and file monitoring.
+ * This function runs the Python script and monitors for new files in a specified output directory,
+ * allowing for a progress update mechanism and handling script timeouts.
+ *
+ * @param waitTimeSeconds The maximum time in seconds to wait for the Python script to complete for each file check.
+ * @param virtualEnvPath The path to the Python virtual environment.
+ * @param pythonScriptPath The path to the Python script to be executed.
+ * @param args A list of arguments to pass to the Python script.
+ * @return true if the process completes successfully within the timeout and expected files are generated, false otherwise.
+ */
+    static boolean managePythonInstance(int waitTimeSeconds, String virtualEnvPath, String pythonScriptPath, List<String> args) {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        AtomicBoolean processCompleted = new AtomicBoolean(false);
+        String outputFolderPath = Paths.get(args[0], args[1], args[2], args[3]).toString();
+        logger.info("managePythonInstance checking folder $outputFolderPath")
+        AtomicInteger previousFileCount = new AtomicInteger(0);
+
+        Future<?> future = executorService.submit(() -> {
+            try {
+                // Run the Python command and process the output
+                List<String> result = runPythonCommand(virtualEnvPath, pythonScriptPath, args);
+
+                // Check if the Python script completed successfully based on the result
+                if (result != null) {
+                    processCompleted.set(true);
+                }
+            } catch (Exception e) {
+                logger.error("Error executing Python command: " + e.getMessage());
+            }
+        });
+
+        // Scheduled executor to check the output directory for new files
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        scheduledExecutor.scheduleAtFixedRate(() -> {
+            try {
+                File outputFolder = new File(outputFolderPath);
+                if (outputFolder.exists()) {
+                    String[] fileList = outputFolder.list();
+                    int currentFileCount = (fileList != null) ? fileList.length : 0;
+
+                    if (currentFileCount > previousFileCount.get()) {
+                        previousFileCount.set(currentFileCount);
+                        // Log progress
+                        logger.info("Current file count: $currentFileCount");
+                    }
+
+                    // Check if expected number of files is reached
+                    if (currentFileCount >= QP.getDetectionObjects().size() + 2) {
+                        future.cancel(true); // Attempt to cancel the running task
+                        processCompleted.set(true);
+                        scheduledExecutor.shutdown();
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Error monitoring output files: " + e.getMessage());
+            }
+        }, 0, waitTimeSeconds, TimeUnit.SECONDS);
+
+        // Wait for the Python script to complete or timeout
+        try {
+            future.get(waitTimeSeconds * (QP.getDetectionObjects().size() + 2), TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            future.cancel(true); // Ensure the process is stopped in case of timeout or interruption
+            logger.error("Python script execution interrupted or timed out: " + e.getMessage());
+        } finally {
+            scheduledExecutor.shutdownNow();
+        }
+
+        executorService.shutdownNow();
+        return processCompleted.get();
     }
 
 

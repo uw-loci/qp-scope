@@ -31,15 +31,9 @@ import java.nio.file.Paths
 
 import java.util.stream.Collectors
 
-import javafx.application.Platform
-import javafx.scene.Scene
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.layout.VBox
 import javafx.stage.Modality
 import javafx.stage.Stage
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+
 
 //Thoughts:
 //Have collapsible sections to a larger dialog box?
@@ -54,16 +48,13 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-    static TextField virtualEnvField = new TextField(preferences.find{it.getName() == "Python Environment Path"}.getValue().toString())
-    static TextField pythonScriptField = new TextField(preferences.find{it.getName() == "PycroManager Script Path"}.getValue().toString())
-    static TextField projectsFolderField = new TextField(preferences.find{it.getName() == "Projects Folder Path"}.getValue().toString())
     static TextField sampleLabelField = new TextField("First_Test")
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
-    static def extensionPath = preferences.find{it.getName() == "Extension Path"}.getValue().toString()
+    static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
-    static TextField pixelSizeField = new TextField(preferences.find{it.getName() == "Pixel Size Source"}.getValue().toString())
+    static TextField pixelSizeField = new TextField(preferences.find{it.getName() == "Macro image px size"}.getValue().toString())
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
 
@@ -91,9 +82,9 @@ class QP_scope_GUI {
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
 
 
-        String projectsFolderPath = preferences.find{it.getName() == "Projects Folder Path"}.getValue() as String
-        String virtualEnvPath =  preferences.find{it.getName() == "Python Environment Path"}.getValue() as String
-        String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Script Path"}.getValue() as String
+        String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
+        String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
+        String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
         // Show the dialog and capture the response
         def result = dlg.showAndWait()
 
@@ -209,14 +200,14 @@ class QP_scope_GUI {
             def sampleLabel = sampleLabelField.getText()
 
             // Preferences from GUI
-            double frameWidth = preferences.find{it.getName() == "Camera Frame Width in Pixels"}.getValue() as Double
-            double frameHeight = preferences.find{it.getName() == "Camera Frame Height in Pixels"}.getValue() as Double
-            double pixelSizeSource = preferences.find{it.getName() == "Pixel Size Source"}.getValue() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double
+            double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
+            double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
+            double pixelSizeSource = preferences.find{it.getName() == "Macro image px size"}.getValue() as Double
+            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
-            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder Path"}.getValue() as String
-            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment Path"}.getValue() as String
-            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Script Path"}.getValue() as String
+            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
+            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
+            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
 // Log retrieved preference values
@@ -354,9 +345,13 @@ class QP_scope_GUI {
                         logger.info("Check input args for runPythonCommand")
 
                         //TODO can we create non-blocking python code
-                        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-
-
+                        //UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(10, virtualEnvPath, pythonScriptPath, args)
+                        if (!pythonCommandSuccessful){
+                            logger.info("Python command did not complete successfully")
+                            return
+                        }
+                        logger.info("Begin stitching")
                         String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
                                 sampleLabel, projectDetails.scanTypeWithIndex as String, annotation.getName(),
                                 qupathGUI, currentQuPathProject, compressionType)
@@ -414,15 +409,16 @@ class QP_scope_GUI {
             boolean dataCheck = true
 
             //Preferences from GUI
-            double frameWidth = preferences.find{it.getName() == "Camera Frame Width in Pixels"}.getValue() as Double
-            double frameHeight = preferences.find{it.getName() == "Camera Frame Height in Pixels"}.getValue() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double
+            double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
+            double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
+            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
-            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder Path"}.getValue() as String
-            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment Path"}.getValue() as String
-            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Script Path"}.getValue() as String
+            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
+            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
+            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
+
             // Continue with previous behavior using coordinates
             if (boxString != "") {
                 def values = boxString.replaceAll("[^0-9.,]", "").split(",")
@@ -543,16 +539,17 @@ class QP_scope_GUI {
 
 
             //Preferences from GUI
-            double frameWidth = preferences.find{it.getName() == "Camera Frame Width in Pixels"}.getValue() as Double
-            double frameHeight = preferences.find{it.getName() == "Camera Frame Height in Pixels"}.getValue() as Double
-            double pixelSizeSource = preferences.find{it.getName() == "Pixel Size Source"}.getValue() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double
+            double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
+            double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
+            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+            double pixelSizeSecondScanType = preferences.find{it.getName() == "2nd scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
-            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder Path"}.getValue() as String
-            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment Path"}.getValue() as String
-            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Script Path"}.getValue() as String
-            String secondScanType = preferences.find{it.getName() == "Second Scan Type"}.getValue() as String
+            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
+            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
+            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
+            String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
+            String secondScanType = preferences.find{it.getName() == "Second Scan Type"}.getValue() as String
 
             //SETUP: collect variables
             QuPathGUI qupathGUI = QPEx.getQuPath()
@@ -570,8 +567,8 @@ class QP_scope_GUI {
                 return
             }
             //Convert the camera frame width/height into pixels in the image we are working on.
-            Double frameWidthQPpixels = (frameWidth ) / (pixelSizeSource ) * (pixelSizeFirstScanType )
-            Double frameHeightQPpixels = (frameHeight ) / (pixelSizeSource) * (pixelSizeFirstScanType )
+            Double frameWidthQPpixels = (frameWidth ) / (pixelSizeFirstScanType ) * (pixelSizeSecondScanType )
+            Double frameHeightQPpixels = (frameHeight ) / (pixelSizeFirstScanType) * (pixelSizeSecondScanType )
             UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                     scanTypeWithIndex,
                     frameWidthQPpixels,
@@ -594,11 +591,17 @@ class QP_scope_GUI {
                              sampleLabel,
                              scanTypeWithIndex,
                              annotationName]
-                //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
-                //TODO Need to check if stitching is successful, provide error
+
 
                 //Progress bar that updates by checking target folder for new images?
                 UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+                //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
+                //TODO Need to check if stitching is successful, provide error
+                //while projectsFolderPath/sampleLabel/scanTypeWithIndex/annotationName does not have
+                //fileCount = number of entries in TileConfiguration.txt OR getDetectionObjects().size()+1
+                //Loop checking each second for file count files within the folder
+                //Track loops, after N loops, break and end program with error.
+
                 logger.info("Finished Python Command for $annotationName")
                 // Start a new thread for stitching
                 Thread.start {
@@ -624,7 +627,6 @@ class QP_scope_GUI {
             }
             // Post-stitching tasks like deleting or zipping tiles
             //Check if the tiles should be deleted from the collection folder
-            String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
             if (tileHandling == "Delete")
                 UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
             if (tileHandling == "Zip") {
@@ -701,65 +703,123 @@ class QP_scope_GUI {
         return pane
     }
 
+
+    /**
+     * Displays a dialog to the user for tile selection to match the live view in the microscope with QuPath's coordinate system.
+     * This function ensures that exactly one tile (detection) is selected by the user. If the selection does not meet
+     * the criteria (exactly one detection), the user is prompted until a valid selection is made or the operation is cancelled.
+     *
+     * The dialog is set to always be on top to ensure visibility to the user. If the user cancels or closes the dialog
+     * without making a valid selection, the function returns false to indicate the operation was not completed.
+     *
+     * @return true if a valid tile is selected and the user confirms the selection; false if the user cancels the operation.
+     */
     static boolean stageToQuPathAlignmentGUI1() {
-        Dialog<ButtonType> dlg = new Dialog<>()
-        dlg.initModality(Modality.NONE)
-        dlg.setTitle("Identify Location")
-        dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!")
-        // Add buttons to the dialog
-        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+        boolean validTile = false;
+        Optional<ButtonType> result;
+
+        while (!validTile) {
+            // Create and configure the dialog inside the loop
+            Dialog<ButtonType> dlg = new Dialog<>();
+            dlg.initModality(Modality.NONE);
+            dlg.setTitle("Identify Location");
+            dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
+            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            dlg.setOnShown(event -> {
+                Window window = dlg.getDialogPane().getScene().getWindow();
+                if (window instanceof Stage) {
+                    ((Stage) window).setAlwaysOnTop(true);
+                }
+            });
+
+            // Show the dialog and wait for the user response
+            result = dlg.showAndWait();
+
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                List selectedObjects = QP.getSelectedObjects().stream()
+                        .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
+                        .collect(Collectors.toList());
+
+                if (selectedObjects.size() != 1) {
+                    MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.");
+                } else {
+                    validTile = true;
+                }
+            } else {
+                // User cancelled or closed the dialog
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+/**
+ * Displays a dialog to confirm the accuracy of the current stage position in comparison with the live view.
+ * This dialog is part of the process to calibrate the "Live view" stage position with the position of a single field of view in the preview image.
+ * The user is presented with two options: to confirm the current position is accurate or to cancel the acquisition.
+ *
+ * @return {@code true} if the user confirms the current position is accurate, {@code false} if the user cancels the acquisition.
+ */
+    static boolean stageToQuPathAlignmentGUI2() {
+        // Create a custom dialog with application modal modality.
+        Dialog<Boolean> dlg = new Dialog<>();
+        dlg.initModality(Modality.APPLICATION_MODAL); // Prevents interaction with other windows until this dialog is closed.
+        dlg.setTitle("Position Confirmation");
+        // Header text explaining the purpose of the dialog and providing instructions for comparison.
+        dlg.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n" +
+                "The first time this dialog shows up, it should select the center of the top row!\n" +
+                "The second time, it should select the center of the left-most column!");
         dlg.setOnShown(event -> {
             Window window = dlg.getDialogPane().getScene().getWindow();
             if (window instanceof Stage) {
                 ((Stage) window).setAlwaysOnTop(true);
             }
         });
-        Optional<ButtonType> result
-        boolean validTile = false
+        // Define button types for user actions.
+        ButtonType btnCurrentPositionAccurate = new ButtonType("Current Position is Accurate", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelAcquisition = new ButtonType("Cancel acquisition", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-        while (!validTile) {
-            // Show the dialog and wait for the user response
-            result = dlg.showAndWait()
+        // Add buttons to the dialog pane.
+        dlg.getDialogPane().getButtonTypes().addAll(btnCurrentPositionAccurate, btnCancelAcquisition);
 
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                // Check for expected rectangle
-                List selectedObjects = QP.getSelectedObjects().stream()
-                        .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
-                        .collect(Collectors.toList())
-
-                if (selectedObjects.size() != 1) {
-                    // Use UtilityFunctions to show a warning
-                    MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.")
-                } else {
-                    validTile = true
-                }
-            } else {
-                // User cancelled or closed the dialog
-                return false
+        // Process the user's button click to determine the return value.
+        dlg.setResultConverter(dialogButton -> {
+            if (dialogButton == btnCurrentPositionAccurate) {
+                // If the user confirms the current position is accurate, return true.
+                return true;
+            } else if (dialogButton == btnCancelAcquisition) {
+                // If the user cancels the acquisition, return false.
+                return false;
             }
-        }
-        return true
+            return null; // Return null if another close mechanism is triggered.
+        });
+
+        // Show the dialog and wait for the user to make a selection, then return the result.
+        Optional<Boolean> result = dlg.showAndWait();
+
+        // Return the user's decision or false if no explicit decision was made.
+        return result.orElse(false);
     }
 
 
-
-    static stageToQuPathAlignmentGUI2() {
-        List<String> choices = Arrays.asList("Yes", "Use adjusted position")
-        ChoiceDialog<String> dialog = new ChoiceDialog<>("Yes", choices)
-        dialog.initModality(Modality.NONE)
-        dialog.setTitle("Position Confirmation")
-        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!")
-
-        Optional<String> result = dialog.showAndWait()
-        if (result.isPresent()) {
-
-            return result.get()
-
-        }
-
-        // If no choice is made (e.g., dialog is closed), you can decide to return false or handle it differently
-        return false
-    }
+//    static stageToQuPathAlignmentGUI2() {
+//        List<String> choices = Arrays.asList("Current Position is Accurate", "Cancel acquisition")
+//        ChoiceDialog<String> dialog = new ChoiceDialog<>("Current Position is Accurate", choices)
+//        dialog.initModality(Modality.NONE)
+//        dialog.setTitle("Position Confirmation")
+//        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!")
+//
+//        Optional<String> result = dialog.showAndWait()
+//        if (result.isPresent()) {
+//
+//            return result.get()
+//
+//        }
+//
+//        // If no choice is made (e.g., dialog is closed), you can decide to return false or handle it differently
+//        return false
+//    }
 
     /**
      * Handles the process of selecting a tile, transforming its coordinates, moving the stage,
@@ -818,11 +878,6 @@ class QP_scope_GUI {
         addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
         addToGrid(pane, new Label('Annotation classes to image:'), classFilterField, row++)
 
-
-        // Add components for Python environment and script path
-        addToGrid(pane, new Label('Python Virtual Env Location:'), virtualEnvField, row++)
-        addToGrid(pane, new Label('PycroManager .py file path:'), pythonScriptField, row++)
-        addToGrid(pane, new Label('Projects path:'), projectsFolderField, row++)
         // Listener for the checkbox
 
         return pane

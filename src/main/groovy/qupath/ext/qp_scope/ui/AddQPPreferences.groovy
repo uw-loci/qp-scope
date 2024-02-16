@@ -64,7 +64,7 @@ class AddQPPreferences {
         BooleanProperty isFlippedProperty = PathPrefs.createPersistentPreference("isFlippedProperty", true);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isFlippedProperty, Boolean.class)
-                        .name("Flip macro image horizontally")
+                        .name("Flip macro image")
                         .category(EXTENSION_NAME)
                         .description("Allows the slide to be flipped horizontally so that the coordinates can be matched correctly with the stage.")
                         .build()
@@ -75,7 +75,7 @@ class AddQPPreferences {
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pycromanagerProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
-                        .name("PycroManager Script Path")
+                        .name("PycroManager Path")
                         .category(EXTENSION_NAME)
                         .description("Path to the PycroManager script used for controlling microscopes.")
                         .build()
@@ -86,7 +86,7 @@ class AddQPPreferences {
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pythonEnvironmentProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
-                        .name("Python Environment Path")
+                        .name("Python Environment")
                         .category(EXTENSION_NAME)
                         .description("Path to the Python environment.")
                         .build()
@@ -97,7 +97,7 @@ class AddQPPreferences {
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(projectsFolderProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
-                        .name("Projects Folder Path")
+                        .name("Projects Folder")
                         .category(EXTENSION_NAME)
                         .description("Path to the projects folder.")
                         .build()
@@ -108,19 +108,20 @@ class AddQPPreferences {
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(extensionPathProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
-                        .name("Extension Path")
+                        .name("Extension Location")
                         .category(EXTENSION_NAME)
-                        .description("Path to the extension directory.")
+                        .description("Path to the extension directory in order to find included scripts.")
                         .build()
         );
 
+        //TODO change to file path rather than locking in a location within the installation
 // Tissue Detection Script
         StringProperty tissueDetectionScriptProperty = PathPrefs.createPersistentPreference("tissueDetectionScriptProperty", "DetectTissue.groovy");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(tissueDetectionScriptProperty, String.class)
                         .name("Tissue Detection Script")
                         .category(EXTENSION_NAME)
-                        .description("Name or path of the tissue detection script.")
+                        .description("Name f the tissue detection script.")
                         .build()
         );
 
@@ -158,32 +159,33 @@ class AddQPPreferences {
                                 "\n'Delete' will delete the tiles and keep NO COPIES. Only use this if you are confident in your system and need the space.")
                         .build()
         );
-
-// Pixel Size for First Scan Type
-        DoubleProperty pixelSizeFirstScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstScanTypeProperty", 1.105);
-        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(pixelSizeFirstScanTypeProperty, Double.class)
-                        .name("Pixel Size for First Scan Type")
-                        .category(EXTENSION_NAME)
-                        .description("Pixel size for the first scan type, in micrometers.")
-                        .build()
-        );
-
 // Pixel Size Source
         DoubleProperty pixelSizeSourceProperty = PathPrefs.createPersistentPreference("pixelSizeSourceProperty", 7.2);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pixelSizeSourceProperty, Double.class)
-                        .name("Pixel Size Source")
+                        .name("Macro image px size")
                         .category(EXTENSION_NAME)
                         .description("Pixel size of the source image, in micrometers.")
                         .build()
         );
 
+// Pixel Size for First Scan Type
+        DoubleProperty pixelSizeFirstScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstScanTypeProperty", 1.105);
+        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+                new PropertyItemBuilder<>(pixelSizeFirstScanTypeProperty, Double.class)
+                        .name("1st scan pixel size um")
+                        .category(EXTENSION_NAME)
+                        .description("Pixel size for the first scan type, in micrometers.")
+                        .build()
+        );
+
+
+
 // Pixel Size for Second Scan Type
         DoubleProperty pixelSizeSecondScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeSecondScanTypeProperty", 0.5);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pixelSizeSecondScanTypeProperty, Double.class)
-                        .name("Pixel Size for Second Scan Type")
+                        .name("2nd scan pixel size um")
                         .category(EXTENSION_NAME)
                         .description("Pixel size for the second scan type, in micrometers.")
                         .build()
@@ -193,7 +195,7 @@ class AddQPPreferences {
         IntegerProperty cameraFrameWidthPxProperty = PathPrefs.createPersistentPreference("cameraFrameWidthPxProperty", 1392);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(cameraFrameWidthPxProperty, Integer.class)
-                        .name("Camera Frame Width in Pixels")
+                        .name("Camera Frame Width #px")
                         .category(EXTENSION_NAME)
                         .description("Width of the camera frame in pixels.")
                         .build()
@@ -203,7 +205,7 @@ class AddQPPreferences {
         IntegerProperty cameraFrameHeightPxProperty = PathPrefs.createPersistentPreference("cameraFrameHeightPxProperty", 1040);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(cameraFrameHeightPxProperty, Integer.class)
-                        .name("Camera Frame Height in Pixels")
+                        .name("Camera Frame Height #px")
                         .category(EXTENSION_NAME)
                         .description("Height of the camera frame in pixels.")
                         .build()
