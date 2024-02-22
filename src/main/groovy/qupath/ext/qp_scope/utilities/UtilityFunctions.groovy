@@ -240,6 +240,7 @@ class UtilityFunctions {
                 if (result != null) {
                     processCompleted.set(true);
                 }
+
             } catch (Exception e) {
                 logger.error("Error executing Python command: " + e.getMessage());
             }
@@ -264,6 +265,7 @@ class UtilityFunctions {
                     def currentAnnotationName = args[3]
                     def annotation = QP.getAnnotationObjects().find{it.getName() == currentAnnotationName}
                     def expectedFileCount = QP.getCurrentHierarchy().getObjectsForROI(qupath.lib.objects.PathDetectionObject, annotation.getROI()).size() + 2
+
                     if (currentFileCount >= expectedFileCount) {
                         future.cancel(true); // Attempt to cancel the running task
                         processCompleted.set(true);
