@@ -8,13 +8,18 @@ import qupath.fx.dialogs.Dialogs
 import qupath.lib.gui.images.stores.ImageRegionStoreFactory
 import qupath.lib.gui.scripting.QPEx
 import qupath.lib.gui.tools.GuiTools
+import qupath.lib.images.ImageData
 import qupath.lib.images.servers.ImageServerProvider
+import qupath.lib.images.servers.ImageServers
+import qupath.lib.images.servers.TransformedServerBuilder
 import qupath.lib.projects.Project
 import qupath.lib.projects.ProjectIO
 import qupath.lib.projects.ProjectImageEntry
 import qupath.lib.projects.Projects
 import qupath.lib.scripting.QP
 import qupath.lib.gui.images.stores.DefaultImageRegionStore
+
+import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 
 class QPProjectFunctions {
@@ -32,9 +37,14 @@ class QPProjectFunctions {
      * matchingImage ProjectImageEntry
      * scanTypeWithIndex string
      */
-    static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI, String projectsFolderPath, String sampleLabel, ObservableListWrapper preferences) {
+    static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI,
+                                                          String projectsFolderPath,
+                                                          String sampleLabel,
+                                                          ObservableListWrapper preferences,
+                                                          boolean isSlideFlippedX=false,
+                                                          boolean isSlideFlippedY=false) {
         String firstScanType = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
-        Project currentQuPathProject = createProjectFolder(projectsFolderPath, sampleLabel, firstScanType)
+        Project currentQuPathProject = createProjectFolder(projectsFolderPath, sampleLabel)
 
         String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstScanType)
         String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
@@ -50,7 +60,7 @@ class QPProjectFunctions {
             logger.info(macroImagePath)
             if (macroImagePath != null) {
                 logger.info("Extracted file path: $macroImagePath")
-                addImageToProject(new File(macroImagePath), currentQuPathProject)
+                addImageToProject(new File(macroImagePath), currentQuPathProject, isSlideFlippedX, isSlideFlippedY)
                 logger.info("image added to project")
                 qupathGUI.setProject(currentQuPathProject)
                 matchingImage = currentQuPathProject.getImageList().find { image ->
@@ -92,55 +102,72 @@ class QPProjectFunctions {
         ]
     }
 
-    static boolean addImageToProject(File stitchedImagePath, Project project) {
+    static boolean addImageToProject(File stitchedImagePath,
+                                     Project project,
+                                     boolean isSlideFlippedX = false,
+                                     boolean isSlideFlippedY = false) {
 
         def imagePath = stitchedImagePath.toURI().toString()
         //logger.info(imagePath)
 
-        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath)
-        //logger.info(support as String)
-        def builder = support.builders.get(0)
-        // Make sure we don't have null
-        if (builder == null) {
-            logger.warn("Image not supported: " + imagePath)
-            return false
-        }
-
+//        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath)
+//        //logger.info(support as String)
+//        def builder = support.builders.get(0)
+//        // Make sure we don't have null
+//        if (builder == null) {
+//            logger.warn("Image not supported: " + imagePath)
+//            return false
+//        }
+        //Code courtesy of https://forum.image.sc/t/flipping-an-image-on-import/92532/2
         // Add the image as entry to the project
         logger.info("Adding: " + imagePath)
         if (project == null) {
             logger.warn("Project is null, there must have been a problem creating the project")
             return false
         }
-        Object entry = project.addImage(builder)
+        def originalImageServer = ImageServers.buildServer(imagePath)
+        AffineTransform transform = new AffineTransform()
+        // Determine scale factors based on the flip booleans
+        double scaleX = isSlideFlippedX ? -1 : 1;
+        double scaleY = isSlideFlippedY ? -1 : 1;
+
+        // Apply scaling with flip conditions
+        transform.scale(scaleX, scaleY);
+        // If flipping on X-axis, also adjust the translation to reposition the image correctly
+        if (isSlideFlippedX) {
+            transform.translate(-originalImageServer.getWidth(), 0);
+        }
+
+        // If flipping on Y-axis, adjust the translation to reposition the image correctly
+        if (isSlideFlippedY) {
+            transform.translate(0, -originalImageServer.getHeight());
+        }
+
+        def flippedImageServer = new TransformedServerBuilder(originalImageServer)
+                .transform(transform)
+                .build()
+        def imageEntry = project.addImage(flippedImageServer.getBuilder())
 
         // Set a particular image type
-        def imageData = entry.readImageData()
+        ImageData imageData = imageEntry.readImageData()
         logger.info(imageData.toString())
-        // Write a thumbnail if we can
-        var img = ProjectCommands.getThumbnailRGB(imageData.getServer())
-        entry.setThumbnail(img)
-        // Set a particular image type automatically (based on /qupath/lib/gui/QuPathGUI.java#L2847)
         // https://forum.image.sc/t/creating-project-from-command-line/45608/24
 
-        //def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(QuPathGUI.getTileCacheSizeBytes());
-        //def imageRegionStore = ImageRegionStoreFactory.createImageRegionStore(DefaultImageRegionStore.getTileCacheSize());
         def imageRegionStore = QPEx.getQuPath().getImageRegionStore()
         def imageType = GuiTools.estimateImageType(imageData.getServer(), imageRegionStore.getThumbnail(imageData.getServer(), 0, 0, true));
         imageData.setImageType(imageType)
-        //imageData.setImageType(ImageData.ImageType.BRIGHTFIELD_H_DAB)
-        entry.saveImageData(imageData)
+        imageEntry.saveImageData(imageData)
 
 
 
         // Add an entry name (the filename)
-        entry.setImageName(stitchedImagePath.getName())
+        imageEntry.setImageName(stitchedImagePath.getName())
         project.syncChanges()
         return true
 
     }
 
-    static Project createProjectFolder(String projectsFolderPath, String sampleLabel, String scanType) {
+    static Project createProjectFolder(String projectsFolderPath, String sampleLabel) {
         //TODO check if a project is open! It probably should not be?
 
         // Ensure that the projectsFolderPath exists, if it does not, create it.

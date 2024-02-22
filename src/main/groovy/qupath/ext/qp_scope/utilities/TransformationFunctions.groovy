@@ -112,48 +112,103 @@ class TransformationFunctions {
     }
 
 
-//TODO adjust for situations where the macro image is flipped
+//working function, saved
+//    /**
+//     * Calculates an affine transformation based on scaling and translation.
+//     *
+//     * @param scalingTransform The AffineTransform object representing the scaling.
+//     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
+//     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
+//     * @return An AffineTransform object representing the combined scaling and translation.
+//     */
+//    static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
+//                                                        List<String> qpCoordinatesList,
+//                                                        List<String> stageCoordinatesList) {
+//        // Parse the coordinate strings to double
+//        logger.info("input scaling transform $scalingTransform")
+//        double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
+//        double[] mmPoint = stageCoordinatesList.collect { it.toDouble() } as double[]
+//
+//        logger.info("Parsed qpPoint: ${qpPoint}")
+//        logger.info("Parsed mmPoint: ${mmPoint}")
+//
+//        // Applying the scaling transform to qpPoint
+//        Point2D.Double scaledQpPoint = new Point2D.Double()
+//        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint)
+//
+//        logger.info("Scaled qpPoint: ${scaledQpPoint}")
+//
+//        // Calculate the translation vector, adjusted for scaling
+//        double tx = mmPoint[0] - scaledQpPoint.x
+//        double ty = mmPoint[1] - scaledQpPoint.y
+//
+//        logger.info("Calculated translation: tx = ${tx}, ty = ${ty}")
+//
+//        // Create the combined transform (scaling and translation)
+//        AffineTransform transform = new AffineTransform(scalingTransform)
+//        transform.translate(tx / scalingTransform.getScaleX(), ty / scalingTransform.getScaleY())
+//
+//        logger.info("Final AffineTransform: ${transform}")
+//
+//        return transform
+//    }
 
-    /**
-     * Calculates an affine transformation based on scaling and translation.
-     *
-     * @param scalingTransform The AffineTransform object representing the scaling.
-     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
-     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
-     * @return An AffineTransform object representing the combined scaling and translation.
-     */
-    static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform, List<String> qpCoordinatesList, List<String> stageCoordinatesList) {
-        // Parse the coordinate strings to double
-        logger.info("input scaling transform $scalingTransform")
-        double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
-        double[] mmPoint = stageCoordinatesList.collect { it.toDouble() } as double[]
+/**
+ * Adjusts an existing scaling affine transformation by adding a translation to align with stage coordinates more accurately.
+ *
+ * @param scalingTransform The initial AffineTransform object representing the scaling, in QuPath to stage coordinate space.
+ * @param qpCoordinatesList A list of strings representing the coordinates in the QuPath coordinate system (pixels).
+ * @param stageCoordinatesList A list of strings representing the coordinates in the stage coordinate system (microns/distance).
+ * @param offset An AffineTransform object representing the additional offset (translation) to be applied, in stage coordinates.
+ * @return An AffineTransform object representing the combined scaling, translation, and additional offset.
+ */
+    public static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
+                                                               List<String> qpCoordinatesList,
+                                                               List<String> stageCoordinatesList,
+                                                               AffineTransform offset) {
 
-        logger.info("Parsed qpPoint: ${qpPoint}")
-        logger.info("Parsed mmPoint: ${mmPoint}")
+        logger.info("Input scaling transform: " + scalingTransform);
 
-        // Applying the scaling transform to qpPoint
-        Point2D.Double scaledQpPoint = new Point2D.Double()
-        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint)
+        // Convert strings to doubles and log
+        double[] qpPoint = qpCoordinatesList.stream().mapToDouble(Double::parseDouble).toArray();
+        double[] mmPoint = stageCoordinatesList.stream().mapToDouble(Double::parseDouble).toArray();
 
-        logger.info("Scaled qpPoint: ${scaledQpPoint}")
+        logger.info("Parsed qpPoint: [" + qpPoint[0] + ", " + qpPoint[1] + "]");
+        logger.info("Parsed mmPoint: [" + mmPoint[0] + ", " + mmPoint[1] + "]");
 
-        // Calculate the translation vector, adjusted for scaling
-        double tx = mmPoint[0] - scaledQpPoint.x
-        double ty = mmPoint[1] - scaledQpPoint.y
+        // Apply scaling transform to QuPath point to convert to intermediate stage coordinates
+        Point2D.Double scaledQpPoint = new Point2D.Double();
+        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint);
 
-        logger.info("Calculated translation: tx = ${tx}, ty = ${ty}")
+        logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
 
-        // Create the combined transform (scaling and translation)
-        AffineTransform transform = new AffineTransform(scalingTransform)
-        transform.translate(tx / scalingTransform.getScaleX(), ty / scalingTransform.getScaleY())
+        // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
+        double tx = mmPoint[0] - scaledQpPoint.x;
+        double ty = mmPoint[1] - scaledQpPoint.y;
 
-        logger.info("Final AffineTransform: ${transform}")
+        logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
 
-        return transform
+        // Create the combined transform (scaling and translation) and apply the offset
+        AffineTransform transform = new AffineTransform(scalingTransform);
+        transform.translate(tx, ty);
+
+        // Apply the additional offset after initial scaling and translation
+        transform.concatenate(offset);
+
+        logger.info("Final AffineTransform after including offset: " + transform);
+
+        return transform;
     }
 
 
-
+    /**
+     * Gets the tile at the top center position from a collection of detections.
+     * This function filters out null detections, sorts the remaining detections by their Y-coordinate (in image space),
+     * and selects the tile that is closest to the median X-coordinate among the topmost tiles.
+     *
+     * @param detections A collection of PathObject detections.
+     * @return The PathObject representing the top center tile. If there are multiple top tiles, it returns the one closest to the median X-coordinate.
+     */
     static PathObject getTopCenterTile(Collection<PathObject> detections) {
         // Filter out null detections and sort by Y-coordinate
         List<PathObject> sortedDetections = detections.findAll { it != null }
@@ -172,9 +227,17 @@ class TransformationFunctions {
         // Select the top tile closest to the median X-coordinate
         PathObject topCenterTile = topTiles.min { Math.abs(it.getROI().getCentroidX() - medianX) }
 
-        return topCenterTile
+        return topCenterTile;
     }
 
+/**
+ * Gets the tile at the left center position from a collection of detections.
+ * This function filters out null detections, sorts the remaining detections by their X-coordinate (in image space),
+ * and selects the tile that is closest to the median Y-coordinate among the leftmost tiles.
+ *
+ * @param detections A collection of PathObject detections.
+ * @return The PathObject representing the left center tile. If there are multiple left tiles, it returns the one closest to the median Y-coordinate.
+ */
     static PathObject getLeftCenterTile(Collection<PathObject> detections) {
         // Filter out null detections and sort by X-coordinate
         List<PathObject> sortedDetections = detections.findAll { it != null }
@@ -193,7 +256,7 @@ class TransformationFunctions {
         // Select the left tile closest to the median Y-coordinate
         PathObject leftCenterTile = leftTiles.min { Math.abs(it.getROI().getCentroidY() - medianY) }
 
-        return leftCenterTile
+        return leftCenterTile;
     }
 
 /**

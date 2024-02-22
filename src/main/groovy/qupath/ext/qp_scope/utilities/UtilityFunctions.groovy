@@ -234,8 +234,8 @@ class UtilityFunctions {
         Future<?> future = executorService.submit(() -> {
             try {
                 // Run the Python command and process the output
-                List<String> result = runPythonCommand(virtualEnvPath, pythonScriptPath, args);
-
+                runPythonCommand(virtualEnvPath, pythonScriptPath, args);
+                def result=true
                 // Check if the Python script completed successfully based on the result
                 if (result != null) {
                     processCompleted.set(true);

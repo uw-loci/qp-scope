@@ -50,7 +50,6 @@ class QP_scope_GUI {
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
     static TextField sampleLabelField = new TextField("First_Test")
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
-    static CheckBox slideFlippedCheckBox = new CheckBox("Slide is flipped")
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
@@ -189,9 +188,6 @@ class QP_scope_GUI {
         // Handling the response
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields and checkbox
-//            String xCoordinate = x1Field.getText()
-//            String yCoordinate = y1Field.getText()
-            boolean isSlideFlipped = slideFlippedCheckBox.isSelected()
 
             //TODO implement separate xy processing
 
@@ -210,6 +206,9 @@ class QP_scope_GUI {
             String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
+            boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
+            boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
+
 // Log retrieved preference values
             logger.info("frameWidth: $frameWidth")
             logger.info("frameHeight: $frameHeight")
@@ -239,7 +238,8 @@ class QP_scope_GUI {
             logger.info("sampleLabel: " + sampleLabel);
             //create a projectDetails map with four values that will be needed later, all related to project creation.
             if (QPEx.getProject() == null) {
-                projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
+                projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel,
+                        preferences as ObservableListWrapper, isSlideFlippedX, isSlideFlippedY)
             }else{
                 //If the project already exists and an image is open, return that information
                 projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
@@ -282,7 +282,7 @@ class QP_scope_GUI {
                     /////////////////////////////////////////
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
-                    AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, isSlideFlipped, preferences as ObservableListWrapper)
+                    AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
                     logger.info("Initial affine transform, scaling only: $transformation")
                     //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
                     if (transformation == null) {
@@ -306,7 +306,15 @@ class QP_scope_GUI {
                     logger.info("Obtained stage coordinates: $currentStageCoordinates_um")
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $transformation")
-                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>)
+
+                    //TODO TEST THIS
+                    // Calculate the offset in microns - the size of one frame in stage coordinates
+                    double offsetX = -1*frameWidth * pixelSizeFirstScanType;
+                    double offsetY = -1*frameHeight * pixelSizeFirstScanType;
+                    // Create the offset AffineTransform
+                    AffineTransform offset = new AffineTransform();
+                    offset.translate(offsetX, offsetY);
+                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>, offset)
                     logger.info("affine transform after initial alignment: $transformation")
 
 
@@ -346,7 +354,7 @@ class QP_scope_GUI {
 
                         //TODO can we create non-blocking python code
                         //UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(10, virtualEnvPath, pythonScriptPath, args)
+                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(2, virtualEnvPath, pythonScriptPath, args)
                         if (!pythonCommandSuccessful){
                             logger.info("Python command did not complete successfully")
                             return

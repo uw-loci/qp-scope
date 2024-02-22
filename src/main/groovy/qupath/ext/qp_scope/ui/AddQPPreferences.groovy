@@ -61,14 +61,24 @@ class AddQPPreferences {
         );
 
 // Flip macro image horizontally
-        BooleanProperty isFlippedProperty = PathPrefs.createPersistentPreference("isFlippedProperty", true);
+        BooleanProperty isFlippedXProperty = PathPrefs.createPersistentPreference("isFlippedXProperty", false);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(isFlippedProperty, Boolean.class)
-                        .name("Flip macro image")
+                new PropertyItemBuilder<>(isFlippedXProperty, Boolean.class)
+                        .name("Flip macro image X")
                         .category(EXTENSION_NAME)
                         .description("Allows the slide to be flipped horizontally so that the coordinates can be matched correctly with the stage.")
                         .build()
         );
+        // Flip macro image horizontally
+        BooleanProperty isFlippedYProperty = PathPrefs.createPersistentPreference("isFlippedYProperty", false);
+        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+                new PropertyItemBuilder<>(isFlippedYProperty, Boolean.class)
+                        .name("Flip macro image Y")
+                        .category(EXTENSION_NAME)
+                        .description("Allows the slide to be flipped vertically so that the coordinates can be matched correctly with the stage.")
+                        .build()
+        );
+
 
 // PycroManager Script Path
         StringProperty pycromanagerProperty = PathPrefs.createPersistentPreference("pycromanagerProperty", "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py");
