@@ -163,15 +163,16 @@ class TransformationFunctions {
  * @return An AffineTransform object representing the combined scaling, translation, and additional offset.
  */
     public static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
-                                                               List<String> qpCoordinatesList,
-                                                               List<String> stageCoordinatesList,
-                                                               AffineTransform offset) {
+                                                               List<Double> qpCoordinatesList,
+                                                               List<Double> stageCoordinatesList,
+                                                               AffineTransform offset = new AffineTransform()) {
 
         logger.info("Input scaling transform: " + scalingTransform);
+        logger.info("qpCoordinatesList: " + qpCoordinatesList);
 
-        // Convert strings to doubles and log
-        double[] qpPoint = qpCoordinatesList.stream().mapToDouble(Double::parseDouble).toArray();
-        double[] mmPoint = stageCoordinatesList.stream().mapToDouble(Double::parseDouble).toArray();
+
+        double[] qpPoint = qpCoordinatesList.stream().mapToDouble(Double::doubleValue).toArray();
+        double[] mmPoint = stageCoordinatesList.stream().mapToDouble(Double::doubleValue).toArray();
 
         logger.info("Parsed qpPoint: [" + qpPoint[0] + ", " + qpPoint[1] + "]");
         logger.info("Parsed mmPoint: [" + mmPoint[0] + ", " + mmPoint[1] + "]");
@@ -269,17 +270,20 @@ class TransformationFunctions {
  * @param qupathGUI The QuPath GUI instance used for executing GUI-related operations.
  * @return An AffineTransform object set up based on the provided parameters, or null if the user cancels the operation.
  */
-    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, boolean isSlideFlipped, ObservableListWrapper preferences) {
+    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, ObservableListWrapper preferences) {
 
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
         double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
 
+        boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
+        boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
         double scale =  pixelSize/(pixelSizeFirstScanType)
-        double scaleY = isSlideFlipped ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
+        double scaleX = invertedXAxis ? scale : -scale
+        double scaleY = invertedYAxis ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
         //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
 
-        transformation.scale(scale, scaleY)
+        transformation.scale(scaleX, scaleY)
 
         boolean gui4Success = QP_scope_GUI.stageToQuPathAlignmentGUI1()
         if (!gui4Success) {

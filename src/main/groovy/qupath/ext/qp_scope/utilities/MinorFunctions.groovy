@@ -3,17 +3,41 @@ package qupath.ext.qp_scope.utilities
 import javafx.scene.control.Alert
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
-import groovy.json.JsonSlurper
+import com.google.gson.Gson
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 
 class MinorFunctions {
     static final logger = LoggerFactory.getLogger(MinorFunctions.class)
+
+
+    /**
+     * Attempts to convert each element of a list to a Double.
+     * Non-convertible elements are skipped.
+     *
+     * @param list The list to convert.
+     * @return A new list of Double values.
+     */
+    static List<Double> convertListToDouble(List<?> list) {
+        List<Double> doubleList = []
+        list.each {
+            try {
+                doubleList.add(it.toString().toDouble())
+            } catch (NumberFormatException e) {
+                // Log the error or handle it as needed
+                println("Warning: Skipping unconvertible element '$it'")
+                // Optionally, add a default value instead of skipping
+                // doubleList.add(0.0)
+            }
+        }
+        return doubleList
+    }
 
     static void showAlertDialog(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING)
@@ -36,27 +60,73 @@ class MinorFunctions {
      * @return A map or list representation of the YAML file's content,
      *         allowing for multi-layered maps if the YAML is nested.
      */
-    def readYamlFileToMap(String filePath) {
+    static def readYamlFileToMap(String filePath) {
         Yaml yaml = new Yaml()
         String content = new String(Files.readAllBytes(Paths.get(filePath)))
         def data = yaml.load(content)
         return data
     }
 
+/**
+ * Reads a JSON file and parses it into a multi-layered map using Gson.
+ *
+ * @param filePath The path to the JSON file to be read and parsed.
+ * @return A map representation of the JSON file's content.
+ * @throws IOException If an I/O error occurs reading from the file or a malformed or unmappable byte sequence is read.
+ */
+    public static Map<String, Object> readJsonFileToMapWithGson(String filePath) throws IOException {
+        // Read the entire file content into a String
+        String content = new String(Files.readAllBytes(Paths.get(filePath)));
+
+        // Use Gson to parse the string into a map
+        Gson gson = new Gson();
+        Type type = new TypeToken<Map<String, Object>>(){}.getType();
+        Map<String, Object> data = gson.fromJson(content, type);
+
+        return data;
+    }
+
+
     /**
-     * Reads a JSON file and parses it into a Groovy map or list structure.
-     * The structure of the returned object depends on the JSON content,
-     * allowing for multi-layered maps if the JSON is nested.
+     * Counts the number of .tif entries in a TileConfiguration.txt file located in a directory constructed from a list of arguments.
      *
-     * @param filePath The path to the JSON file to be read and parsed.
-     * @return A map or list representation of the JSON file's content,
-     *         depending on the JSON structure.
+     * @param arguments A list containing the base path to the projects folder, sample label, scan type with index, and an optional subfolder name.
+     * @return The count of .tif entries in the TileConfiguration.txt file, or 0 if the file does not exist.
      */
-    def readJsonFileToMap(String filePath) {
-        def jsonSlurper = new JsonSlurper()
-        def file = new File(filePath)
-        def data = jsonSlurper.parse(file)
-        return data
+    static int countTifEntriesInTileConfig(List<String> arguments) {
+        // Construct the path to the TileConfiguration.txt file
+        String tileConfigPath = arguments.join("/") + "/TileConfiguration.txt"
+        File tileConfigFile = new File(tileConfigPath)
+
+        // Check if the TileConfiguration.txt file exists
+        if (!tileConfigFile.exists()) {
+            println "TileConfiguration.txt file not found at: $tileConfigPath"
+            return 0
+        } else { logger.info("Reading file at $tileConfigPath")}
+
+        // Count .tif entries in the file
+        int tifCount = 0
+        tileConfigFile.eachLine { line ->
+            if (line.contains(".tif")) {
+                tifCount++
+            }
+        }
+
+        logger.info( "Found $tifCount .tif entries in TileConfiguration.txt")
+        return tifCount
+    }
+
+    private static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
+        Path groovyScriptDirectory = Paths.get(groovyScriptPath).getParent()
+        groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
+
+        Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("Tissue-lowres.json")
+        Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
+
+        return [
+                jsonTissueClassfierPathString: jsonTissueClassfierPath.toString().replace("\\", "/"),
+                exportScriptPathString: exportScriptPath.toString().replace("\\", "/")
+        ]
     }
 
 

@@ -4,11 +4,13 @@ import javafx.application.Platform
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.Label
+import javafx.scene.control.ProgressBar
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
 import javafx.stage.Stage
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import qupath.ext.qp_scope.ui.UI_functions
 import qupath.lib.gui.QuPathGUI
 
 import qupath.lib.gui.scripting.QPEx
@@ -30,6 +32,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -97,117 +100,234 @@ class UtilityFunctions {
         return stitchedImagePathStr
     }
 
-    /**
-     * Executes a Python script using a specified Python executable within a virtual environment.
-     * This method is designed to be compatible with Windows, Linux, and macOS.
-     *
-     * @param anacondaEnvPath The path to the Python virtual environment.
-     * @param pythonScriptPath The path to the Python script in Preferences to run the microscope.
-     * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
-     */
-    static runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+//    /**
+//     * Executes a Python script using a specified Python executable within a virtual environment.
+//     * This method is designed to be compatible with Windows, Linux, and macOS.
+//     *
+//     * @param anacondaEnvPath The path to the Python virtual environment.
+//     * @param pythonScriptPath The path to the Python script in Preferences to run the microscope.
+//     * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
+//     */
+//    static runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
+//        try {
+//
+//            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
+//
+//            File scriptFile = new File(pythonScriptPath)
+//
+//            // Adjust the pythonScriptPath based on arguments
+//            if (arguments == null) {
+//                // Change the script to 'getStageCoordinates.py'
+//
+//                def getStageScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath()
+//                logger.info("calling runPythonCommand on $getStageScriptPath")
+//                if (!(new File(getStageScriptPath).exists())) {
+//                    // If the file does not exist, call runTestPythonScript
+//                    return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
+//                }
+//                // Construct the command
+//                String command = "\"" + pythonExecutable + "\" -u \"" + getStageScriptPath + "\" " + arguments
+//                // Execute the command
+//                Process process = command.execute()
+//                logger.info("Executing command: " + command)
+//                logger.info("This should get stage coordinates back")
+//                List<String> result = handleProcessOutput(process)
+//                if (result != null) {
+//                    logger.info("Received output: ${result.join(', ')}")
+//                    return result
+//                } else {
+//                    logger.error("Error occurred or no valid output received from the script.")
+//                    return null
+//                }
+//            }
+//            //If only two arguments are passed, we assume that a command needs to be sent to move the stage.
+//            if (arguments.size() == 2) {
+//                pythonScriptPath = new File(scriptFile.parent, "moveStageToCoordinates.py").canonicalPath
+//            }
+//
+//            logger.info("calling runPythonCommand on $pythonScriptPath")
+//            if (!(new File(pythonScriptPath).exists())) {
+//                // If the file does not exist, call runTestPythonScript
+//                return runTestPythonScript(anacondaEnvPath, pythonScriptPath, arguments)
+//            }
+//
+//            //Run the correct Python script! Either moe the stage to a point, or perform a collection
+//            //
+//            String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : ""
+//
+//            // Construct the command
+//            String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + args
+//            logger.info("Executing command: " + command)
+//
+//            // Execute the command
+//            Process process = command.execute()
+//            // Read the full output from the process
+//            process.waitFor()
+//            String output = process.in.text
+//            String errorOutput = process.err.text
+//
+//            if (output) {
+//                logger.info("Received output: \n$output")
+//            }
+//            if (errorOutput) {
+//                logger.error("Error output: \n$errorOutput")
+//            }
+//
+//            return null
+//        } catch (Exception e) {
+//            e.printStackTrace()
+//        }
+//    }
+//
+//    static List<String> handleProcessOutput(Process process) {
+//        BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+//        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))
+//
+//        String line
+//        List<String> outputLines = []
+//        List<String> errorLines = []
+//        String value1 = null
+//        String value2 = null
+//
+//        while ((line = outputReader.readLine()) != null) {
+//            outputLines.add(line)
+//            // Assuming coordinates are on the first line
+//            if (outputLines.size() == 1) {
+//                String[] values = line.split(" ")
+//                value1 = values[0]
+//                value2 = values[1]
+//            }
+//        }
+//
+//        while ((line = errorReader.readLine()) != null) {
+//            errorLines.add(line)
+//        }
+//        // Capture and log the process exit code
+//        int exitCode = process.waitFor();
+//        logger.info("Process exit code: " + exitCode);
+//
+//        // Log any error output from the process
+//        if (!errorLines.isEmpty()) {
+//            logger.error("Error output from Python script: \n" + String.join("\n", errorLines));
+//        }
+//        // Check for errors or invalid output
+//        if (!errorLines.isEmpty() || value1 == null || value2 == null) {
+//            return null
+//        }
+//
+//        return [value1, value2]
+//    }
+
+
+    //TODO fix runTestPythonScript calls
+
+//                if (!(new File(getStageScriptPath).exists())) {
+//                    // If the file does not exist, call runTestPythonScript
+//                    return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
+//
+//                }
+
+//            if (!(new File(pythonScriptPath).exists())) {
+//                // If the file does not exist, call runTestPythonScript
+//                return runTestPythonScript(anacondaEnvPath, pythonScriptPath, arguments)
+//
+//            }
+/**
+ * Executes a Python script using a specified Python executable within a virtual environment and handles live output.
+ * This method can handle different scripts and arguments, including cases where no arguments are provided and two values are expected from the output.
+ *
+ * @param anacondaEnvPath The path to the Python virtual environment.
+ * @param pythonScriptPath The path to the Python script.
+ * @param arguments A list of arguments to pass to the Python script; can be null.
+ * @return A List<String> with the output values if specific output handling is required; otherwise, null.
+ */
+
+    static List<String> runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List<String> arguments) {
+        AtomicReference<Double> progress = new AtomicReference<>(0.0) as AtomicReference<Double>; // Initialize progress as 0.0
+        AtomicInteger tifCount = new AtomicInteger(0);
+        int totalTifFiles = 0;
+        AtomicReference<String> value1 = new AtomicReference<>();
+        AtomicReference<String> value2 = new AtomicReference<>();
+        AtomicBoolean errorOccurred = new AtomicBoolean(false);
+        List<String> tifLines = new ArrayList<>(); // Store .tif lines here
+
+
         try {
+            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
+            File scriptFile = new File(pythonScriptPath);
 
-            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
-
-            File scriptFile = new File(pythonScriptPath)
-
-            // Adjust the pythonScriptPath based on arguments
+            // Adjust script path and logger message for null arguments or specific size of arguments
             if (arguments == null) {
-                // Change the script to 'getStageCoordinates.py'
-
-                def getStageScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath()
-                logger.info("calling runPythonCommand on $getStageScriptPath")
-                if (!(new File(getStageScriptPath).exists())) {
-                    // If the file does not exist, call runTestPythonScript
-                    return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
-                }
-                // Construct the command
-                String command = "\"" + pythonExecutable + "\" -u \"" + getStageScriptPath + "\" " + arguments
-                // Execute the command
-                Process process = command.execute()
-                logger.info("Executing command: " + command)
-                logger.info("This should get stage coordinates back")
-                List<String> result = handleProcessOutput(process)
-                if (result != null) {
-                    logger.info("Received output: ${result.join(', ')}")
-                    return result
-                } else {
-                    logger.error("Error occurred or no valid output received from the script.")
-                    return null
-                }
+                pythonScriptPath = new File(new File(pythonScriptPath).getParent(), "getStageCoordinates.py").getCanonicalPath();
+                logger.info("Running getStageCoordinates script");
             } else if (arguments.size() == 2) {
-                //If only two arguments are passed, we assume that a command needs to be sent to move the stage.
-                pythonScriptPath = new File(scriptFile.parent, "moveStageToCoordinates.py").canonicalPath
-            }
-            logger.info("calling runPythonCommand on $pythonScriptPath")
-            if (!(new File(pythonScriptPath).exists())) {
-                // If the file does not exist, call runTestPythonScript
-                return runTestPythonScript(anacondaEnvPath, pythonScriptPath, arguments)
-            }
-            String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : ""
-
-            // Construct the command
-            String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + args
-            logger.info("Executing command: " + command)
-
-            // Execute the command
-            Process process = command.execute()
-            // Read the full output from the process
-            process.waitFor()
-            String output = process.in.text
-            String errorOutput = process.err.text
-
-            if (output) {
-                logger.info("Received output: \n$output")
-            }
-            if (errorOutput) {
-                logger.error("Error output: \n$errorOutput")
+                pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
+            } else {
+                totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
+                logger.info("SHOWING PROGRESS BAR NOW FOR $totalTifFiles TIFF FILES")
+                UI_functions.showProgressBar(tifCount, totalTifFiles);
             }
 
-            return null
+            String argsJoined = arguments != null ? arguments.stream().map(arg -> "\"" + arg + "\"").collect(Collectors.joining(" ")) : "";
+            String command = String.format("\"%s\" -u \"%s\" %s", pythonExecutable, pythonScriptPath, argsJoined);
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            Thread outputThread = new Thread(() -> {
+                outputReader.lines().forEach(line -> {
+                    logger.info("Output: " + line);
+                    if (line.contains(".tif")) {
+                        tifLines.add(line); // Add .tif line to the list
+                        int currentCount = tifCount.incrementAndGet();
+                        double currentProgress = (double) currentCount / totalTifFiles;
+                        progress.set(currentProgress);
+                    } else if (arguments == null || arguments.size() == 2) {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length >= 2) {
+                            value1.set(parts[0]);
+                            value2.set(parts[1]);
+                        }
+                    }
+                });
+            });
+
+            Thread errorThread = new Thread(() -> {
+                String errorLine;
+                try {
+                    while ((errorLine = errorReader.readLine()) != null) {
+                        logger.error("Error: " + errorLine);
+                        errorOccurred.set(true);
+                    }
+                } catch (IOException e) {
+                    logger.error("Error reading script error output", e);
+                }
+            });
+
+            outputThread.start();
+            errorThread.start();
+
+            outputThread.join(); // Ensure output processing completes
+            errorThread.join(); // Ensure error processing completes
+
+            int exitCode = process.waitFor();
+            logger.info("Python process exited with code: " + exitCode);
+            if (errorOccurred.get()) {
+                return null; // Or handle error differently
+            }
+
+            if (arguments == null || arguments.size() == 2) {
+                return Arrays.asList(value1.get(), value2.get());
+            } else {
+                return tifLines; // Return collected .tif lines
+            }
+
         } catch (Exception e) {
-            e.printStackTrace()
+            e.printStackTrace();
+        } finally {
+            UI_functions.closeProgressBar();
         }
-    }
-
-    static List<String> handleProcessOutput(Process process) {
-        BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
-        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))
-
-        String line
-        List<String> outputLines = []
-        List<String> errorLines = []
-        String value1 = null
-        String value2 = null
-
-        while ((line = outputReader.readLine()) != null) {
-            outputLines.add(line)
-            // Assuming coordinates are on the first line
-            if (outputLines.size() == 1) {
-                String[] values = line.split(" ")
-                value1 = values[0]
-                value2 = values[1]
-            }
-        }
-
-        while ((line = errorReader.readLine()) != null) {
-            errorLines.add(line)
-        }
-        // Capture and log the process exit code
-        int exitCode = process.waitFor();
-        logger.info("Process exit code: " + exitCode);
-
-        // Log any error output from the process
-        if (!errorLines.isEmpty()) {
-            logger.error("Error output from Python script: \n" + String.join("\n", errorLines));
-        }
-        // Check for errors or invalid output
-        if (!errorLines.isEmpty() || value1 == null || value2 == null) {
-            return null
-        }
-
-        return [value1, value2]
+        return null; // Default return in case of unexpected failure
     }
 
 
@@ -235,11 +355,7 @@ class UtilityFunctions {
             try {
                 // Run the Python command and process the output
                 runPythonCommand(virtualEnvPath, pythonScriptPath, args);
-                def result=true
-                // Check if the Python script completed successfully based on the result
-                if (result != null) {
-                    processCompleted.set(true);
-                }
+
 
             } catch (Exception e) {
                 logger.error("Error executing Python command: " + e.getMessage());

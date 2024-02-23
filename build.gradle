@@ -53,12 +53,13 @@ dependencies {
     // If you aren't using Groovy, this can be removed
     shadow libs.bundles.groovy
     implementation libs.qupath.fxtras
+    implementation libs.snakeyaml
+    implementation libs.gson
     testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     testImplementation libs.junit
     implementation "qupath.ext.basicstitching:basic-stitching:0.2.0"
     implementation "io.github.qupath:qupath-extension-bioformats:${qupathVersion}"
-    implementation 'org.codehaus.groovy:groovy-json:3.0.9'
-    implementation 'org.yaml:snakeyaml:2.2'
+//    implementation 'org.yaml:snakeyaml:2.2'
 }
 
 /*

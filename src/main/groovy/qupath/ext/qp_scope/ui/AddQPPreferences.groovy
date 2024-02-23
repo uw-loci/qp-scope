@@ -69,7 +69,7 @@ class AddQPPreferences {
                         .description("Allows the slide to be flipped horizontally so that the coordinates can be matched correctly with the stage.")
                         .build()
         );
-        // Flip macro image horizontally
+        // Flip macro image vertically
         BooleanProperty isFlippedYProperty = PathPrefs.createPersistentPreference("isFlippedYProperty", false);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isFlippedYProperty, Boolean.class)
@@ -79,7 +79,24 @@ class AddQPPreferences {
                         .build()
         );
 
-
+        // Stage axis is inverted relative to QuPath
+        BooleanProperty isInvertedXProperty = PathPrefs.createPersistentPreference("isInvertedXProperty", false);
+        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+                new PropertyItemBuilder<>(isInvertedXProperty, Boolean.class)
+                        .name("Inverted X stage")
+                        .category(EXTENSION_NAME)
+                        .description("Stage axis is inverted in X relative to QuPath.")
+                        .build()
+        );
+        // Stage axis is inverted relative to QuPath
+        BooleanProperty isInvertedYProperty = PathPrefs.createPersistentPreference("isInvertedYProperty", true);
+        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+                new PropertyItemBuilder<>(isInvertedYProperty, Boolean.class)
+                        .name("Inverted Y stage")
+                        .category(EXTENSION_NAME)
+                        .description("Stage axis is inverted in Y relative to QuPath.")
+                        .build()
+        );
 // PycroManager Script Path
         StringProperty pycromanagerProperty = PathPrefs.createPersistentPreference("pycromanagerProperty", "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(

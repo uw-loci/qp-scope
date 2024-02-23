@@ -1,6 +1,7 @@
 package qupath.ext.qp_scope.ui
 
 import com.sun.javafx.collections.ObservableListWrapper
+import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.Node
 import javafx.scene.control.*
@@ -12,6 +13,7 @@ import qupath.ext.qp_scope.utilities.QPProjectFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
 import qupath.ext.qp_scope.utilities.MinorFunctions
 import qupath.ext.qp_scope.utilities.TransformationFunctions
+import qupath.ext.qp_scope.ui.UI_functions
 import qupath.lib.gui.QuPathGUI
 import qupath.fx.dialogs.Dialogs
 import qupath.lib.gui.scripting.QPEx
@@ -28,7 +30,7 @@ import java.awt.image.BufferedImage
 
 import java.nio.file.Path
 import java.nio.file.Paths
-
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Collectors
 
 import javafx.stage.Modality
@@ -64,102 +66,120 @@ class QP_scope_GUI {
 
     static void testGUI() {
         // Create the dialog
-        def dlg = new Dialog<ButtonType>()
-        dlg.initModality(Modality.APPLICATION_MODAL)
-        dlg.setTitle("qp_scope")
-        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
-        dlg.setOnShown(event -> {
-            Window window = dlg.getDialogPane().getScene().getWindow();
-            if (window instanceof Stage) {
-                ((Stage) window).setAlwaysOnTop(true);
-            }
-        });
-        // Set the content
-        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+//        def dlg = new Dialog<ButtonType>()
+//        dlg.initModality(Modality.APPLICATION_MODAL)
+//        dlg.setTitle("qp_scope")
+//        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
+//        dlg.setOnShown(event -> {
+//            Window window = dlg.getDialogPane().getScene().getWindow();
+//            if (window instanceof Stage) {
+//                ((Stage) window).setAlwaysOnTop(true);
+//            }
+//        });
+//        // Set the content
+//        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+//
+//        // Add Okay and Cancel buttons
+//        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
 
-        // Add Okay and Cancel buttons
-        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+
+        AtomicInteger progressCounter = new AtomicInteger(0);
+        int totalFiles = 5
+
+        UI_functions.showProgressBar(progressCounter, totalFiles)
+        new Thread(() -> {
+            while (progressCounter.get() < totalFiles) {
+                logger.info(Integer.toString(progressCounter.get()));
+                try {
+                    Thread.sleep(1000); // Sleep for 1 second
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore interrupted status
+                    logger.error("Thread interrupted", e);
+                }
+                progressCounter.incrementAndGet();
+            }
+        }).start();
 
 
         String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
         String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
         String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
         // Show the dialog and capture the response
-        def result = dlg.showAndWait()
-
-        // Handling the response
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Retrieve values from text fields
-            def sampleLabel = sampleLabelField.getText()
-
-            def x1 = x1Field.getText()
-            def y1 = y1Field.getText()
-            def x2 = x2Field.getText()
-            def y2 = y2Field.getText()
-            // Handle full bounding box input
-            def boxString = scanBox.getText()
-            //Boolean to check whether to proceed with running the microscope data collection
-            boolean dataCheck = true
-            def pixelSize = preferences.find{it.getName() == "Pixel Size Source"}.getValue().toString()
-
-            // Continue with previous behavior using coordinates
-
-            if (boxString != "") {
-                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
-                if (values.length == 4) {
-                    x1 = values[0]
-                    y1 = values[1]
-                    x2 = values[2]
-                    y2 = values[3]
-                }
-            }
-            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
-                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
-                dataCheck = false
-            }
-
-
-            // Check if any value is empty
-
-            if (dataCheck) {
-                QuPathGUI qupathGUI = QPEx.getQuPath()
-
-                def qp_test_coords_1 = [2216.9667073567707, 1094.4444580078125]
-                def stage_test_coords_1 = [-11797.03, -1374.9]
-                def qp_test_coords_2 = [2003.3333740234375, 1573.277791341146]
-                def stage_test_coords_2  = [-13371, -4819.9]
-                def qp_test_coords_3 = [2110.150040690104, 1972.3055691189236]
-                def stage_test_coords_3  = [-11873.289, -8163.269]
-                def qp_test_coords_4 = [1896.516707356771, 1972.3055691189236]
-                def stage_test_coords_4  = [-11856.86, -8028.46]
-                def qp_test_list = [qp_test_coords_1,qp_test_coords_2, qp_test_coords_3, qp_test_coords_4]
-                def stage_test_list = [stage_test_coords_1,stage_test_coords_2, stage_test_coords_3, stage_test_coords_4]
-
-                for (int i = 0; i < qp_test_list.size(); i++) {
-                    List<Double> qpTestCoords = qp_test_list[i]
-                    List<Double> stageTestCoords = stage_test_list[i]
-
-                    // Create initial scaling transform
-                    AffineTransform transformation = new AffineTransform()
-                    double scale =  (pixelSize as Double)/ (preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double)
-                    logger.info("scale is $scale")
-                    transformation.scale(scale, -scale)
-                    logger.info("transformation at this point should be 0.15, 0,0  0, 0.15, 0: $transformation")
-                    // Calculate the transformation for the current pair
-                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, qpTestCoords.collect { it.toString() }, stageTestCoords.collect { it.toString() })
-                    logger.info("Transformation for pair ${i + 1}: $transformation")
-
-                    // Apply the transformation to each test coordinate
-                    qp_test_list.each { qpCoords ->
-                        Point2D.Double transformedPoint = applyTransformation(transformation, qpCoords as double[])
-                        logger.info("Converted $qpCoords to $transformedPoint")
-                        logger.info("Expected value was: ${stage_test_list[qp_test_list.indexOf(qpCoords)]}")
-                    }
-                }
-
-
-            }
-        }
+//        def result = dlg.showAndWait()
+//
+//        // Handling the response
+//        if (result.isPresent() && result.get() == ButtonType.OK) {
+//            // Retrieve values from text fields
+//            def sampleLabel = sampleLabelField.getText()
+//
+//            def x1 = x1Field.getText()
+//            def y1 = y1Field.getText()
+//            def x2 = x2Field.getText()
+//            def y2 = y2Field.getText()
+//            // Handle full bounding box input
+//            def boxString = scanBox.getText()
+//            //Boolean to check whether to proceed with running the microscope data collection
+//            boolean dataCheck = true
+//            def pixelSize = preferences.find{it.getName() == "Pixel Size Source"}.getValue().toString()
+//
+//            // Continue with previous behavior using coordinates
+//
+//            if (boxString != "") {
+//                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
+//                if (values.length == 4) {
+//                    x1 = values[0]
+//                    y1 = values[1]
+//                    x2 = values[2]
+//                    y2 = values[3]
+//                }
+//            }
+//            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+//                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
+//                dataCheck = false
+//            }
+//
+//
+//            // Check if any value is empty
+//
+//            if (dataCheck) {
+//                QuPathGUI qupathGUI = QPEx.getQuPath()
+//
+//                def qp_test_coords_1 = [2216.9667073567707, 1094.4444580078125]
+//                def stage_test_coords_1 = [-11797.03, -1374.9]
+//                def qp_test_coords_2 = [2003.3333740234375, 1573.277791341146]
+//                def stage_test_coords_2  = [-13371, -4819.9]
+//                def qp_test_coords_3 = [2110.150040690104, 1972.3055691189236]
+//                def stage_test_coords_3  = [-11873.289, -8163.269]
+//                def qp_test_coords_4 = [1896.516707356771, 1972.3055691189236]
+//                def stage_test_coords_4  = [-11856.86, -8028.46]
+//                def qp_test_list = [qp_test_coords_1,qp_test_coords_2, qp_test_coords_3, qp_test_coords_4]
+//                def stage_test_list = [stage_test_coords_1,stage_test_coords_2, stage_test_coords_3, stage_test_coords_4]
+//
+//                for (int i = 0; i < qp_test_list.size(); i++) {
+//                    List<Double> qpTestCoords = qp_test_list[i]
+//                    List<Double> stageTestCoords = stage_test_list[i]
+//
+//                    // Create initial scaling transform
+//                    AffineTransform transformation = new AffineTransform()
+//                    double scale =  (pixelSize as Double)/ (preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double)
+//                    logger.info("scale is $scale")
+//                    transformation.scale(scale, -scale)
+//                    logger.info("transformation at this point should be 0.15, 0,0  0, 0.15, 0: $transformation")
+//                    // Calculate the transformation for the current pair
+//                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, qpTestCoords.collect { it.toString() }, stageTestCoords.collect { it.toString() })
+//                    logger.info("Transformation for pair ${i + 1}: $transformation")
+//
+//                    // Apply the transformation to each test coordinate
+//                    qp_test_list.each { qpCoords ->
+//                        Point2D.Double transformedPoint = applyTransformation(transformation, qpCoords as double[])
+//                        logger.info("Converted $qpCoords to $transformedPoint")
+//                        logger.info("Expected value was: ${stage_test_list[qp_test_list.indexOf(qpCoords)]}")
+//                    }
+//                }
+//
+//
+//            }
+//        }
     }
     static Point2D.Double applyTransformation(AffineTransform transform, double[] point) {
         Point2D.Double originalPoint = new Point2D.Double(point[0], point[1])
@@ -174,7 +194,7 @@ class QP_scope_GUI {
         // Define response validation
         dlg.setResultConverter(dialogButton -> {
             if (dialogButton == ButtonType.OK) {
-                if (!isValidInput(x1Field.getText()) || !isValidInput(y1Field.getText())) {
+                if (!UI_functions.isValidInput(x1Field.getText()) || !UI_functions.isValidInput(y1Field.getText())) {
                     Dialogs.showWarningNotification("Invalid Input", "Please enter valid numeric values for coordinates.")
                     return null // Prevent dialog from closing
                 }
@@ -227,7 +247,7 @@ class QP_scope_GUI {
             }
             //String imageName = QP.getCurrentImageName()
 
-            Map scriptPaths = calculateScriptPaths(groovyScriptPath)
+            Map scriptPaths = MinorFunctions.calculateScriptPaths(groovyScriptPath)
             String jsonTissueClassifierPathString = scriptPaths.jsonTissueClassfierPathString
             QuPathGUI qupathGUI = QPEx.getQuPath()
             Map projectDetails
@@ -296,17 +316,17 @@ class QP_scope_GUI {
 
 
                     // Get the current stage coordinates to figure out the translation from the first alignment.
-                    List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()]
+                    List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()] as List<Double>
                     if (!coordinatesQP) {
                         logger.error("Need coordinates.")
                         return
                     }
                     logger.info("user adjusted position of tile at $coordinatesQP")
-                    List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null) as List
-                    logger.info("Obtained stage coordinates: $currentStageCoordinates_um")
+                    List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                    logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $transformation")
-
+                    List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
                     //TODO TEST THIS
                     // Calculate the offset in microns - the size of one frame in stage coordinates
                     double offsetX = -1*frameWidth * pixelSizeFirstScanType;
@@ -314,7 +334,7 @@ class QP_scope_GUI {
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
-                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP as List<String>, currentStageCoordinates_um as List<String>, offset)
+                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP, currentStageCoordinates_um, offset)
                     logger.info("affine transform after initial alignment: $transformation")
 
 
@@ -354,7 +374,7 @@ class QP_scope_GUI {
 
                         //TODO can we create non-blocking python code
                         //UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                        boolean pythonCommandSuccessful = UtilityFunctions.managePythonInstance(2, virtualEnvPath, pythonScriptPath, args)
+                        boolean pythonCommandSuccessful = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
                         if (!pythonCommandSuccessful){
                             logger.info("Python command did not complete successfully")
                             return
@@ -451,7 +471,6 @@ class QP_scope_GUI {
                 Project currentQuPathProject = projectDetails.currentQuPathProject as Project
                 String tempTileDirectory = projectDetails.tempTileDirectory
                 String scanTypeWithIndex = projectDetails.scanTypeWithIndex
-                //Map scriptPaths = calculateScriptPaths(pythonScriptPath)
 
                 //Specifically for the case where there is only a bounding box provided
                 List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
@@ -501,14 +520,14 @@ class QP_scope_GUI {
         def row = 0
 
         // Add new component for Sample Label
-        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+        UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
 
         // Add existing components to the grid
-        addToGrid(pane, new Label('X1:'), x1Field, row++)
-        addToGrid(pane, new Label('Y1:'), y1Field, row++)
-        addToGrid(pane, new Label('X2:'), x2Field, row++)
-        addToGrid(pane, new Label('Y2:'), y2Field, row++)
-        addToGrid(pane, new Label('Full bounding box:'), scanBox, row++)
+        UI_functions.addToGrid(pane, new Label('X1:'), x1Field, row++)
+        UI_functions.addToGrid(pane, new Label('Y1:'), y1Field, row++)
+        UI_functions.addToGrid(pane, new Label('X2:'), x2Field, row++)
+        UI_functions.addToGrid(pane, new Label('Y2:'), y2Field, row++)
+        UI_functions.addToGrid(pane, new Label('Full bounding box:'), scanBox, row++)
 
         return pane
     }
@@ -645,15 +664,7 @@ class QP_scope_GUI {
     }
 
 
-    private static void addToGrid(GridPane pane, Node label, Node control, int rowIndex) {
-        pane.add(label, 0, rowIndex)
-        pane.add(control, 1, rowIndex)
-    }
-    // Overloaded addToGrid method for a single Node
-    // TODO fix hardcoding of 2 and 1
-    private static void addToGrid(GridPane pane, Node node, int rowIndex) {
-        pane.add(node, 0, rowIndex, 2, 1) // The node spans 2 columns
-    }
+
 
 
     private static Dialog<ButtonType> createMacroImageInputDialog() {
@@ -679,11 +690,6 @@ class QP_scope_GUI {
         return dlg
     }
 
-    // Helper method to check if input is numeric
-    private static boolean isValidInput(String input) {
-        return input.matches("\\d*")
-    }
-
 
     private static GridPane createMacroImageInputGUI() {
         GridPane pane = new GridPane()
@@ -692,14 +698,14 @@ class QP_scope_GUI {
         def row = 0
 
         // Add new components for the checkbox and Groovy script path
-        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+        UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
         // Add components for Python environment and script path
 
-        addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
+        UI_functions.addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
         // Add new components for pixel size and non-isotropic pixels checkbox on the same line
         HBox pixelSizeBox = new HBox(10)
         pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
-        addToGrid(pane, pixelSizeBox, row++)
+        UI_functions.addToGrid(pane, pixelSizeBox, row++)
         // Add new components for "Upper left XY coordinate"
         //Label upperLeftLabel = new Label("Upper left XY coordinate")
         //pane.add(upperLeftLabel, 0, row); // Span multiple columns if needed
@@ -855,7 +861,7 @@ class QP_scope_GUI {
         logger.info("QuPath pixel coordinates: $QPPixelCoordinates")
         logger.info("Transformed into stage coordinates: $expectedStageXYPositionMicrons")
         // Move the stage to the new coordinates
-        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons)
+        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons as List<String>)
         qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
 
         // Validate the position that was moved to or update with an adjusted position
@@ -863,7 +869,8 @@ class QP_scope_GUI {
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<String>, currentStageCoordinates_um)
+
+            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<Double>, currentStageCoordinates_um as List<Double>)
         }
 
         // Prepare the results to be returned
@@ -883,26 +890,14 @@ class QP_scope_GUI {
         def row = 0
 
         // Add new component for Sample Label
-        addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
-        addToGrid(pane, new Label('Annotation classes to image:'), classFilterField, row++)
+        UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+        UI_functions.addToGrid(pane, new Label('Annotation classes to image:'), classFilterField, row++)
 
         // Listener for the checkbox
 
         return pane
     }
 
-    private static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
-        Path groovyScriptDirectory = Paths.get(groovyScriptPath).getParent()
-        groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
-
-        Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("Tissue-lowres.json")
-        Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
-
-        return [
-                jsonTissueClassfierPathString: jsonTissueClassfierPath.toString().replace("\\", "/"),
-                exportScriptPathString: exportScriptPath.toString().replace("\\", "/")
-        ]
-    }
 
 
 

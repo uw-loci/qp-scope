@@ -2,12 +2,15 @@ import os
 import sys
 import shutil
 import glob
+import time
 from multiprocessing import Pool
 
 def copy_file(file, dest_dir):
     try:
+        time.sleep(0.5)
         shutil.copy(file, dest_dir)
-        print(f"Copied {file} to {dest_dir}")
+        #print(f"Copied {file} to {dest_dir}")
+        print(f"Copied {file}")
     except Exception as e:
         print(f"Error copying file {file}: {e}")
 

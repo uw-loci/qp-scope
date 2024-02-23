@@ -77,12 +77,12 @@ class QP_scope implements QuPathExtension, GitHubProject {
         def qpScope4 = new MenuItem("Dummy menu option for troubleshooting")
         // TODO: tooltip
         qpScope4.setOnAction(e -> {
-            //QP_scope_GUI.testGUI()
+            QP_scope_GUI.testGUI()
             // Directly toggle the property to test listener reaction
-            def qppreferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-            logger.info("Toggling enableExtension");
-            def enableExtension = qppreferences.find{it.getName() == "Enable my extension"}
-            enableExtension.setValue(!enableExtension.getValue());
+//            def qppreferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
+//            logger.info("Toggling enableExtension");
+//            def enableExtension = qppreferences.find{it.getName() == "Enable my extension"}
+//            enableExtension.setValue(!enableExtension.getValue());
         })
         // Add the menu items to the menu
         menu.getItems() << qpScope1
