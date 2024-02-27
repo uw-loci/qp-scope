@@ -25,15 +25,15 @@ class TransformationFunctions {
  *         where the first element is the x-coordinate and the second is the y-coordinate.
  */
     static List<Double> QPtoMicroscopeCoordinates(List<Double> qpCoordinates, AffineTransform transformation) {
-        logger.info("Transforming QP coordinates to microscope coordinates. Input QP Coordinates: ["
-                + qpCoordinates.get(0) + ", " + qpCoordinates.get(1) + "]");
+//        logger.info("Transforming QP coordinates to microscope coordinates. Input QP Coordinates: ["
+//                + qpCoordinates.get(0) + ", " + qpCoordinates.get(1) + "]");
 
         Point2D.Double sourcePoint = new Point2D.Double(qpCoordinates.get(0), qpCoordinates.get(1));
         Point2D.Double destPoint = new Point2D.Double();
 
         transformation.transform(sourcePoint, destPoint);
 
-        logger.info("Transformed Microscope Coordinates: [" + destPoint.x + ", " + destPoint.y + "]");
+//        logger.info("Transformed Microscope Coordinates: [" + destPoint.x + ", " + destPoint.y + "]");
 
         return Arrays.asList(destPoint.x, destPoint.y);
     }

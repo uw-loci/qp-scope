@@ -243,14 +243,15 @@ class UtilityFunctions {
  */
 
     static List<String> runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List<String> arguments) {
-        AtomicReference<Double> progress = new AtomicReference<>(0.0) as AtomicReference<Double>; // Initialize progress as 0.0
         AtomicInteger tifCount = new AtomicInteger(0);
-        int totalTifFiles = 0;
+
         AtomicReference<String> value1 = new AtomicReference<>();
         AtomicReference<String> value2 = new AtomicReference<>();
         AtomicBoolean errorOccurred = new AtomicBoolean(false);
         List<String> tifLines = new ArrayList<>(); // Store .tif lines here
-
+        String argsJoined = arguments != null ? arguments.stream().map(arg -> "\"" + arg + "\"").collect(Collectors.joining(" ")) : "";
+        int totalTifFiles = 0
+        boolean progressBar = false
 
         try {
             String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
@@ -264,24 +265,32 @@ class UtilityFunctions {
                 pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
             } else {
                 totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
-                logger.info("SHOWING PROGRESS BAR NOW FOR $totalTifFiles TIFF FILES")
-                UI_functions.showProgressBar(tifCount, totalTifFiles);
+                progressBar = true
+                //logger.info("SHOWING PROGRESS BAR NOW FOR $totalTifFiles TIFF FILES after")
             }
 
-            String argsJoined = arguments != null ? arguments.stream().map(arg -> "\"" + arg + "\"").collect(Collectors.joining(" ")) : "";
+
             String command = String.format("\"%s\" -u \"%s\" %s", pythonExecutable, pythonScriptPath, argsJoined);
+            logger.info("Running Python Command as follows")
+            logger.info("$command")
             Process process = Runtime.getRuntime().exec(command);
+            if (progressBar) {
+                UI_functions.showProgressBar(tifCount, totalTifFiles, process, 10000)
+                //UI_functions.showProgressBar(tifCount, totalTifFiles)
+            }
+
             BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
+            //This section handles the output from the python script, and what impact it has on the rest of the workflow
             Thread outputThread = new Thread(() -> {
                 outputReader.lines().forEach(line -> {
                     logger.info("Output: " + line);
                     if (line.contains(".tif")) {
+
                         tifLines.add(line); // Add .tif line to the list
-                        int currentCount = tifCount.incrementAndGet();
-                        double currentProgress = (double) currentCount / totalTifFiles;
-                        progress.set(currentProgress);
+                        tifCount.incrementAndGet();
+                        logger.info("Line and $tifCount count")
                     } else if (arguments == null || arguments.size() == 2) {
                         String[] parts = line.split("\\s+");
                         if (parts.length >= 2) {
@@ -292,15 +301,25 @@ class UtilityFunctions {
                 });
             });
 
+            //Handle error output related to the python process, destroying it if necessary.
             Thread errorThread = new Thread(() -> {
                 String errorLine;
                 try {
                     while ((errorLine = errorReader.readLine()) != null) {
                         logger.error("Error: " + errorLine);
-                        errorOccurred.set(true);
+                        if (errorLine.equals("Exiting")) {
+                            process.destroy();
+                            return;
+                        }
                     }
                 } catch (IOException e) {
                     logger.error("Error reading script error output", e);
+                } finally {
+                    try {
+                        errorReader.close();
+                    } catch (IOException e) {
+                        logger.error("Error closing the error stream", e);
+                    }
                 }
             });
 
@@ -324,87 +343,8 @@ class UtilityFunctions {
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            UI_functions.closeProgressBar();
         }
         return null; // Default return in case of unexpected failure
-    }
-
-
-
-
-/**
- * Manages the execution of a Python script within a virtual environment, with timeout and file monitoring.
- * This function runs the Python script and monitors for new files in a specified output directory,
- * allowing for a progress update mechanism and handling script timeouts.
- *
- * @param waitTimeSeconds The maximum time in seconds to wait for the Python script to complete for each file check.
- * @param virtualEnvPath The path to the Python virtual environment.
- * @param pythonScriptPath The path to the Python script to be executed.
- * @param args A list of arguments to pass to the Python script.
- * @return true if the process completes successfully within the timeout and expected files are generated, false otherwise.
- */
-    static boolean managePythonInstance(int waitTimeSeconds, String virtualEnvPath, String pythonScriptPath, List<String> args) {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        AtomicBoolean processCompleted = new AtomicBoolean(false);
-        String outputFolderPath = Paths.get(args[0], args[1], args[2], args[3]).toString();
-        logger.info("managePythonInstance checking folder $outputFolderPath")
-        AtomicInteger previousFileCount = new AtomicInteger(0);
-
-        Future<?> future = executorService.submit(() -> {
-            try {
-                // Run the Python command and process the output
-                runPythonCommand(virtualEnvPath, pythonScriptPath, args);
-
-
-            } catch (Exception e) {
-                logger.error("Error executing Python command: " + e.getMessage());
-            }
-        });
-
-        // Scheduled executor to check the output directory for new files
-        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        scheduledExecutor.scheduleAtFixedRate(() -> {
-            try {
-                File outputFolder = new File(outputFolderPath);
-                if (outputFolder.exists()) {
-                    String[] fileList = outputFolder.list();
-                    int currentFileCount = (fileList != null) ? fileList.length : 0;
-
-                    if (currentFileCount > previousFileCount.get()) {
-                        previousFileCount.set(currentFileCount);
-                        // Log progress
-                        logger.info("Current file count: $currentFileCount");
-                    }
-
-                    // Check if expected number of files is reached
-                    def currentAnnotationName = args[3]
-                    def annotation = QP.getAnnotationObjects().find{it.getName() == currentAnnotationName}
-                    def expectedFileCount = QP.getCurrentHierarchy().getObjectsForROI(qupath.lib.objects.PathDetectionObject, annotation.getROI()).size() + 2
-
-                    if (currentFileCount >= expectedFileCount) {
-                        future.cancel(true); // Attempt to cancel the running task
-                        processCompleted.set(true);
-                        scheduledExecutor.shutdown();
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Error monitoring output files: " + e.getMessage());
-            }
-        }, 0, waitTimeSeconds, TimeUnit.SECONDS);
-
-        // Wait for the Python script to complete or timeout
-        try {
-            future.get(waitTimeSeconds * (QP.getDetectionObjects().size() + 2), TimeUnit.SECONDS);
-        } catch (TimeoutException | InterruptedException | ExecutionException e) {
-            future.cancel(true); // Ensure the process is stopped in case of timeout or interruption
-            logger.error("Python script execution interrupted or timed out: " + e.getMessage());
-        } finally {
-            scheduledExecutor.shutdownNow();
-        }
-
-        executorService.shutdownNow();
-        return processCompleted.get();
     }
 
 

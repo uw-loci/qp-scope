@@ -24,6 +24,7 @@ import qupath.lib.scripting.QP
 import javafx.stage.Window
 import java.awt.event.ActionEvent
 import java.awt.geom.Point2D
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Semaphore
 import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
@@ -101,9 +102,28 @@ class QP_scope_GUI {
         }).start();
 
 
+        // Preferences from GUI
+        double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
+        double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
+        double pixelSizeSource = preferences.find{it.getName() == "Macro image px size"}.getValue() as Double
+        double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+        double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
         String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
         String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
         String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
+        String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
+        String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
+        boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
+        boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
+
+        List<String> args = [projectsFolderPath,
+                             "First_Test",
+                             "4x_bf_1",
+                             "2220_1738",
+        ] as List<String>
+        int count = MinorFunctions.countTifEntriesInTileConfig(args)
+        logger.info("Count is $count")
+
         // Show the dialog and capture the response
 //        def result = dlg.showAndWait()
 //
@@ -274,17 +294,19 @@ class QP_scope_GUI {
             QuPathGUI.getInstance().runScript(null, tissueDetectScript)
             //At this point the tissue should be outlined in an annotation
 
+
+
 //            boolean annotationStatusCheck = UtilityFunctions.checkValidAnnotationsGUI()
 //            if (!annotationStatusCheck){
 //                logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
 //                return
 //            }
 //
-            //Using a callback to allow the user to both interact with the QuPath main window, and yet block execution of future code
-            UtilityFunctions.checkValidAnnotationsGUI({ check ->
-                if (!check) {
-                    logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
-                } else {
+//            //Using a callback to allow the user to both interact with the QuPath main window, and yet block execution of future code
+//            UtilityFunctions.checkValidAnnotationsGUI({ check ->
+//                if (!check) {
+//                    logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
+//                } else {
                     def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
                     Double frameWidthMicrons = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
                     Double frameHeightMicrons = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
@@ -297,9 +319,6 @@ class QP_scope_GUI {
                             true,
                             annotations)
 
-                    /////////////////////////////////////////
-                    //Dialog chain to validate stage location
-                    /////////////////////////////////////////
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
                     AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
@@ -362,8 +381,8 @@ class QP_scope_GUI {
                         logger.info("modified TileConfiguration at $folder")
                     }
 
-                    // scanTypeWithIndex will be the name of the folder where the tiles will be saved to
-                    for (annotation in annotations) {
+                    Semaphore pythonCommandSemaphore = new Semaphore(1);
+                    annotations.each { annotation ->
 
                         List<String> args = [projectsFolderPath,
                                              sampleLabel,
@@ -372,20 +391,28 @@ class QP_scope_GUI {
                         ] as List<String>
                         logger.info("Check input args for runPythonCommand")
 
-                        //TODO can we create non-blocking python code
-                        //UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                        boolean pythonCommandSuccessful = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                        if (!pythonCommandSuccessful){
-                            logger.info("Python command did not complete successfully")
-                            return
-                        }
+                        CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
+
                         logger.info("Begin stitching")
-                        String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                                sampleLabel, projectDetails.scanTypeWithIndex as String, annotation.getName(),
-                                qupathGUI, currentQuPathProject, compressionType)
+
+                        // After the Python command completes, run the stitching operation
+                        pythonFuture.thenAcceptAsync(stageCoordinates -> {
+                            // Assuming stageCoordinates are used in stitching; adjust as necessary
+                            String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
+                                    projectsFolderPath,
+                                    sampleLabel,
+                                    projectDetails.scanTypeWithIndex as String,
+                                    annotation.getName(),
+                                    qupathGUI,
+                                    currentQuPathProject,
+                                    compressionType);
                         logger.info("Stitching completed at $stitchedImagePathStr")
+                        });
                     }
-                    //Check if the tiles should be deleted from the collection folder
+
+                    logger.info("All collections complete, tiles will be handled as $tileHandling")
+                    //Check if the tiles should be deleted from the collection folder set
+                    //tempTileDirectory is the parent folder to each annotation/bounding folder
 
                     if (tileHandling == "Delete")
                         UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
@@ -393,9 +420,12 @@ class QP_scope_GUI {
                         UtilityFunctions.zipTilesAndMove(tempTileDirectory)
                         UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
                     }
-                }
-            })
+//                }
+//                logger.info("check1")
+//            })
+            logger.info("check2")
         }
+        logger.info("check3")
     }
 
     /******************************************************
@@ -899,7 +929,19 @@ class QP_scope_GUI {
     }
 
 
-
+    static CompletableFuture<List<String>> runPythonCommandAsync(String virtualEnvPath, String pythonScriptPath, List<String> args, Semaphore pythonCommandSemaphore) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                pythonCommandSemaphore.acquire(); // Ensure only one command runs at a time
+                return UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null; // Handle this appropriately
+            } finally {
+                pythonCommandSemaphore.release();
+            }
+        });
+    }
 
 
 }

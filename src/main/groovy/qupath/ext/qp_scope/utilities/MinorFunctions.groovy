@@ -8,6 +8,7 @@ import org.yaml.snakeyaml.Yaml
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.CompletableFuture
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import com.google.gson.reflect.TypeToken;
@@ -87,6 +88,7 @@ class MinorFunctions {
     }
 
 
+
     /**
      * Counts the number of .tif entries in a TileConfiguration.txt file located in a directory constructed from a list of arguments.
      *
@@ -95,7 +97,7 @@ class MinorFunctions {
      */
     static int countTifEntriesInTileConfig(List<String> arguments) {
         // Construct the path to the TileConfiguration.txt file
-        String tileConfigPath = arguments.join("/") + "/TileConfiguration.txt"
+        String tileConfigPath = arguments.join("/") + "/TileConfiguration_transformed.txt"
         File tileConfigFile = new File(tileConfigPath)
 
         // Check if the TileConfiguration.txt file exists
@@ -106,13 +108,17 @@ class MinorFunctions {
 
         // Count .tif entries in the file
         int tifCount = 0
+        int totalLines = 0
         tileConfigFile.eachLine { line ->
+            totalLines++
             if (line.contains(".tif")) {
+                //logger.info("Current count: $tifCount")
+                //logger.info("line is $line")
                 tifCount++
             }
         }
 
-        logger.info( "Found $tifCount .tif entries in TileConfiguration.txt")
+        logger.info( "Found $tifCount .tif entries in TileConfiguration.txt out of $totalLines")
         return tifCount
     }
 
