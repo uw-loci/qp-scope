@@ -122,7 +122,7 @@ class MinorFunctions {
         return tifCount
     }
 
-    private static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
+    public static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
         Path groovyScriptDirectory = Paths.get(groovyScriptPath).getParent()
         groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
 

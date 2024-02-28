@@ -9,8 +9,8 @@ def copy_file(file, dest_dir):
     try:
         shutil.copy(file, dest_dir)
         #print(f"Copied {file} to {dest_dir}")
-        print(f"Copied {file}")
-        time.sleep(10)
+        print(f"file saved {file}")
+        #time.sleep(10)
     except Exception as e:
         print(f"Error copying file {file}: {e}")
 

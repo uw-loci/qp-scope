@@ -9,6 +9,8 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import org.slf4j.LoggerFactory
 import javafx.scene.control.*
+import qupath.lib.scripting.QP
+
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -152,6 +154,7 @@ class UI_functions {
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
+                            logger.info("Progress bar closing")
                             Platform.runLater(progressBarStage::close);
                         }).start();
                     });
@@ -163,6 +166,7 @@ class UI_functions {
                 // If process is complete, close the progress bar
                 if (!pythonProcess.isAlive()) {
                     Platform.runLater(() -> {
+                        logger.info("Progress bar closing")
                         progressBarStage.close();
                         executor.shutdownNow(); // Ensure the executor is stopped
                     });
@@ -181,6 +185,55 @@ class UI_functions {
                 alert.setContentText(errorMessage)
                 alert.initModality(Modality.APPLICATION_MODAL) // Ensure dialog is modal and on top
                 alert.showAndWait()
+            }
+        })
+    }
+
+    static void checkValidAnnotationsGUI(Closure callback) {
+        Platform.runLater(new Runnable() {
+            void run() {
+                Stage stage = new Stage()
+                stage.initModality(Modality.NONE) // Non-blocking
+                stage.title = "Validate annotation boundaries"
+                stage.alwaysOnTop = true // Ensure the dialog stays on top
+
+                VBox layout = new VBox(10)
+                Label infoLabel = new Label("Checking annotations...")
+                Button collectButton = new Button("Collect regions")
+                Button doNotCollectButton = new Button("Do not collect ANY regions")
+
+                collectButton.setOnAction({ e ->
+                    logger.info( "Collect regions selected.")
+                    stage.close()
+                    callback.call(true)
+                    // No explicit cast needed here
+                })
+
+                doNotCollectButton.setOnAction({ e ->
+                    logger.info("Do not collect, cancelled out of dialog.")
+                    stage.close()
+                    callback.call(false)
+                    // No explicit cast needed here
+                })
+                var executor = Executors.newSingleThreadScheduledExecutor();
+                executor.scheduleAtFixedRate(() -> {
+                    Platform.runLater(() -> {
+                        // Assuming QP.getAnnotationObjects() is the correct method to retrieve the current annotations
+                        // This might need to be adjusted based on your actual API for accessing annotations
+                        int annotationCount = QP.getAnnotationObjects().findAll { it.getPathClass()
+                                .toString().equals("Tissue") }.size();
+                        infoLabel.setText("Total Annotation count in image to be processed: " + annotationCount +
+                                "\nADD, MODIFY or DELETE annotations to select regions to be scanned." +
+                                "\nEnsure that any newly created annotations are classified as 'Tissue'");
+                        collectButton.setText("Collect " + annotationCount + " regions");
+                    });
+                }, 0, 500, TimeUnit.MILLISECONDS);
+
+
+                layout.children.addAll(infoLabel, collectButton, doNotCollectButton)
+                Scene scene = new Scene(layout, 400, 200)
+                stage.scene = scene
+                stage.show() // Non-blocking show
             }
         })
     }

@@ -289,11 +289,15 @@ class UtilityFunctions {
             Thread outputThread = new Thread(() -> {
                 outputReader.lines().forEach(line -> {
                     logger.info("Output: " + line);
-                    if (line.contains(".tif")) {
+                    if (line.contains("file saved")) {
 
                         tifLines.add(line); // Add .tif line to the list
                         tifCount.incrementAndGet();
                         logger.info("Line and $tifCount count")
+                    } else if (line.contains("QuPath:")){
+                        // Remove "QuPath: " from the line and then log it
+                        String modifiedLine = line.replaceFirst("QuPath: ", "");
+                        logger.info(modifiedLine);
                     } else if (arguments == null || arguments.size() == 2) {
                         String[] parts = line.split("\\s+");
                         if (parts.length >= 2) {
@@ -778,53 +782,6 @@ class UtilityFunctions {
 //        });
 //    }
 
-    static void checkValidAnnotationsGUI(Closure callback) {
-        Platform.runLater(new Runnable() {
-            void run() {
-                Stage stage = new Stage()
-                stage.initModality(Modality.NONE) // Non-blocking
-                stage.title = "Validate annotation boundaries"
-                stage.alwaysOnTop = true // Ensure the dialog stays on top
 
-                VBox layout = new VBox(10)
-                Label infoLabel = new Label("Checking annotations...")
-                Button collectButton = new Button("Collect regions")
-                Button doNotCollectButton = new Button("Do not collect ANY regions")
-
-                collectButton.setOnAction({ e ->
-                    logger.info( "Collect regions selected.")
-                    stage.close()
-                    callback.call(true)
-                    // No explicit cast needed here
-                })
-
-                doNotCollectButton.setOnAction({ e ->
-                    logger.info("Do not collect, cancelled out of dialog.")
-                    stage.close()
-                    callback.call(false)
-                    // No explicit cast needed here
-                })
-                var executor = Executors.newSingleThreadScheduledExecutor();
-                executor.scheduleAtFixedRate(() -> {
-                    Platform.runLater(() -> {
-                        // Assuming QP.getAnnotationObjects() is the correct method to retrieve the current annotations
-                        // This might need to be adjusted based on your actual API for accessing annotations
-                        int annotationCount = QP.getAnnotationObjects().findAll { it.getPathClass()
-                                .toString().equals("Tissue") }.size();
-                        infoLabel.setText("Total Annotation count in image to be processed: " + annotationCount +
-                                "\nADD, MODIFY or DELETE annotations to select regions to be scanned." +
-                                "\nEnsure that any newly created annotations are classified as 'Tissue'");
-                        collectButton.setText("Collect " + annotationCount + " regions");
-                    });
-                }, 0, 500, TimeUnit.MILLISECONDS);
-
-
-                layout.children.addAll(infoLabel, collectButton, doNotCollectButton)
-                Scene scene = new Scene(layout, 400, 200)
-                stage.scene = scene
-                stage.show() // Non-blocking show
-            }
-        })
-    }
 
 }
