@@ -262,8 +262,10 @@ class UtilityFunctions {
                 pythonScriptPath = new File(new File(pythonScriptPath).getParent(), "getStageCoordinates.py").getCanonicalPath();
                 logger.info("Running getStageCoordinates script");
             } else if (arguments.size() == 2) {
+                logger.info("Running moveStageToCoordinates script");
                 pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
             } else {
+                logger.info("Performing collection using $arguments")
                 totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
                 progressBar = true
                 //logger.info("SHOWING PROGRESS BAR NOW FOR $totalTifFiles TIFF FILES after")
@@ -274,7 +276,8 @@ class UtilityFunctions {
             logger.info("Running Python Command as follows")
             logger.info("$command")
             Process process = Runtime.getRuntime().exec(command);
-            if (progressBar) {
+            //Only show progress bars for collections
+            if (progressBar && totalTifFiles != 0) {
                 UI_functions.showProgressBar(tifCount, totalTifFiles, process, 10000)
                 //UI_functions.showProgressBar(tifCount, totalTifFiles)
             }

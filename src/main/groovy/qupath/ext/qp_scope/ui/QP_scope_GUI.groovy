@@ -201,12 +201,13 @@ class QP_scope_GUI {
 //            }
 //        }
     }
-    static Point2D.Double applyTransformation(AffineTransform transform, double[] point) {
-        Point2D.Double originalPoint = new Point2D.Double(point[0], point[1])
-        Point2D.Double transformedPoint = new Point2D.Double()
-        transform.transform(originalPoint, transformedPoint)
-        return transformedPoint
-    }
+/**
+ * Launches a graphical user interface for macro image input in a microscopy imaging workflow. This function facilitates
+ * the acquisition of necessary parameters from the user, such as coordinates, preferences, and paths for scripts and
+ * environment setups. It validates user input, retrieves application preferences, executes scripts for tissue detection,
+ * and manages tile configurations and stitching tasks. The GUI also handles affine transformation setup for image alignment
+ * and coordinates the execution of Python scripts for microscope control and image processing.
+ */
     static void macroImageInputGUI() {
         // Create the dialog
         def dlg = createMacroImageInputDialog()
@@ -296,141 +297,151 @@ class QP_scope_GUI {
 
 
 
-//            boolean annotationStatusCheck = UtilityFunctions.checkValidAnnotationsGUI()
-//            if (!annotationStatusCheck){
-//                logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
-//                return
-//            }
-//
-//            //Using a callback to allow the user to both interact with the QuPath main window, and yet block execution of future code
-//            UtilityFunctions.checkValidAnnotationsGUI({ check ->
-//                if (!check) {
-//                    logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
-//                } else {
-                    def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
-                    Double frameWidthMicrons = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
-                    Double frameHeightMicrons = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
-                    UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
-                            projectDetails.scanTypeWithIndex.toString(),
-                            frameWidthMicrons,
-                            frameHeightMicrons,
-                            overlapPercent,
-                            null,
-                            true,
-                            annotations)
+            def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
+            Double frameWidthMicrons = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
+            Double frameHeightMicrons = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
+            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
+                    projectDetails.scanTypeWithIndex.toString(),
+                    frameWidthMicrons,
+                    frameHeightMicrons,
+                    overlapPercent,
+                    null,
+                    true,
+                    annotations)
 
-                    //create a basic affine transformation, add the scaling information and a possible Y axis flip
-                    //Then create a dialog that asks the user to select a single detection tile
-                    AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
-                    logger.info("Initial affine transform, scaling only: $transformation")
-                    //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
-                    if (transformation == null) {
-                        return
-                    }
+            //create a basic affine transformation, add the scaling information and a possible Y axis flip
+            //Then create a dialog that asks the user to select a single detection tile
+            AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
+            logger.info("Initial affine transform, scaling only: $transformation")
+            //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
+            if (transformation == null) {
+                return
+            }
 
-                    PathObject expectedTile = QP.getSelectedObject()
-                    def detections = QP.getDetectionObjects()
-                    def topCenterTileXY = TransformationFunctions.getTopCenterTile(detections)
-                    def leftCenterTileXY = TransformationFunctions.getLeftCenterTile(detections)
+            PathObject expectedTile = QP.getSelectedObject()
+            def detections = QP.getDetectionObjects()
+            def topCenterTileXY = TransformationFunctions.getTopCenterTile(detections)
+            def leftCenterTileXY = TransformationFunctions.getLeftCenterTile(detections)
 
 
-                    // Get the current stage coordinates to figure out the translation from the first alignment.
-                    List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()] as List<Double>
-                    if (!coordinatesQP) {
-                        logger.error("Need coordinates.")
-                        return
-                    }
-                    logger.info("user adjusted position of tile at $coordinatesQP")
-                    List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-                    logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
-                    logger.info("QuPath coordinates for selected tile: $coordinatesQP")
-                    logger.info("affine transform before initial alignment: $transformation")
-                    List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
-                    //TODO TEST THIS
-                    // Calculate the offset in microns - the size of one frame in stage coordinates
-                    double offsetX = -1*frameWidth * pixelSizeFirstScanType;
-                    double offsetY = -1*frameHeight * pixelSizeFirstScanType;
-                    // Create the offset AffineTransform
-                    AffineTransform offset = new AffineTransform();
-                    offset.translate(offsetX, offsetY);
-                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP, currentStageCoordinates_um, offset)
-                    logger.info("affine transform after initial alignment: $transformation")
+            // Get the current stage coordinates to figure out the translation from the first alignment.
+            List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()] as List<Double>
+            if (!coordinatesQP) {
+                logger.error("Need coordinates.")
+                return
+            }
+            logger.info("user adjusted position of tile at $coordinatesQP")
+            List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+            logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
+            logger.info("QuPath coordinates for selected tile: $coordinatesQP")
+            logger.info("affine transform before initial alignment: $transformation")
+            List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
+            //TODO TEST THIS
+            // Calculate the offset in microns - the size of one frame in stage coordinates
+            double offsetX = -1*frameWidth * pixelSizeFirstScanType;
+            double offsetY = -1*frameHeight * pixelSizeFirstScanType;
+            // Create the offset AffineTransform
+            AffineTransform offset = new AffineTransform();
+            offset.translate(offsetX, offsetY);
+            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP, currentStageCoordinates_um, offset)
+            logger.info("affine transform after initial alignment: $transformation")
 
 
-                    // Handle stage alignment for top center tile
-                    Map resultsTopCenter = handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
-                    if (!resultsTopCenter.updatePosition) {
-                        logger.info("Window was closed, alignment cancelled.")
-                        return // Exit if position validation fails
-                    }
-                    transformation = resultsTopCenter.transformation as AffineTransform
+            // Handle stage alignment for top center tile
+            Map resultsTopCenter = handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
+            if (!resultsTopCenter.updatePosition) {
+                logger.info("Window was closed, alignment cancelled.")
+                return // Exit if position validation fails
+            }
+            transformation = resultsTopCenter.transformation as AffineTransform
 
-                    // Handle stage alignment for left center tile
-                    Map resultsLeftCenter = handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
-                    if (!resultsLeftCenter.updatePosition) {
-                        logger.info("Window was closed, alignment cancelled.")
-                        return // Exit if position validation fails
-                    }
-                    transformation = resultsLeftCenter.transformation as AffineTransform
+            // Handle stage alignment for left center tile
+            Map resultsLeftCenter = handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
+            if (!resultsLeftCenter.updatePosition) {
+                logger.info("Window was closed, alignment cancelled.")
+                return // Exit if position validation fails
+            }
+            transformation = resultsLeftCenter.transformation as AffineTransform
 
-                    //The TileConfiguration.txt file created by the Groovy script is in QuPath pixel coordinates.
-                    //It must be transformed into stage coordinates in microns
-                    logger.info("export script path string $tempTileDirectory")
-                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
-                    for (folder in tileconfigFolders) {
-                        logger.info("modified TileConfiguration at $folder")
-                    }
+            //The TileConfiguration.txt file created by the Groovy script is in QuPath pixel coordinates.
+            //It must be transformed into stage coordinates in microns
+            logger.info("export script path string $tempTileDirectory")
+            def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
+            for (folder in tileconfigFolders) {
+                logger.info("modified TileConfiguration at $folder")
+            }
 
-                    Semaphore pythonCommandSemaphore = new Semaphore(1);
-                    annotations.each { annotation ->
+            Semaphore pythonCommandSemaphore = new Semaphore(1);
+            annotations.each { annotation ->
 
-                        List<String> args = [projectsFolderPath,
-                                             sampleLabel,
-                                             projectDetails.scanTypeWithIndex,
-                                             annotation.getName(),
-                        ] as List<String>
-                        logger.info("Check input args for runPythonCommand")
+                List<String> args = [projectsFolderPath,
+                                     sampleLabel,
+                                     projectDetails.scanTypeWithIndex,
+                                     annotation.getName(),
+                ] as List<String>
+                logger.info("Check input args for runPythonCommand")
 
-                        CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
+                CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
 
-                        logger.info("Begin stitching")
 
-                        // After the Python command completes, run the stitching operation
-                        pythonFuture.thenAcceptAsync(stageCoordinates -> {
-                            // Assuming stageCoordinates are used in stitching; adjust as necessary
-                            String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
-                                    projectsFolderPath,
-                                    sampleLabel,
-                                    projectDetails.scanTypeWithIndex as String,
-                                    annotation.getName(),
-                                    qupathGUI,
-                                    currentQuPathProject,
-                                    compressionType);
-                        logger.info("Stitching completed at $stitchedImagePathStr")
-                        });
-                    }
+// Handle the successful completion of the Python command
+                pythonFuture.thenAcceptAsync(stageCoordinates -> {
+                    // Process the result for successful execution
+                    logger.info("Begin stitching")
+                    String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
+                            projectsFolderPath,
+                            sampleLabel,
+                            projectDetails.scanTypeWithIndex as String,
+                            annotation.getName(),
+                            qupathGUI,
+                            currentQuPathProject,
+                            compressionType);
+                    logger.info("Stitching completed at $stitchedImagePathStr")
+                    // Ensure stitching operation is also non-blocking and async
+                }).exceptionally(throwable -> {
+                    // Handle any exceptions from the Python command
+                    logger.error("Error during Python script execution: ${throwable.message}")
+                    UI_functions.notifyUserOfError("Error during Python script execution: ${throwable.message}", "Python Script Execution")
+                    return null; // To comply with the Function interface return type
+                });
+//                pythonFuture.whenComplete((output, error) -> {
+//                    logger.info("Begin stitching")
+//                    // Assuming stageCoordinates are used in stitching; adjust as necessary
+//                    String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
+//                            projectsFolderPath,
+//                            sampleLabel,
+//                            projectDetails.scanTypeWithIndex as String,
+//                            annotation.getName(),
+//                            qupathGUI,
+//                            currentQuPathProject,
+//                            compressionType);
+//                logger.info("Stitching completed at $stitchedImagePathStr")
+//                });
+            }
 
-                    logger.info("All collections complete, tiles will be handled as $tileHandling")
-                    //Check if the tiles should be deleted from the collection folder set
-                    //tempTileDirectory is the parent folder to each annotation/bounding folder
+            logger.info("All collections complete, tiles will be handled as $tileHandling")
+            //Check if the tiles should be deleted from the collection folder set
+            //tempTileDirectory is the parent folder to each annotation/bounding folder
 
-                    if (tileHandling == "Delete")
-                        UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                    if (tileHandling == "Zip") {
-                        UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-                        UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                    }
-//                }
-//                logger.info("check1")
-//            })
+            if (tileHandling == "Delete")
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            if (tileHandling == "Zip") {
+                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            }
+
             logger.info("check2")
         }
         logger.info("check3")
     }
 
-    /******************************************************
-    *Starting point for creating a tiling grid from a bounding box using stage coordinates as inputs
-    *********************************************************/
+    /**
+     * Initiates a graphical user interface for inputting a bounding box to create a tiling grid.
+     * The function collects inputs from the user regarding the bounding box coordinates or a full bounding box specification.
+     * It then processes these inputs to set up and execute a microscopy scan based on the specified area.
+     * This includes creating a QuPath project, configuring tiling parameters, running a Python script for data collection,
+     * and optionally handling the stitched image and tile management post-scanning.
+     */
     static void boundingBoxInputGUI() {
         // Create the dialog
         def dlg = new Dialog<ButtonType>()
@@ -542,7 +553,13 @@ class QP_scope_GUI {
             }
         }
     }
-
+/**
+ * Creates and returns a GridPane containing input fields for specifying a bounding box.
+ * This includes fields for entering the coordinates of the top-left (X1, Y1) and bottom-right (X2, Y2) corners of the bounding box,
+ * as well as an option for entering a full bounding box specification. It is designed to facilitate user input in the boundingBoxInputGUI function.
+ *
+ * @return GridPane with labeled input fields for bounding box specification.
+ */
     private static GridPane createBoundingBoxInputGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
@@ -562,7 +579,13 @@ class QP_scope_GUI {
         return pane
     }
 
-
+/**
+ * Launches a GUI dialog for initiating a secondary modality data collection process within selected annotations of the current image.
+ * The function gathers user input from the GUI to specify parameters for the collection, such as sample label and class filters for annotations.
+ * It then calculates necessary parameters based on user preferences and initiates the data collection process for each selected annotation.
+ * The process includes tiling, running a Python command for data collection, and optionally stitching the collected data.
+ * Post-collection, it handles the tiles according to user preference, including deletion or compression.
+ */
     static void secondModalityGUI() {
         //TODO check if in a project?
         def logger = LoggerFactory.getLogger(QuPathGUI.class)
@@ -695,7 +718,15 @@ class QP_scope_GUI {
 
 
 
-
+/**
+ * Creates and configures a dialog for inputting macro image settings, including sample label and tissue detection script paths.
+ * The dialog is designed to collect configuration settings for macro view imaging, ensuring that it stays on top of other windows
+ * for better visibility and interaction. It initializes with application modal modality and sets the title and header text
+ * to guide the user through the configuration process. The content of the dialog is populated with a dynamically created GUI
+ * for input fields related to macro image settings.
+ *
+ * @return The configured Dialog instance ready for showing to the user.
+ */
 
     private static Dialog<ButtonType> createMacroImageInputDialog() {
         def dlg = new Dialog<ButtonType>()
@@ -720,7 +751,14 @@ class QP_scope_GUI {
         return dlg
     }
 
-
+/**
+ * Constructs a GridPane layout containing input fields and labels for configuring macro image settings.
+ * This method dynamically adds UI components to a GridPane for collecting settings such as the sample label,
+ * the path to a tissue detection script, and pixel size. It is designed to be used as the content of a dialog
+ * or another container within a GUI. Each row of the grid contains a different setting, organized for clarity and ease of use.
+ *
+ * @return A GridPane containing the configured UI components for macro image input settings.
+ */
     private static GridPane createMacroImageInputGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
@@ -736,12 +774,6 @@ class QP_scope_GUI {
         HBox pixelSizeBox = new HBox(10)
         pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
         UI_functions.addToGrid(pane, pixelSizeBox, row++)
-        // Add new components for "Upper left XY coordinate"
-        //Label upperLeftLabel = new Label("Upper left XY coordinate")
-        //pane.add(upperLeftLabel, 0, row); // Span multiple columns if needed
-
-        //addToGrid(pane, new Label('X coordinate:'), x1Field, ++row);
-        //addToGrid(pane, new Label('Y coordinate:'), y1Field, ++row);
 
 
         return pane

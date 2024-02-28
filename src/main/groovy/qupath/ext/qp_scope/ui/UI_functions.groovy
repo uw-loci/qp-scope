@@ -14,6 +14,8 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import javafx.scene.control.Alert
+import javafx.scene.control.Alert.AlertType
 
 
 class UI_functions {
@@ -141,6 +143,8 @@ class UI_functions {
                     executor.shutdownNow();
                     Platform.runLater(() -> {
                         progressLabel.setText("Process stalled and was terminated.");
+                        notifyUserOfError("Timeout reached when waiting for images from microscope.\n Acquisition halted.",
+                                "Acquisition process.")
                         // Delayed closing of progress bar window
                         new Thread(() -> {
                             try {
@@ -163,9 +167,22 @@ class UI_functions {
                         executor.shutdownNow(); // Ensure the executor is stopped
                     });
                 }
-            }, 500, 300, TimeUnit.MILLISECONDS);
+            }, 200, 200, TimeUnit.MILLISECONDS);
         });
     }
 
+    static void notifyUserOfError(String errorMessage, String actionContext) {
+        Platform.runLater(new Runnable() {
+            @Override
+            void run() {
+                Alert alert = new Alert(AlertType.ERROR)
+                alert.setTitle("Error")
+                alert.setHeaderText("Error during $actionContext")
+                alert.setContentText(errorMessage)
+                alert.initModality(Modality.APPLICATION_MODAL) // Ensure dialog is modal and on top
+                alert.showAndWait()
+            }
+        })
+    }
 
 }
