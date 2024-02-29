@@ -306,7 +306,7 @@ class UI_functions {
         dlg.initModality(Modality.APPLICATION_MODAL); // Prevents interaction with other windows until this dialog is closed.
         dlg.setTitle("Position Confirmation");
         // Header text explaining the purpose of the dialog and providing instructions for comparison.
-        dlg.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n" +
+        dlg.setHeaderText("Is the current position accurate? \nCompare with the uManager live view!\n" +
                 "The first time this dialog shows up, it should select the center of the top row!\n" +
                 "The second time, it should select the center of the left-most column!");
         dlg.setOnShown(event -> {
