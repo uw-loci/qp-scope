@@ -780,123 +780,6 @@ class QP_scope_GUI {
 
 
     /**
-     * Displays a dialog to the user for tile selection to match the live view in the microscope with QuPath's coordinate system.
-     * This function ensures that exactly one tile (detection) is selected by the user. If the selection does not meet
-     * the criteria (exactly one detection), the user is prompted until a valid selection is made or the operation is cancelled.
-     *
-     * The dialog is set to always be on top to ensure visibility to the user. If the user cancels or closes the dialog
-     * without making a valid selection, the function returns false to indicate the operation was not completed.
-     *
-     * @return true if a valid tile is selected and the user confirms the selection; false if the user cancels the operation.
-     */
-    static boolean stageToQuPathAlignmentGUI1() {
-        boolean validTile = false;
-        Optional<ButtonType> result;
-
-        while (!validTile) {
-            // Create and configure the dialog inside the loop
-            Dialog<ButtonType> dlg = new Dialog<>();
-            dlg.initModality(Modality.NONE);
-            dlg.setTitle("Identify Location");
-            dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
-            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            dlg.setOnShown(event -> {
-                Window window = dlg.getDialogPane().getScene().getWindow();
-                if (window instanceof Stage) {
-                    ((Stage) window).setAlwaysOnTop(true);
-                }
-            });
-
-            // Show the dialog and wait for the user response
-            result = dlg.showAndWait();
-
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                List selectedObjects = QP.getSelectedObjects().stream()
-                        .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
-                        .collect(Collectors.toList());
-
-                if (selectedObjects.size() != 1) {
-                    MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.");
-                } else {
-                    validTile = true;
-                }
-            } else {
-                // User cancelled or closed the dialog
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-/**
- * Displays a dialog to confirm the accuracy of the current stage position in comparison with the live view.
- * This dialog is part of the process to calibrate the "Live view" stage position with the position of a single field of view in the preview image.
- * The user is presented with two options: to confirm the current position is accurate or to cancel the acquisition.
- *
- * @return {@code true} if the user confirms the current position is accurate, {@code false} if the user cancels the acquisition.
- */
-    static boolean stageToQuPathAlignmentGUI2() {
-        // Create a custom dialog with application modal modality.
-        Dialog<Boolean> dlg = new Dialog<>();
-        dlg.initModality(Modality.APPLICATION_MODAL); // Prevents interaction with other windows until this dialog is closed.
-        dlg.setTitle("Position Confirmation");
-        // Header text explaining the purpose of the dialog and providing instructions for comparison.
-        dlg.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n" +
-                "The first time this dialog shows up, it should select the center of the top row!\n" +
-                "The second time, it should select the center of the left-most column!");
-        dlg.setOnShown(event -> {
-            Window window = dlg.getDialogPane().getScene().getWindow();
-            if (window instanceof Stage) {
-                ((Stage) window).setAlwaysOnTop(true);
-            }
-        });
-        // Define button types for user actions.
-        ButtonType btnCurrentPositionAccurate = new ButtonType("Current Position is Accurate", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnCancelAcquisition = new ButtonType("Cancel acquisition", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        // Add buttons to the dialog pane.
-        dlg.getDialogPane().getButtonTypes().addAll(btnCurrentPositionAccurate, btnCancelAcquisition);
-
-        // Process the user's button click to determine the return value.
-        dlg.setResultConverter(dialogButton -> {
-            if (dialogButton == btnCurrentPositionAccurate) {
-                // If the user confirms the current position is accurate, return true.
-                return true;
-            } else if (dialogButton == btnCancelAcquisition) {
-                // If the user cancels the acquisition, return false.
-                return false;
-            }
-            return null; // Return null if another close mechanism is triggered.
-        });
-
-        // Show the dialog and wait for the user to make a selection, then return the result.
-        Optional<Boolean> result = dlg.showAndWait();
-
-        // Return the user's decision or false if no explicit decision was made.
-        return result.orElse(false);
-    }
-
-
-//    static stageToQuPathAlignmentGUI2() {
-//        List<String> choices = Arrays.asList("Current Position is Accurate", "Cancel acquisition")
-//        ChoiceDialog<String> dialog = new ChoiceDialog<>("Current Position is Accurate", choices)
-//        dialog.initModality(Modality.NONE)
-//        dialog.setTitle("Position Confirmation")
-//        dialog.setHeaderText("Is the current position accurate? Compare with the uManager live view!\n The first time this dialog shows up, it should select the center of the top row! \n The second time, it should select the center of the left-most column!")
-//
-//        Optional<String> result = dialog.showAndWait()
-//        if (result.isPresent()) {
-//
-//            return result.get()
-//
-//        }
-//
-//        // If no choice is made (e.g., dialog is closed), you can decide to return false or handle it differently
-//        return false
-//    }
-
-    /**
      * Handles the process of selecting a tile, transforming its coordinates, moving the stage,
      * validating the new stage position, and updating the transformation.
      *
@@ -926,7 +809,7 @@ class QP_scope_GUI {
         qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
 
         // Validate the position that was moved to or update with an adjusted position
-        def updatePosition = stageToQuPathAlignmentGUI2()
+        def updatePosition = UI_functions.stageToQuPathAlignmentGUI2()
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)

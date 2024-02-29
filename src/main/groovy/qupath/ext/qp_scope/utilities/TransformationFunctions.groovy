@@ -3,6 +3,7 @@ package qupath.ext.qp_scope.utilities
 import com.sun.javafx.collections.ObservableListWrapper
 import org.slf4j.LoggerFactory
 import qupath.ext.qp_scope.ui.QP_scope_GUI
+import qupath.ext.qp_scope.ui.UI_functions
 import qupath.lib.objects.PathObject
 
 import java.awt.geom.AffineTransform
@@ -279,13 +280,13 @@ class TransformationFunctions {
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
         double scale =  pixelSize/(pixelSizeFirstScanType)
         double scaleX = invertedXAxis ? scale : -scale
-        double scaleY = invertedYAxis ? scale : -scale 
+        double scaleY = invertedYAxis ? scale : -scale
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
         //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
 
         transformation.scale(scaleX, scaleY)
 
-        boolean gui4Success = QP_scope_GUI.stageToQuPathAlignmentGUI1()
+        boolean gui4Success = UI_functions.stageToQuPathAlignmentGUI1()
         if (!gui4Success) {
             return null // End function early if the user cancels
         }
