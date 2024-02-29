@@ -67,39 +67,39 @@ class QP_scope_GUI {
 
     static void testGUI() {
         // Create the dialog
-//        def dlg = new Dialog<ButtonType>()
-//        dlg.initModality(Modality.APPLICATION_MODAL)
-//        dlg.setTitle("qp_scope")
-//        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
-//        dlg.setOnShown(event -> {
-//            Window window = dlg.getDialogPane().getScene().getWindow();
-//            if (window instanceof Stage) {
-//                ((Stage) window).setAlwaysOnTop(true);
-//            }
-//        });
-//        // Set the content
-//        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
-//
-//        // Add Okay and Cancel buttons
-//        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
-
-
-        AtomicInteger progressCounter = new AtomicInteger(0);
-        int totalFiles = 5
-
-        UI_functions.showProgressBar(progressCounter, totalFiles)
-        new Thread(() -> {
-            while (progressCounter.get() < totalFiles) {
-                logger.info(Integer.toString(progressCounter.get()));
-                try {
-                    Thread.sleep(1000); // Sleep for 1 second
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // Restore interrupted status
-                    logger.error("Thread interrupted", e);
-                }
-                progressCounter.incrementAndGet();
+        def dlg = new Dialog<ButtonType>()
+        dlg.initModality(Modality.APPLICATION_MODAL)
+        dlg.setTitle("qp_scope")
+        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
+        dlg.setOnShown(event -> {
+            Window window = dlg.getDialogPane().getScene().getWindow();
+            if (window instanceof Stage) {
+                ((Stage) window).setAlwaysOnTop(true);
             }
-        }).start();
+        });
+        // Set the content
+        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+
+        // Add Okay and Cancel buttons
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
+
+//
+//        AtomicInteger progressCounter = new AtomicInteger(0);
+//        int totalFiles = 5
+//
+//        UI_functions.showProgressBar(progressCounter, totalFiles)
+//        new Thread(() -> {
+//            while (progressCounter.get() < totalFiles) {
+//                logger.info(Integer.toString(progressCounter.get()));
+//                try {
+//                    Thread.sleep(1000); // Sleep for 1 second
+//                } catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt(); // Restore interrupted status
+//                    logger.error("Thread interrupted", e);
+//                }
+//                progressCounter.incrementAndGet();
+//            }
+//        }).start();
 
 
         // Preferences from GUI
@@ -124,82 +124,90 @@ class QP_scope_GUI {
         int count = MinorFunctions.countTifEntriesInTileConfig(args)
         logger.info("Count is $count")
 
-        // Show the dialog and capture the response
-//        def result = dlg.showAndWait()
-//
-//        // Handling the response
-//        if (result.isPresent() && result.get() == ButtonType.OK) {
-//            // Retrieve values from text fields
-//            def sampleLabel = sampleLabelField.getText()
-//
-//            def x1 = x1Field.getText()
-//            def y1 = y1Field.getText()
-//            def x2 = x2Field.getText()
-//            def y2 = y2Field.getText()
-//            // Handle full bounding box input
-//            def boxString = scanBox.getText()
-//            //Boolean to check whether to proceed with running the microscope data collection
-//            boolean dataCheck = true
-//            def pixelSize = preferences.find{it.getName() == "Pixel Size Source"}.getValue().toString()
-//
-//            // Continue with previous behavior using coordinates
-//
-//            if (boxString != "") {
-//                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
-//                if (values.length == 4) {
-//                    x1 = values[0]
-//                    y1 = values[1]
-//                    x2 = values[2]
-//                    y2 = values[3]
-//                }
-//            }
-//            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
-//                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
-//                dataCheck = false
-//            }
-//
-//
-//            // Check if any value is empty
-//
-//            if (dataCheck) {
-//                QuPathGUI qupathGUI = QPEx.getQuPath()
-//
-//                def qp_test_coords_1 = [2216.9667073567707, 1094.4444580078125]
-//                def stage_test_coords_1 = [-11797.03, -1374.9]
-//                def qp_test_coords_2 = [2003.3333740234375, 1573.277791341146]
-//                def stage_test_coords_2  = [-13371, -4819.9]
-//                def qp_test_coords_3 = [2110.150040690104, 1972.3055691189236]
-//                def stage_test_coords_3  = [-11873.289, -8163.269]
-//                def qp_test_coords_4 = [1896.516707356771, 1972.3055691189236]
-//                def stage_test_coords_4  = [-11856.86, -8028.46]
-//                def qp_test_list = [qp_test_coords_1,qp_test_coords_2, qp_test_coords_3, qp_test_coords_4]
-//                def stage_test_list = [stage_test_coords_1,stage_test_coords_2, stage_test_coords_3, stage_test_coords_4]
-//
-//                for (int i = 0; i < qp_test_list.size(); i++) {
-//                    List<Double> qpTestCoords = qp_test_list[i]
-//                    List<Double> stageTestCoords = stage_test_list[i]
-//
-//                    // Create initial scaling transform
-//                    AffineTransform transformation = new AffineTransform()
-//                    double scale =  (pixelSize as Double)/ (preferences.find{it.getName() == "Pixel Size for First Scan Type"}.getValue() as Double)
-//                    logger.info("scale is $scale")
-//                    transformation.scale(scale, -scale)
-//                    logger.info("transformation at this point should be 0.15, 0,0  0, 0.15, 0: $transformation")
-//                    // Calculate the transformation for the current pair
-//                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, qpTestCoords.collect { it.toString() }, stageTestCoords.collect { it.toString() })
-//                    logger.info("Transformation for pair ${i + 1}: $transformation")
-//
-//                    // Apply the transformation to each test coordinate
-//                    qp_test_list.each { qpCoords ->
-//                        Point2D.Double transformedPoint = applyTransformation(transformation, qpCoords as double[])
-//                        logger.info("Converted $qpCoords to $transformedPoint")
-//                        logger.info("Expected value was: ${stage_test_list[qp_test_list.indexOf(qpCoords)]}")
-//                    }
-//                }
-//
-//
-//            }
-//        }
+//         Show the dialog and capture the response
+        def result = dlg.showAndWait()
+
+        // Handling the response
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Retrieve values from text fields
+            def sampleLabel = sampleLabelField.getText()
+
+            def x1 = x1Field.getText()
+            def y1 = y1Field.getText()
+            def x2 = x2Field.getText()
+            def y2 = y2Field.getText()
+            // Handle full bounding box input
+            def boxString = scanBox.getText()
+            //Boolean to check whether to proceed with running the microscope data collection
+            boolean dataCheck = true
+            // Continue with previous behavior using coordinates
+
+            if (boxString != "") {
+                def values = boxString.replaceAll("[^0-9.,]", "").split(",")
+                if (values.length == 4) {
+                    x1 = values[0]
+                    y1 = values[1]
+                    x2 = values[2]
+                    y2 = values[3]
+                }
+            }
+            if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
+                Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
+                dataCheck = false
+            }
+
+
+            // Check if any value is empty
+
+            if (dataCheck) {
+                QuPathGUI qupathGUI = QPEx.getQuPath()
+
+                def qp_test_coords_1 = [2350, 1088]
+                def stage_test_coords_1 = [19594, 18295]
+                def qp_test_coords_2 = [2565, 1088]
+                def stage_test_coords_2  = [21108, 18295]
+                def qp_test_coords_3 = [2352, 1726]
+                def stage_test_coords_3  = [19550, 13715]
+                def qp_test_coords_4 = [2566, 2045]
+                def stage_test_coords_4  = [21130, 11571]
+                def qp_test_list = [qp_test_coords_1,qp_test_coords_2, qp_test_coords_3, qp_test_coords_4].collect { it.collect { it as Double } }
+                def stage_test_list = [stage_test_coords_1,stage_test_coords_2, stage_test_coords_3, stage_test_coords_4].collect { it.collect { it as Double } }
+
+                for (int i = 0; i < qp_test_list.size(); i++) {
+                    List<Double> qpTestCoords = qp_test_list[i]
+                    List<Double> stageTestCoords = stage_test_list[i]
+
+                    // Create initial scaling transform
+                    AffineTransform transformation = new AffineTransform()
+                    double scale =  (pixelSizeSource)/ pixelSizeFirstScanType
+                    logger.info("scale is $scale")
+                    transformation.scale(scale, -scale)
+                    // Calculate the transformation for the current pair
+                    // Calculate the offset in microns - the size of one frame in stage coordinates
+                    double offsetX = 0 //-1 * frameWidth * pixelSizeFirstScanType;
+                    double offsetY = -1 * frameHeight * pixelSizeFirstScanType;
+                    // Create the offset AffineTransform
+                    AffineTransform offset = new AffineTransform();
+
+                    offset.translate(offsetX/scale, offsetY/scale);
+                    transformation = TransformationFunctions.addTranslationToScaledAffine(
+                            transformation,
+                            qpTestCoords,
+                            stageTestCoords,
+                            offset)
+                    logger.info("Transformation for pair ${i + 1}: $transformation")
+
+                    // Apply the transformation to each test coordinate
+                    qp_test_list.each { qpCoords ->
+                        def transformedPoint = TransformationFunctions.QPtoMicroscopeCoordinates(qpCoords, transformation)
+                        logger.info("Converted $qpCoords to $transformedPoint")
+                        logger.info("Expected value was: ${stage_test_list[qp_test_list.indexOf(qpCoords)]}")
+                    }
+                }
+
+
+            }
+        }
     }
 /**
  * Launches a graphical user interface for macro image input in a microscopy imaging workflow. This function facilitates
@@ -342,8 +350,8 @@ class QP_scope_GUI {
                     List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
                     //TODO TEST THIS
                     // Calculate the offset in microns - the size of one frame in stage coordinates
-                    double offsetX = -1 * frameWidth * pixelSizeFirstScanType;
-                    double offsetY = -1 * frameHeight * pixelSizeFirstScanType;
+                    double offsetX = 0 //-1 * frameWidthMicrons;
+                    double offsetY = -1 * frameHeightMicrons/transformation.getScaleY();
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);

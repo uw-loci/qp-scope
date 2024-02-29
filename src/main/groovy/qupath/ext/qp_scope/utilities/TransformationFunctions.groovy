@@ -165,11 +165,11 @@ class TransformationFunctions {
     public static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
                                                                List<Double> qpCoordinatesList,
                                                                List<Double> stageCoordinatesList,
-                                                               AffineTransform offset = new AffineTransform()) {
+                                                               AffineTransform offsetTransform = new AffineTransform()) {
 
         logger.info("Input scaling transform: " + scalingTransform);
         logger.info("qpCoordinatesList: " + qpCoordinatesList);
-
+        logger.info("Input offset transform: " + offsetTransform);
 
         double[] qpPoint = qpCoordinatesList.stream().mapToDouble(Double::doubleValue).toArray();
         double[] mmPoint = stageCoordinatesList.stream().mapToDouble(Double::doubleValue).toArray();
@@ -184,8 +184,8 @@ class TransformationFunctions {
         logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
 
         // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
-        double tx = mmPoint[0] - scaledQpPoint.x;
-        double ty = mmPoint[1] - scaledQpPoint.y;
+        double tx = (mmPoint[0] - scaledQpPoint.x)/scalingTransform.getScaleX();
+        double ty = (mmPoint[1] - scaledQpPoint.y)/scalingTransform.getScaleY();
 
         logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
 
@@ -194,7 +194,7 @@ class TransformationFunctions {
         transform.translate(tx, ty);
 
         // Apply the additional offset after initial scaling and translation
-        transform.concatenate(offset);
+        transform.concatenate(offsetTransform);
 
         logger.info("Final AffineTransform after including offset: " + transform);
 

@@ -317,6 +317,8 @@ class UtilityFunctions {
                         if (errorLine.equals("Exiting")) {
                             process.destroy();
                             return;
+                        } else if (errorLine.equals("Out of config")){
+                            UI_functions.notifyUserOfError( errorLine, "Coordinates out of bounds")
                         }
                     }
                 } catch (IOException e) {
