@@ -220,17 +220,6 @@ class QP_scope_GUI {
         // Create the dialog
         def dlg = createMacroImageInputDialog()
 
-//        // Define response validation
-//        dlg.setResultConverter(dialogButton -> {
-//            if (dialogButton == ButtonType.OK) {
-//                if (!UI_functions.isValidInput(x1Field.getText()) || !UI_functions.isValidInput(y1Field.getText())) {
-//                    Dialogs.showWarningNotification("Invalid Input", "Please enter valid numeric values for coordinates.")
-//                    return null // Prevent dialog from closing
-//                }
-//            }
-//            return dialogButton
-//        })
-
         // Show the dialog and capture the response
         Optional<ButtonType> result = dlg.showAndWait()
 
