@@ -279,7 +279,7 @@ class TransformationFunctions {
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
         double scale =  pixelSize/(pixelSizeFirstScanType)
         double scaleX = invertedXAxis ? scale : -scale
-        double scaleY = invertedYAxis ? scale : -scale // Assume QuPath coordinate system is Y inverted from microscope stage
+        double scaleY = invertedYAxis ? scale : -scale 
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
         //tend to have a more normal coordinates system with increasing numbers going "up" the Y axis.
 
