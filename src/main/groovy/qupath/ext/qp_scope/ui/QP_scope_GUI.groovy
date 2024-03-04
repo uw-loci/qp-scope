@@ -184,11 +184,11 @@ class QP_scope_GUI {
                     transformation.scale(scale, -scale)
                     // Calculate the transformation for the current pair
                     // Calculate the offset in microns - the size of one frame in stage coordinates
-                    double offsetX = 0 //-1 * frameWidth * pixelSizeFirstScanType;
-                    double offsetY = -1 * frameHeight * pixelSizeFirstScanType;
+                    double offsetX = 0.5 * frameWidth * pixelSizeFirstScanType;
+                    double offsetY = 1 * frameHeight * pixelSizeFirstScanType;
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
-
+                //todo make generic
                     offset.translate(offsetX/scale, offsetY/scale);
                     transformation = TransformationFunctions.addTranslationToScaledAffine(
                             transformation,
@@ -348,10 +348,11 @@ class QP_scope_GUI {
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $transformation")
                     List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
-                    //TODO TEST THIS
+                    //TODO WORKING
                     // Calculate the offset in microns - the size of one frame in stage coordinates
-                    double offsetX = 0 //-1 * frameWidthMicrons;
-                    double offsetY = 0//-1 * frameHeightMicrons/transformation.getScaleY();
+                    // PUT THIS INFORMATION SOMEWHERE ELSE
+                    double offsetX = -0.5 * frameWidthMicrons//transformation.getScaleX()
+                    double offsetY = -1 * frameHeightMicrons//transformation.getScaleY();
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);

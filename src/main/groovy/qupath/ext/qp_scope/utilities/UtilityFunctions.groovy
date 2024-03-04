@@ -288,7 +288,7 @@ class UtilityFunctions {
             //This section handles the output from the python script, and what impact it has on the rest of the workflow
             Thread outputThread = new Thread(() -> {
                 outputReader.lines().forEach(line -> {
-                    logger.info("Output: " + line);
+                    //logger.info("Python: " + line);
                     if (line.contains("file saved")) {
 
                         tifLines.add(line); // Add .tif line to the list

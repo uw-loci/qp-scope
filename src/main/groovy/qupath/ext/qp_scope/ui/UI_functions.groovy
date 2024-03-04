@@ -44,46 +44,6 @@ class UI_functions {
     }
 
 
-//    static void showProgressBar(AtomicInteger progressCounter, int totalFiles) {
-//        Platform.runLater(() -> {
-//            long startTime = System.currentTimeMillis(); // Capture start time
-//            logger.info("Creating progress bar with $totalFiles max")
-//            progressBarStage = new Stage();
-//            progressBarStage.initModality(Modality.NONE);
-//            progressBarStage.setTitle("Microscope acquisition progress");
-//
-//            VBox vbox = new VBox(10); // Add spacing between elements
-//            ProgressBar progressBar = new ProgressBar(0);
-//            progressBar.setPrefWidth(300);
-//            progressBar.setPrefHeight(20);
-//            Label timeLabel = new Label("Estimating time..."); // Label to show time estimate
-//            vbox.getChildren().addAll(progressBar, timeLabel);
-//
-//            Scene scene = new Scene(vbox);
-//            progressBarStage.setScene(scene);
-//            progressBarStage.setAlwaysOnTop(true);
-//            progressBarStage.show();
-//
-//            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-//            executor.scheduleAtFixedRate(() -> {
-//                double progress = progressCounter.get() / (double) totalFiles;
-//                logger.info("Current Progress - updating bar to $progress via ${progressCounter.get()}")
-//                long elapsedTime = System.currentTimeMillis() - startTime;
-//                double timePerUnit = elapsedTime / (double) progressCounter.get();
-//                int estimatedTotalTime = (int) (timePerUnit * totalFiles);
-//                int remainingTime = (int) ((estimatedTotalTime - (int) elapsedTime) / 1000); // in seconds
-//
-//                Platform.runLater(() -> {
-//                    progressBar.setProgress(progress);
-//                    timeLabel.setText("Rough estimate of remaining time: " + remainingTime + " seconds");
-//                    if (progressCounter.get() >= totalFiles) {
-//                        progressBarStage.close();
-//                        executor.shutdown();
-//                    }
-//                });
-//            }, 0, 300, TimeUnit.MILLISECONDS);
-//        });
-//    }
 
 /**
  * Displays a progress bar and updates it based on progress of a Python process.
