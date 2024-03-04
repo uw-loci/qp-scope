@@ -289,7 +289,7 @@ class UtilityFunctions {
             Thread outputThread = new Thread(() -> {
                 outputReader.lines().forEach(line -> {
                     //logger.info("Python: " + line);
-                    if (line.contains("file saved")) {
+                    if (line.contains("tiles done")) {
 
                         tifLines.add(line); // Add .tif line to the list
                         tifCount.incrementAndGet();
