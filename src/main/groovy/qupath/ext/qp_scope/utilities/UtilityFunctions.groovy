@@ -1,5 +1,6 @@
 package qupath.ext.qp_scope.utilities
 
+import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Platform
 import javafx.scene.Scene
 import javafx.scene.control.Button
@@ -88,7 +89,9 @@ class UtilityFunctions {
        Platform.runLater {
             logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
             // Add the (possibly renamed) image to the project
-            QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject)
+           //TODO pass preferences boolean isSlideFlippedY = false
+
+            QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject, )
             def matchingImage = currentQuPathProject.getImageList().find { image ->
                 new File(image.getImageName()).name == adjustedFilePath.name
             }
@@ -99,124 +102,6 @@ class UtilityFunctions {
         }
         return stitchedImagePathStr
     }
-
-//    /**
-//     * Executes a Python script using a specified Python executable within a virtual environment.
-//     * This method is designed to be compatible with Windows, Linux, and macOS.
-//     *
-//     * @param anacondaEnvPath The path to the Python virtual environment.
-//     * @param pythonScriptPath The path to the Python script in Preferences to run the microscope.
-//     * @param arguments A list of arguments to pass to the python script. The amount may vary, and different scripts will be run depending on the number of arguments passed
-//     */
-//    static runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List arguments) {
-//        try {
-//
-//            String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath()
-//
-//            File scriptFile = new File(pythonScriptPath)
-//
-//            // Adjust the pythonScriptPath based on arguments
-//            if (arguments == null) {
-//                // Change the script to 'getStageCoordinates.py'
-//
-//                def getStageScriptPath = new File(scriptFile.getParent(), "getStageCoordinates.py").getCanonicalPath()
-//                logger.info("calling runPythonCommand on $getStageScriptPath")
-//                if (!(new File(getStageScriptPath).exists())) {
-//                    // If the file does not exist, call runTestPythonScript
-//                    return runTestPythonScript(anacondaEnvPath, getStageScriptPath, arguments)
-//                }
-//                // Construct the command
-//                String command = "\"" + pythonExecutable + "\" -u \"" + getStageScriptPath + "\" " + arguments
-//                // Execute the command
-//                Process process = command.execute()
-//                logger.info("Executing command: " + command)
-//                logger.info("This should get stage coordinates back")
-//                List<String> result = handleProcessOutput(process)
-//                if (result != null) {
-//                    logger.info("Received output: ${result.join(', ')}")
-//                    return result
-//                } else {
-//                    logger.error("Error occurred or no valid output received from the script.")
-//                    return null
-//                }
-//            }
-//            //If only two arguments are passed, we assume that a command needs to be sent to move the stage.
-//            if (arguments.size() == 2) {
-//                pythonScriptPath = new File(scriptFile.parent, "moveStageToCoordinates.py").canonicalPath
-//            }
-//
-//            logger.info("calling runPythonCommand on $pythonScriptPath")
-//            if (!(new File(pythonScriptPath).exists())) {
-//                // If the file does not exist, call runTestPythonScript
-//                return runTestPythonScript(anacondaEnvPath, pythonScriptPath, arguments)
-//            }
-//
-//            //Run the correct Python script! Either moe the stage to a point, or perform a collection
-//            //
-//            String args = arguments != null ? arguments.collect { "\"$it\"" }.join(' ') : ""
-//
-//            // Construct the command
-//            String command = "\"" + pythonExecutable + "\" -u \"" + pythonScriptPath + "\" " + args
-//            logger.info("Executing command: " + command)
-//
-//            // Execute the command
-//            Process process = command.execute()
-//            // Read the full output from the process
-//            process.waitFor()
-//            String output = process.in.text
-//            String errorOutput = process.err.text
-//
-//            if (output) {
-//                logger.info("Received output: \n$output")
-//            }
-//            if (errorOutput) {
-//                logger.error("Error output: \n$errorOutput")
-//            }
-//
-//            return null
-//        } catch (Exception e) {
-//            e.printStackTrace()
-//        }
-//    }
-//
-//    static List<String> handleProcessOutput(Process process) {
-//        BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
-//        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))
-//
-//        String line
-//        List<String> outputLines = []
-//        List<String> errorLines = []
-//        String value1 = null
-//        String value2 = null
-//
-//        while ((line = outputReader.readLine()) != null) {
-//            outputLines.add(line)
-//            // Assuming coordinates are on the first line
-//            if (outputLines.size() == 1) {
-//                String[] values = line.split(" ")
-//                value1 = values[0]
-//                value2 = values[1]
-//            }
-//        }
-//
-//        while ((line = errorReader.readLine()) != null) {
-//            errorLines.add(line)
-//        }
-//        // Capture and log the process exit code
-//        int exitCode = process.waitFor();
-//        logger.info("Process exit code: " + exitCode);
-//
-//        // Log any error output from the process
-//        if (!errorLines.isEmpty()) {
-//            logger.error("Error output from Python script: \n" + String.join("\n", errorLines));
-//        }
-//        // Check for errors or invalid output
-//        if (!errorLines.isEmpty() || value1 == null || value2 == null) {
-//            return null
-//        }
-//
-//        return [value1, value2]
-//    }
 
 
     //TODO fix runTestPythonScript calls
@@ -293,7 +178,7 @@ class UtilityFunctions {
 
                         tifLines.add(line); // Add .tif line to the list
                         tifCount.incrementAndGet();
-                        logger.info("Line and $tifCount count")
+                        //logger.info("Line and $tifCount count")
                     } else if (line.contains("QuPath:")){
                         // Remove "QuPath: " from the line and then log it
                         String modifiedLine = line.replaceFirst("QuPath: ", "");
@@ -341,6 +226,7 @@ class UtilityFunctions {
             int exitCode = process.waitFor();
             logger.info("Python process exited with code: " + exitCode);
             if (errorOccurred.get()) {
+
                 return null; // Or handle error differently
             }
 
@@ -639,7 +525,7 @@ class UtilityFunctions {
     }
 
 /**
- * Creates tile configuration for a given region of interest and saves it as a TileConfiguration.txt file.
+ * Creates tile configuration for a given region of interest and saves it as a TileConfiguration_QP.txt file.
  * This function either processes a specific ROI or the entire bounding box.
  *
  * @param bBoxX The X-coordinate of the top-left corner of the bounding box or ROI.
@@ -649,7 +535,7 @@ class UtilityFunctions {
  * @param frameWidth The width of each tile.
  * @param frameHeight The height of each tile.
  * @param overlapPercent The percent overlap between tiles.
- * @param tilePath The path where the TileConfiguration.txt file will be saved.
+ * @param tilePath The path where the TileConfiguration_QP.txt file will be saved.
  * @param annotationROI (Optional) The specific ROI to be tiled, null if tiling the entire bounding box.
  * @param imagingModality The type of imaging modality used, e.g., '4x-bf'.
  * @param createTiles Flag to determine if tile objects should be created in QuPath.
@@ -700,9 +586,9 @@ class UtilityFunctions {
             yline++
         }
 
-        // Writing TileConfiguration.txt file
+        // Writing TileConfiguration_QP.txt file
         String header = "dim = 2\n"
-        new File(QP.buildFilePath(tilePath, "TileConfiguration.txt")).withWriter { fw ->
+        new File(QP.buildFilePath(tilePath, "TileConfiguration_QP.txt")).withWriter { fw ->
             fw.writeLine(header)
             xy.eachWithIndex { coords, index ->
                 String line = "${index}.tif; ; (${coords[0]}, ${coords[1]})"
@@ -716,73 +602,7 @@ class UtilityFunctions {
         }
     }
 
-    //    static boolean checkValidAnnotationsGUI() {
-//        Dialog<ButtonType> dlg = new Dialog<>()
-//        dlg.initModality(Modality.NONE)
-//        int annotationCount = QP.getAnnotationObjects().size()
-//        dlg.setTitle("Validate annotation boundaries")
-//        dlg.setHeaderText("There are $annotationCount Annotations in this image that will be processed. \n ADD, MODIFY or DELETE annotations to select regions to be scanned.")
-//
-//        // Define custom button types
-//        ButtonType collectButton = new ButtonType("Collect $annotationCount regions", ButtonBar.ButtonData.OK_DONE);
-//        ButtonType doNotCollectButton = new ButtonType("Do not collect ANY regions", ButtonBar.ButtonData.CANCEL_CLOSE);
-//
-//        // Add buttons to the dialog
-//        dlg.getDialogPane().getButtonTypes().addAll(collectButton, doNotCollectButton)
-//        Optional<ButtonType> result = dlg.showAndWait()
-//        return result.isPresent() && result.get() == collectButton
-//    }
 
-
-//    static boolean checkValidAnnotationsGUI() {
-//        // Ensure this runs on the JavaFX Application Thread
-//        Platform.runLater(() -> {
-//            Stage stage = new Stage();
-//            stage.initModality(Modality.NONE);
-//            stage.setTitle("Validate annotation boundaries");
-//            stage.alwaysOnTop = true // Ensure the dialog stays on top
-//
-//            VBox layout = new VBox(10);
-//            Label infoLabel = new Label("Checking annotations...");
-//            Button collectButton = new Button("Collect regions");
-//            Button doNotCollectButton = new Button("Do not collect ANY regions");
-//
-//            // Update button action
-//            collectButton.setOnAction(e -> {
-//                // Handle collect action
-//
-//                stage.close();
-//                return true
-//            });
-//
-//            doNotCollectButton.setOnAction(e -> {
-//                // Handle do not collect action
-//                logger.info("Do not collect, cancelled out of dialog.")
-//                stage.close();
-//                return false
-//            });
-//
-//            layout.getChildren().addAll(infoLabel, collectButton, doNotCollectButton);
-//            Scene scene = new Scene(layout, 400, 200);
-//            stage.setScene(scene);
-//
-//            // Scheduled task to update the annotation count
-//            var executor = Executors.newSingleThreadScheduledExecutor();
-//            executor.scheduleAtFixedRate(() -> {
-//                int annotationCount = QP.getAnnotationObjects().size(); // Implement this to get the current annotation count
-//                Platform.runLater(() -> {
-//                    infoLabel.setText("Total Annotation count in image to be processed: $annotationCount \nADD, MODIFY or DELETE annotations to select regions to be scanned.");
-//                    collectButton.setText("Collect " + annotationCount + " regions");
-//                });
-//            }, 0, 500, TimeUnit.MILLISECONDS);
-//
-//            stage.setOnCloseRequest(e -> {
-//                executor.shutdownNow(); // Ensure the executor is stopped when the stage closes
-//            });
-//
-//            stage.showAndWait();
-//        });
-//    }
 
 
 

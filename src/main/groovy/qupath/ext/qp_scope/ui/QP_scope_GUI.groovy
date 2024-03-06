@@ -365,7 +365,7 @@ class QP_scope_GUI {
                     }
                     transformation = resultsLeftCenter.transformation as AffineTransform
 
-                    //The TileConfiguration.txt file created by the Groovy script is in QuPath pixel coordinates.
+                    //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
                     //It must be transformed into stage coordinates in microns
                     logger.info("export script path string $tempTileDirectory")
                     def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
@@ -667,7 +667,7 @@ class QP_scope_GUI {
                 //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
                 //TODO Need to check if stitching is successful, provide error
                 //while projectsFolderPath/sampleLabel/scanTypeWithIndex/annotationName does not have
-                //fileCount = number of entries in TileConfiguration.txt OR getDetectionObjects().size()+1
+                //fileCount = number of entries in TileConfiguration_QP.txt OR getDetectionObjects().size()+1
                 //Loop checking each second for file count files within the folder
                 //Track loops, after N loops, break and end program with error.
 

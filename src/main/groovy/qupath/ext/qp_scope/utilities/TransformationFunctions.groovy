@@ -41,17 +41,17 @@ class TransformationFunctions {
 
 
 /**
- * Transforms the coordinates in TileConfiguration.txt files located in all child directories
+ * Transforms the coordinates in TileConfiguration_QP.txt files located in all child directories
  * of a specified parent directory, using an AffineTransform. It reads each file, applies the
  * transformation to each tile's coordinates, and writes the transformed coordinates back to a
  * new file in each directory.
  *
- * @param parentDirPath The path to the parent directory containing child directories with TileConfiguration.txt files.
+ * @param parentDirPath The path to the parent directory containing child directories with TileConfiguration_QP.txt files.
  * @param transformation The AffineTransform to be applied to each tile's coordinates.
- * @return A list of folder names that contain TileConfiguration.txt files which were modified.
+ * @return A list of folder names that contain TileConfiguration_QP.txt files which were modified.
  */
     static List<String> transformTileConfiguration(String parentDirPath, AffineTransform transformation) {
-        logger.info("entering transform Tileconfiguration modification function")
+        logger.info("entering transform TileConfiguration modification function")
         logger.info(parentDirPath)
         logger.info(transformation.toString())
         System.out.println("AffineTransform: " + transformation)
@@ -75,9 +75,9 @@ class TransformationFunctions {
 
         if (subdirectories) {
             subdirectories.each { File subdir ->
-                File tileConfigFile = new File(subdir, "TileConfiguration.txt")
+                File tileConfigFile = new File(subdir, "TileConfiguration_QP.txt")
                 if (tileConfigFile.exists()) {
-                    // Process the TileConfiguration.txt file
+                    // Process the TileConfiguration_QP.txt file
                     processTileConfigurationFile(tileConfigFile, transformation)
                     modifiedFolders.add(subdir.name)
                 }

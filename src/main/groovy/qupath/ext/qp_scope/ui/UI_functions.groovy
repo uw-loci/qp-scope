@@ -98,18 +98,17 @@ class UI_functions {
                     progressBar.setProgress(progress);
                     timeLabel.setText("Rough estimate of remaining time: " + remainingTime + " seconds");
                     progressLabel.setText(String.format("Processed %d out of %d files...", progressCounter.get(), totalFiles));
-                    logger.info("current files are ${progressCounter.get()}")
+                    //logger.info("current files are ${progressCounter.get()}")
                 });
 
 
 
                 // Stall check and process termination
-                if (progress >= 1.0 || !pythonProcess.isAlive() || elapsedSinceLastUpdate > timeout) {
+                if (!pythonProcess.isAlive() || elapsedSinceLastUpdate > timeout) {
                     logger.info("final progress: $progress")
                     logger.info( "Python process: ${pythonProcess.isAlive()}")
                     logger.info("Elapsed time: $elapsedSinceLastUpdate")
 
-                    pythonProcess.destroy();
                     // Executor shutdown moved outside Platform.runLater
                     executor.shutdownNow();
                     Platform.runLater(() -> {
@@ -130,16 +129,14 @@ class UI_functions {
                 } else if (currentProgress > lastProgress.get()) {
                     lastUpdateTime.set(currentTime); // Update the last update time only if progress has changed
                     lastProgress.set(currentProgress); // Update the last known progress
-                }
-
-                // If process is complete, close the progress bar
-                if (!pythonProcess.isAlive()) {
+                } else if (progress >= 1.0){
                     Platform.runLater(() -> {
                         logger.info("Progress bar closing")
                         progressBarStage.close();
                         executor.shutdownNow(); // Ensure the executor is stopped
                     });
                 }
+
             }, 200, 200, TimeUnit.MILLISECONDS);
         });
     }

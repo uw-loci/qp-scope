@@ -108,17 +108,7 @@ class QPProjectFunctions {
                                      boolean isSlideFlippedY = false) {
 
         def imagePath = stitchedImagePath.toURI().toString()
-        //logger.info(imagePath)
 
-//        def support = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath)
-//        //logger.info(support as String)
-//        def builder = support.builders.get(0)
-//        // Make sure we don't have null
-//        if (builder == null) {
-//            logger.warn("Image not supported: " + imagePath)
-//            return false
-//        }
-        //Code courtesy of https://forum.image.sc/t/flipping-an-image-on-import/92532/2
         // Add the image as entry to the project
         logger.info("Adding: " + imagePath)
         if (project == null) {
