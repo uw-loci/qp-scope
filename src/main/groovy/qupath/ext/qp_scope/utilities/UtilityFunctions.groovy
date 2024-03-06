@@ -86,12 +86,15 @@ class UtilityFunctions {
         if (stitchedImagePath.renameTo(adjustedFilePath)) {
             stitchedImagePathStr = adjustedFilePath.absolutePath
         }
-       Platform.runLater {
+
+        Platform.runLater {
             logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
             // Add the (possibly renamed) image to the project
-           //TODO pass preferences boolean isSlideFlippedY = false
-
-            QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject, )
+            //TODO pass preferences boolean isSlideFlippedY = false
+            def preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
+            boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
+            boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
+            QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject,invertedXAxis,invertedYAxis )
             def matchingImage = currentQuPathProject.getImageList().find { image ->
                 new File(image.getImageName()).name == adjustedFilePath.name
             }
@@ -102,7 +105,6 @@ class UtilityFunctions {
         }
         return stitchedImagePathStr
     }
-
 
     //TODO fix runTestPythonScript calls
 
