@@ -11,8 +11,13 @@ import javafx.stage.Window
 import org.slf4j.LoggerFactory
 import javafx.scene.control.*
 import qupath.ext.qp_scope.utilities.MinorFunctions
+import qupath.ext.qp_scope.utilities.TransformationFunctions
+import qupath.ext.qp_scope.utilities.UtilityFunctions
+import qupath.lib.gui.QuPathGUI
+import qupath.lib.objects.PathObject
 import qupath.lib.scripting.QP
 
+import java.awt.geom.AffineTransform
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -301,5 +306,53 @@ class UI_functions {
 
         // Return the user's decision or false if no explicit decision was made.
         return result.orElse(false);
+    }
+
+
+    /**
+     * Handles the process of selecting a tile, transforming its coordinates, moving the stage,
+     * validating the new stage position, and updating the transformation.
+     *
+     * @param tileXY The tile coordinates and object.
+     * @param qupathGUI The QuPath GUI instance.
+     * @param virtualEnvPath
+     The virtual environment path for Python commands.
+
+     @param pythonScriptPath The Python script path.
+
+     @param transformation The current AffineTransform.
+
+     @return A boolean indicating if the position was validated successfully and the updated transformation.
+     */
+
+    static Map<String, Object> handleStageAlignment(PathObject tileXY, QuPathGUI qupathGUI,
+                                                            String virtualEnvPath, String pythonScriptPath,
+                                                            AffineTransform transformation, AffineTransform offset) {
+        QP.selectObjects(tileXY)
+        // Transform the QuPath coordinates into stage coordinates
+        def QPPixelCoordinates = [tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY()]
+        List expectedStageXYPositionMicrons = TransformationFunctions.QPtoMicroscopeCoordinates(QPPixelCoordinates, transformation)
+        logger.info("QuPath pixel coordinates: $QPPixelCoordinates")
+        logger.info("Transformed into stage coordinates: $expectedStageXYPositionMicrons")
+        // Move the stage to the new coordinates
+        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons as List<String>)
+        qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
+
+        // Validate the position that was moved to or update with an adjusted position
+        def updatePosition = stageToQuPathAlignmentGUI2()
+        if (updatePosition.equals("Use adjusted position")) {
+            // Get access to current stage coordinates and update transformation
+            List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+
+            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<Double>, currentStageCoordinates_um as List<Double>, offset)
+        }
+
+        // Prepare the results to be returned
+        Map<String, Object> results = [
+                'updatePosition': updatePosition,
+                'transformation': transformation
+        ]
+
+        return results
     }
 }

@@ -90,7 +90,6 @@ class UtilityFunctions {
         Platform.runLater {
             logger.info("Platform.runLater section of stitchImagesAndUpdateProject")
             // Add the (possibly renamed) image to the project
-            //TODO pass preferences boolean isSlideFlippedY = false
             def preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
             boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
             boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean

@@ -49,7 +49,7 @@ class AddQPPreferences {
      */
     private static void initializePreferences() {
 
-        //TODO CHANGE SOME STRINGS TO DirectoryProperty items
+        StringProperty slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
 // Enable my extension
         BooleanProperty enableExtensionProperty = PathPrefs.createPersistentPreference("enableExtension", true);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(

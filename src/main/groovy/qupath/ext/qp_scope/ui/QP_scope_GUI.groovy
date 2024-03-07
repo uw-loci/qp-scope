@@ -1,9 +1,7 @@
 package qupath.ext.qp_scope.ui
 
 import com.sun.javafx.collections.ObservableListWrapper
-import javafx.application.Platform
-import javafx.event.EventHandler
-import javafx.scene.Node
+import java.util.prefs.Preferences
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
@@ -16,6 +14,7 @@ import qupath.ext.qp_scope.utilities.TransformationFunctions
 import qupath.ext.qp_scope.ui.UI_functions
 import qupath.lib.gui.QuPathGUI
 import qupath.fx.dialogs.Dialogs
+import qupath.lib.gui.prefs.PathPrefs
 import qupath.lib.gui.scripting.QPEx
 import qupath.lib.objects.PathObject
 import qupath.lib.projects.Project
@@ -51,7 +50,9 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-    static TextField sampleLabelField = new TextField("First_Test")
+    static defaultSampleName = Preferences.get("SlideLabel", "First_Test")
+    static TextField sampleLabelField = new TextField(defaultSampleName)
+    //static TextField sampleLabelField = new TextField("First_Test")
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
@@ -218,6 +219,7 @@ class QP_scope_GUI {
  */
     static void macroImageInputGUI() {
         // Create the dialog
+        //Or just check if image is open with annotations
         def dlg = createMacroImageInputDialog()
 
         // Show the dialog and capture the response
@@ -225,13 +227,15 @@ class QP_scope_GUI {
 
         // Handling the response
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Retrieve values from text fields and checkbox
+
 
             //TODO implement separate xy processing
-
+            // Retrieve values from text fields and checkbox
             boolean arePixelsNonIsotropic = nonIsotropicCheckBox.isSelected()
             String groovyScriptPath = groovyScriptField.getText()
             def sampleLabel = sampleLabelField.getText()
+            //Preferences.put("SlideLabel", sampleLabel)
+//TODO implement preference to store previously saved sampleLabelField
 
             // Preferences from GUI
             double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
@@ -286,12 +290,13 @@ class QP_scope_GUI {
             String tempTileDirectory = projectDetails.tempTileDirectory
 
 
-            String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSizeSource as String, jsonTissueClassifierPathString)
-            //logger.info(tissueDetectScript)
-            // Run the modified script
-            QuPathGUI.getInstance().runScript(null, tissueDetectScript)
-            //At this point the tissue should be outlined in an annotation
-
+            if (QP.getAnnotationObjects().findAll{it.getPathClass() == QP.getPathClass("Tissue")}.size() == 0) {
+                String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSizeSource as String, jsonTissueClassifierPathString)
+                //logger.info(tissueDetectScript)
+                // Run the modified script
+                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
+                //At this point the tissue should be outlined in an annotation
+            }
             //Callback that was removed - need to re-insert the checkValidAnnotations function here
             UI_functions.checkValidAnnotationsGUI({ boolean check ->
                 if (!check) {
@@ -301,6 +306,8 @@ class QP_scope_GUI {
                     def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
                     Double frameWidthMicrons = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
                     Double frameHeightMicrons = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
+
+                    //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                             projectDetails.scanTypeWithIndex.toString(),
                             frameWidthMicrons,
@@ -350,7 +357,7 @@ class QP_scope_GUI {
 
 
                     // Handle stage alignment for top center tile
-                    Map resultsTopCenter = handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
+                    Map resultsTopCenter = UI_functions.handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation, offset)
                     if (!resultsTopCenter.updatePosition) {
                         logger.info("Window was closed, alignment cancelled.")
                         return // Exit if position validation fails
@@ -358,7 +365,7 @@ class QP_scope_GUI {
                     transformation = resultsTopCenter.transformation as AffineTransform
 
                     // Handle stage alignment for left center tile
-                    Map resultsLeftCenter = handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation)
+                    Map resultsLeftCenter = UI_functions.handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation, offset)
                     if (!resultsLeftCenter.updatePosition) {
                         logger.info("Window was closed, alignment cancelled.")
                         return // Exit if position validation fails
@@ -769,52 +776,7 @@ class QP_scope_GUI {
     }
 
 
-    /**
-     * Handles the process of selecting a tile, transforming its coordinates, moving the stage,
-     * validating the new stage position, and updating the transformation.
-     *
-     * @param tileXY The tile coordinates and object.
-     * @param qupathGUI The QuPath GUI instance.
-     * @param virtualEnvPath
-     The virtual environment path for Python commands.
 
-     @param pythonScriptPath The Python script path.
-
-     @param transformation The current AffineTransform.
-
-     @return A boolean indicating if the position was validated successfully and the updated transformation.
-     */
-
-    private static Map<String, Object> handleStageAlignment(PathObject tileXY, QuPathGUI qupathGUI,
-                                                            String virtualEnvPath, String pythonScriptPath,
-                                                            AffineTransform transformation) {
-        QP.selectObjects(tileXY)
-        // Transform the QuPath coordinates into stage coordinates
-        def QPPixelCoordinates = [tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY()]
-        List expectedStageXYPositionMicrons = TransformationFunctions.QPtoMicroscopeCoordinates(QPPixelCoordinates, transformation)
-        logger.info("QuPath pixel coordinates: $QPPixelCoordinates")
-        logger.info("Transformed into stage coordinates: $expectedStageXYPositionMicrons")
-        // Move the stage to the new coordinates
-        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons as List<String>)
-        qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
-
-        // Validate the position that was moved to or update with an adjusted position
-        def updatePosition = UI_functions.stageToQuPathAlignmentGUI2()
-        if (updatePosition.equals("Use adjusted position")) {
-            // Get access to current stage coordinates and update transformation
-            List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
-
-            transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<Double>, currentStageCoordinates_um as List<Double>)
-        }
-
-        // Prepare the results to be returned
-        Map<String, Object> results = [
-                'updatePosition': updatePosition,
-                'transformation': transformation
-        ]
-
-        return results
-    }
 
     //Create the second interface window for performing higher resolution or alternate modality scans
     private static GridPane createSecondModalityGUI() {
