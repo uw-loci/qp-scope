@@ -19,9 +19,8 @@ import qupath.lib.scripting.QP
  * allowing for different types of properties such as String, Double, and List.
  */
 class AddQPPreferences {
-
+    public static StringProperty slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
     static AddQPPreferences instance
-
     static AddQPPreferences getInstance() {
         if (!instance) {
             instance = new AddQPPreferences()
@@ -49,7 +48,7 @@ class AddQPPreferences {
      */
     private static void initializePreferences() {
 
-        StringProperty slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
+        slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
 // Enable my extension
         BooleanProperty enableExtensionProperty = PathPrefs.createPersistentPreference("enableExtension", true);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(

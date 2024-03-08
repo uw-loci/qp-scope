@@ -1,7 +1,7 @@
 package qupath.ext.qp_scope.ui
 
 import com.sun.javafx.collections.ObservableListWrapper
-import java.util.prefs.Preferences
+import qupath.ext.qp_scope.ui.AddQPPreferences
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
@@ -52,7 +52,7 @@ class QP_scope_GUI {
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
     //static defaultSampleName = Preferences.get("SlideLabel", "First_Test")
     //static TextField sampleLabelField = new TextField(defaultSampleName)
-    static TextField sampleLabelField = new TextField("First_Test")
+    static TextField sampleLabelField = new TextField(AddQPPreferences.slideLabelSaved.value)
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
