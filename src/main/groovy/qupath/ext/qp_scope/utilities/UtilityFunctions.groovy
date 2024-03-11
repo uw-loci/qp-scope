@@ -479,17 +479,21 @@ class UtilityFunctions {
                 //One extra full frame, since half frame on each side.
                 bBoxH = bBoxH + frameHeight
                 bBoxW = bBoxW + frameWidth
-
             }
+
             // Create an ROI for the bounding box
             def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
             // Create tile configuration based on the bounding box, bBox value are in microns
             createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+
         } else {
             // Tiling logic for existing annotations
-            ImageData imageData = QPEx.getQuPath().getImageData()
-            def hierarchy = imageData.getHierarchy()
-            QP.clearDetections()
+            //ImageData imageData = QPEx.getQuPath().getImageData()
+            //def hierarchy = imageData.getHierarchy()
+
+            //QP.clearDetections()
+            def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().equals{imagingModality}}
+            QP.removeObjects(relevantTiles, true)
             // Retrieve all annotations
 
             // Naming each annotation based on its centroid coordinates
@@ -511,15 +515,15 @@ class UtilityFunctions {
                 // Create folder for each annotation's tiles
                 def tilePath = QP.buildFilePath(modalityIndexFolder, annotationName)
                 QP.mkdirs(tilePath)
-                //Create a half frame bounds around the area of interest
+                //Create a half frame bounds around the area of interest to avoid cutting off bits of tissue
                 if (buffer) {
-                    bBoxX = bBoxX - frameWidth / 2
+                    bBoxX = bBoxX - frameWidth/2
                     bBoxY = bBoxY - frameHeight/2
                     //One extra full frame, since half frame on each side.
                     bBoxH = bBoxH + frameHeight
                     bBoxW = bBoxW + frameWidth
                 }
-                // Create tile configuration for each annotation, bBox values are in pixels
+                // Create tile configuration for each annotation, bBox and frame values are in QuPath image pixels
                 createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
         }
@@ -559,6 +563,8 @@ class UtilityFunctions {
         List newTiles = []
         double x = bBoxX
         double y = bBoxY
+        logger.info("frameHeight: $frameHeight")
+        logger.info("frameWidth: $frameWidth")
         // Calculate step size for X and Y based on frame size and overlap
         double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
         double yStep = frameHeight - (overlapPercent / 100 * frameHeight)

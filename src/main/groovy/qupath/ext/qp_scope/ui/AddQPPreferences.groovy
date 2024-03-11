@@ -19,7 +19,6 @@ import qupath.lib.scripting.QP
  * allowing for different types of properties such as String, Double, and List.
  */
 class AddQPPreferences {
-    public static StringProperty slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
     static AddQPPreferences instance
     static AddQPPreferences getInstance() {
         if (!instance) {
@@ -48,16 +47,6 @@ class AddQPPreferences {
      */
     private static void initializePreferences() {
 
-        slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
-// Enable my extension
-        BooleanProperty enableExtensionProperty = PathPrefs.createPersistentPreference("enableExtension", true);
-        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(enableExtensionProperty, Boolean.class)
-                        .name("Enable my extension")
-                        .category(EXTENSION_NAME)
-                        .description("Enable or disable my extension")
-                        .build()
-        );
 
 // Flip macro image horizontally
         BooleanProperty isFlippedXProperty = PathPrefs.createPersistentPreference("isFlippedXProperty", false);
@@ -185,15 +174,15 @@ class AddQPPreferences {
                                 "\n'Delete' will delete the tiles and keep NO COPIES. Only use this if you are confident in your system and need the space.")
                         .build()
         );
-// Pixel Size Source
-        DoubleProperty pixelSizeSourceProperty = PathPrefs.createPersistentPreference("pixelSizeSourceProperty", 7.2);
-        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(pixelSizeSourceProperty, Double.class)
-                        .name("Macro image px size")
-                        .category(EXTENSION_NAME)
-                        .description("Pixel size of the source image, in micrometers.")
-                        .build()
-        );
+//// Pixel Size Source
+//        DoubleProperty pixelSizeSourceProperty = PathPrefs.createPersistentPreference("pixelSizeSourceProperty", 7.2);
+//        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+//                new PropertyItemBuilder<>(pixelSizeSourceProperty, Double.class)
+//                        .name("Macro image px size")
+//                        .category(EXTENSION_NAME)
+//                        .description("Pixel size of the source image, in micrometers.")
+//                        .build()
+//        );
 
 // Pixel Size for First Scan Type
         DoubleProperty pixelSizeFirstScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstScanTypeProperty", 1.105);
@@ -268,24 +257,6 @@ class AddQPPreferences {
 
     }
 
-    /**
-     * Adds all preferences from the preferencesList to the QuPath GUI preference pane.
-     * @param qupath The instance of QuPathGUI to which the preferences should be added.
-     */
-//    public void addPreferences(QuPathGUI qupath) {
-//        preferencesList.each { pref ->
-//
-//            qupath.getPreferencePane().addPropertyPreference(
-//                    pref.property as Property<Object>,
-//                    pref.type as Class<?>,
-//                    pref.name as String,
-//                    pref.key as String,
-//                    pref.description as String
-//            )
-//        }
-//    }
-
-
     public Property getProperty(String name) {
         // Assuming preferencesList is a list of maps or a similar structure
         // that holds your properties.
@@ -296,13 +267,26 @@ class AddQPPreferences {
 }
 
 
-//Scratch area for testing QuPath scripts
 
+class AutoFillPersistentPreferences{
 
-//
-//for (entry in getQuPath().getPreferencePane().getPropertySheet().getItems().findAll{it.category == "Bio-Formats"}) {
-//   print entry.getName()
-//}
+    //private AutoFillPersistentPreferences options = AutoFillPersistentPreferences.getInstance();
+    private static StringProperty slideLabelSaved = PathPrefs.createPersistentPreference("SlideLabel", "First_Test");
 
+    public static String getSlideLabel(){
+        return slideLabelSaved.value
+    }
+    public static void setSlideLabel(final String slideLabelSaved){
+        this.slideLabelSaved.value = slideLabelSaved
+    }
 
-//describe(getQuPath().getPreferencePane().getPropertySheet().getItems().findAll{it.category == "Bio-Formats"})
+    private static StringProperty macroImagePixelSizeInMicrons = PathPrefs.createPersistentPreference("macroImagePixelSizeInMicrons", "7.2");
+
+    public static String getMacroImagePixelSizeInMicrons(){
+        return macroImagePixelSizeInMicrons.value
+    }
+    public static void setMacroImagePixelSizeInMicrons(final String macroImagePixelSizeInMicrons){
+        this.macroImagePixelSizeInMicrons.value = macroImagePixelSizeInMicrons
+    }
+
+}

@@ -1,7 +1,7 @@
 package qupath.ext.qp_scope.ui
 
 import com.sun.javafx.collections.ObservableListWrapper
-import qupath.ext.qp_scope.ui.AddQPPreferences
+
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
@@ -52,12 +52,12 @@ class QP_scope_GUI {
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
     //static defaultSampleName = Preferences.get("SlideLabel", "First_Test")
     //static TextField sampleLabelField = new TextField(defaultSampleName)
-    static TextField sampleLabelField = new TextField(AddQPPreferences.slideLabelSaved.value)
+    static TextField sampleLabelField = new TextField(AutoFillPersistentPreferences.getSlideLabel())
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
-    static TextField pixelSizeField = new TextField(preferences.find{it.getName() == "Macro image px size"}.getValue().toString())
+    static TextField pixelSizeField = new TextField(AutoFillPersistentPreferences.getMacroImagePixelSizeInMicrons())
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
 
 
@@ -234,13 +234,15 @@ class QP_scope_GUI {
             boolean arePixelsNonIsotropic = nonIsotropicCheckBox.isSelected()
             String groovyScriptPath = groovyScriptField.getText()
             def sampleLabel = sampleLabelField.getText()
-            //Preferences.put("SlideLabel", sampleLabel)
-//TODO implement preference to store previously saved sampleLabelField
+            def pixelSizeMacroImage = pixelSizeField.getText()
+            //Store this for future runs
+            AutoFillPersistentPreferences.setMacroImagePixelSizeInMicrons(pixelSizeMacroImage)
 
+            AutoFillPersistentPreferences.setSlideLabel(sampleLabel)
             // Preferences from GUI
             double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
-            double pixelSizeSource = preferences.find{it.getName() == "Macro image px size"}.getValue() as Double
+            double pixelSizeSource = AutoFillPersistentPreferences.getMacroImagePixelSizeInMicrons() as Double
             double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
             String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
@@ -297,6 +299,7 @@ class QP_scope_GUI {
                 QuPathGUI.getInstance().runScript(null, tissueDetectScript)
                 //At this point the tissue should be outlined in an annotation
             }
+
             //Callback that was removed - need to re-insert the checkValidAnnotations function here
             UI_functions.checkValidAnnotationsGUI({ boolean check ->
                 if (!check) {
@@ -304,14 +307,15 @@ class QP_scope_GUI {
                 } else {
 
                     def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
-                    Double frameWidthMicrons = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
-                    Double frameHeightMicrons = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
+                    //Calculate the field of view size in QuPath pixels
+                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
+                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
 
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                             projectDetails.scanTypeWithIndex.toString(),
-                            frameWidthMicrons,
-                            frameHeightMicrons,
+                            frameWidthQPpixels,
+                            frameHeightQPpixels,
                             overlapPercent,
                             null,
                             true,
@@ -513,6 +517,7 @@ class QP_scope_GUI {
                 List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
                 Double frameWidthMicrons = (frameWidth ) * (pixelSizeFirstScanType )
                 Double frameHeightMicrons = (frameHeight )  * (pixelSizeFirstScanType )
+                //Input frame width/height in microns since everything is done in stage coordinates
                 UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory, scanTypeWithIndex,
                         frameWidthMicrons,
                         frameHeightMicrons,
@@ -645,6 +650,7 @@ class QP_scope_GUI {
             //Convert the camera frame width/height into pixels in the image we are working on.
             Double frameWidthQPpixels = (frameWidth ) / (pixelSizeFirstScanType ) * (pixelSizeSecondScanType )
             Double frameHeightQPpixels = (frameHeight ) / (pixelSizeFirstScanType) * (pixelSizeSecondScanType )
+
             UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                     scanTypeWithIndex,
                     frameWidthQPpixels,
