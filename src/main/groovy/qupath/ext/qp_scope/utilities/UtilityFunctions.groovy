@@ -519,7 +519,7 @@ class UtilityFunctions {
                 if (buffer) {
                     bBoxX = bBoxX - frameWidth/2
                     bBoxY = bBoxY - frameHeight/2
-                    //One extra full frame, since half frame on each side.
+                    //One extra full frame, since half frame on each side
                     bBoxH = bBoxH + frameHeight
                     bBoxW = bBoxW + frameWidth
                 }
@@ -556,6 +556,7 @@ class UtilityFunctions {
                                         ROI annotationROI,
                                         String imagingModality,
                                         boolean createTiles = true) {
+        logger.info("TileConfig setup")
         int predictedTileCount = 0
         int actualTileCount = 0
         List xy = []
@@ -568,7 +569,8 @@ class UtilityFunctions {
         // Calculate step size for X and Y based on frame size and overlap
         double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
         double yStep = frameHeight - (overlapPercent / 100 * frameHeight)
-
+        logger.info("xStep size: $xStep")
+        logger.info("yStep size: $yStep")
         // Loop through Y-axis
         while (y < bBoxY + bBoxH) {
             // Loop through X-axis with conditional direction for serpentine tiling

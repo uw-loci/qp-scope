@@ -113,47 +113,6 @@ class TransformationFunctions {
     }
 
 
-//working function, saved
-//    /**
-//     * Calculates an affine transformation based on scaling and translation.
-//     *
-//     * @param scalingTransform The AffineTransform object representing the scaling.
-//     * @param qpCoordinatesList A list of strings representing the coordinates in the qpCoordinates system.
-//     * @param stageCoordinatesList A list of strings representing the coordinates in the stageCoordinates system.
-//     * @return An AffineTransform object representing the combined scaling and translation.
-//     */
-//    static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
-//                                                        List<String> qpCoordinatesList,
-//                                                        List<String> stageCoordinatesList) {
-//        // Parse the coordinate strings to double
-//        logger.info("input scaling transform $scalingTransform")
-//        double[] qpPoint = qpCoordinatesList.collect { it.toDouble() } as double[]
-//        double[] mmPoint = stageCoordinatesList.collect { it.toDouble() } as double[]
-//
-//        logger.info("Parsed qpPoint: ${qpPoint}")
-//        logger.info("Parsed mmPoint: ${mmPoint}")
-//
-//        // Applying the scaling transform to qpPoint
-//        Point2D.Double scaledQpPoint = new Point2D.Double()
-//        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint)
-//
-//        logger.info("Scaled qpPoint: ${scaledQpPoint}")
-//
-//        // Calculate the translation vector, adjusted for scaling
-//        double tx = mmPoint[0] - scaledQpPoint.x
-//        double ty = mmPoint[1] - scaledQpPoint.y
-//
-//        logger.info("Calculated translation: tx = ${tx}, ty = ${ty}")
-//
-//        // Create the combined transform (scaling and translation)
-//        AffineTransform transform = new AffineTransform(scalingTransform)
-//        transform.translate(tx / scalingTransform.getScaleX(), ty / scalingTransform.getScaleY())
-//
-//        logger.info("Final AffineTransform: ${transform}")
-//
-//        return transform
-//    }
-
 /**
  * Adjusts an existing scaling affine transformation by adding a translation to align with stage coordinates more accurately.
  *
