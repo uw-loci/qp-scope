@@ -488,9 +488,9 @@ class UtilityFunctions {
 
         } else {
             // Tiling logic for existing annotations
-            //ImageData imageData = QPEx.getQuPath().getImageData()
-            //def hierarchy = imageData.getHierarchy()
 
+            //Remove the indexing from the modality.
+            imagingModality = imagingModality.replaceAll(/(_\d+)$/, "")
             //QP.clearDetections()
             def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().equals{imagingModality}}
             QP.removeObjects(relevantTiles, true)
@@ -569,6 +569,7 @@ class UtilityFunctions {
         // Calculate step size for X and Y based on frame size and overlap
         double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
         double yStep = frameHeight - (overlapPercent / 100 * frameHeight)
+
         logger.info("xStep size: $xStep")
         logger.info("yStep size: $yStep")
         // Loop through Y-axis
@@ -578,6 +579,7 @@ class UtilityFunctions {
                 def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
                 // Check if tile intersects the given ROI or bounding box
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
+
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
                     tileDetection.setName(predictedTileCount.toString())
                     tileDetection.measurements.put("TileNumber", actualTileCount)

@@ -144,8 +144,8 @@ class TransformationFunctions {
         logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
 
         // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
-        double tx = (mmPoint[0] - scaledQpPoint.x)/scalingTransform.getScaleX();
-        double ty = (mmPoint[1] - scaledQpPoint.y)/scalingTransform.getScaleY();
+        double tx = (mmPoint[0] - scaledQpPoint.x)//scalingTransform.getScaleX();
+        double ty = (mmPoint[1] - scaledQpPoint.y)//scalingTransform.getScaleY();
 
         logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
 

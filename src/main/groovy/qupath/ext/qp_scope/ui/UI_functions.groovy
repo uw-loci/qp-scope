@@ -344,6 +344,8 @@ class UI_functions {
             // Get access to current stage coordinates and update transformation
             List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
 
+            //TODO WHY DOES THE STAGE MOVE TO THE RIGHT SPOT BUT THE TRANSFORM IS GIVING BACK CAMERA PIXELS
+
             transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<Double>, currentStageCoordinates_um as List<Double>, offset)
         }
 
