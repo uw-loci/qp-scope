@@ -351,8 +351,8 @@ class QP_scope_GUI {
                     //TODO WORKING
                     // Calculate the offset in microns - the size of one frame in stage coordinates
                     // PUT THIS INFORMATION SOMEWHERE ELSE
-                    double offsetX = -0.5 * frameWidthMicrons//transformation.getScaleX()
-                    double offsetY = -1 * frameHeightMicrons//transformation.getScaleY();
+                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//transformation.getScaleX()
+                    double offsetY = -1 * frameHeightQPpixels * (pixelSizeFirstScanType)//transformation.getScaleY();
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
