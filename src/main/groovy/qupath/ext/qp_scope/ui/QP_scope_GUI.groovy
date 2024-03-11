@@ -324,6 +324,7 @@ class QP_scope_GUI {
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
                     AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
+
                     logger.info("Initial affine transform, scaling only: $transformation")
                     //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
                     if (transformation == null) {
@@ -351,8 +352,8 @@ class QP_scope_GUI {
                     //TODO WORKING
                     // Calculate the offset in microns - the size of one frame in stage coordinates
                     // PUT THIS INFORMATION SOMEWHERE ELSE
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//transformation.getScaleX()
-                    double offsetY = -1 * frameHeightQPpixels * (pixelSizeFirstScanType)//transformation.getScaleY();
+                    double offsetX = 0.25 * frameWidthQPpixels * (pixelSizeFirstScanType)//transformation.getScaleX()
+                    double offsetY = 0 * frameHeightQPpixels * (pixelSizeFirstScanType)//transformation.getScaleY();
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
@@ -379,6 +380,12 @@ class QP_scope_GUI {
                     //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
                     //It must be transformed into stage coordinates in microns
                     logger.info("export script path string $tempTileDirectory")
+
+
+                    //Transformation here should be translating Qupath coordinates correctly into stage coordinates
+                    //However we are getting camera pixel coordinates??
+
+
                     def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
                     for (folder in tileconfigFolders) {
                         logger.info("modified TileConfiguration at $folder")
