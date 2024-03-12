@@ -343,6 +343,7 @@ class QP_scope_GUI {
                         logger.error("Need coordinates.")
                         return
                     }
+
                     logger.info("user adjusted position of tile at $coordinatesQP")
                     List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
                     logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
@@ -352,6 +353,7 @@ class QP_scope_GUI {
                     //TODO WORKING
                     // Calculate the offset in microns - the size of one frame in stage coordinates
                     // PUT THIS INFORMATION SOMEWHERE ELSE
+
                     double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//transformation.getScaleX()
                     double offsetY = -0.5 * frameHeightQPpixels * (pixelSizeFirstScanType)//transformation.getScaleY();
                     // Create the offset AffineTransform
