@@ -323,11 +323,11 @@ class QP_scope_GUI {
 
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
-                    AffineTransform transformation = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
+                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
 
-                    logger.info("Initial affine transform, scaling only: $transformation")
+                    logger.info("Initial affine transform, scaling only: $scalingTransform")
                     //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
-                    if (transformation == null) {
+                    if (scalingTransform == null) {
                         return
                     }
 
@@ -347,35 +347,37 @@ class QP_scope_GUI {
                     List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
                     logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
-                    logger.info("affine transform before initial alignment: $transformation")
+                    logger.info("affine transform before initial alignment: $scalingTransform")
                     List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
                     //TODO WORKING
-                    // Calculate the offset in microns - the size of one frame in stage coordinates
+                    // Calculate the offset in stage microns - the size of one frame in stage coordinates
                     // PUT THIS INFORMATION SOMEWHERE ELSE
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//transformation.getScaleX()
-                    double offsetY = -0.5 * frameHeightQPpixels * (pixelSizeFirstScanType)//transformation.getScaleY();
+
+                    //Offset is required due to stage having a different point to define where the FOV is (not upper left)
+                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//scalingTransform.getScaleX()
+                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstScanType)//scalingTransform.getScaleY();
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
-                    transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, coordinatesQP, currentStageCoordinates_um, offset)
-                    logger.info("affine transform after initial alignment: $transformation")
+                    AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
+                    logger.info("affine transform after initial alignment: $scalingTransform")
 
 
                     // Handle stage alignment for top center tile
-                    Map resultsTopCenter = UI_functions.handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation, offset)
+                    Map resultsTopCenter = UI_functions.handleStageAlignment(topCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transform, offset)
                     if (!resultsTopCenter.updatePosition) {
                         logger.info("Window was closed, alignment cancelled.")
                         return // Exit if position validation fails
                     }
-                    transformation = resultsTopCenter.transformation as AffineTransform
+                    transform = resultsTopCenter.transformation as AffineTransform
 
                     // Handle stage alignment for left center tile
-                    Map resultsLeftCenter = UI_functions.handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transformation, offset)
+                    Map resultsLeftCenter = UI_functions.handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transform, offset)
                     if (!resultsLeftCenter.updatePosition) {
                         logger.info("Window was closed, alignment cancelled.")
                         return // Exit if position validation fails
                     }
-                    transformation = resultsLeftCenter.transformation as AffineTransform
+                    transform = resultsLeftCenter.transformation as AffineTransform
 
                     //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
                     //It must be transformed into stage coordinates in microns
@@ -386,7 +388,7 @@ class QP_scope_GUI {
                     //However we are getting camera pixel coordinates??
 
 
-                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transformation)
+                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform)
                     for (folder in tileconfigFolders) {
                         logger.info("modified TileConfiguration at $folder")
                     }
