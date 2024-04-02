@@ -5,41 +5,27 @@ import com.sun.javafx.collections.ObservableListWrapper
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
-import javafx.stage.Modality
 import org.slf4j.LoggerFactory
 import qupath.ext.qp_scope.utilities.QPProjectFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
 import qupath.ext.qp_scope.utilities.MinorFunctions
 import qupath.ext.qp_scope.utilities.TransformationFunctions
-import qupath.ext.qp_scope.ui.UI_functions
 import qupath.lib.gui.QuPathGUI
 import qupath.fx.dialogs.Dialogs
-import qupath.lib.gui.prefs.PathPrefs
 import qupath.lib.gui.scripting.QPEx
 import qupath.lib.objects.PathObject
 import qupath.lib.projects.Project
 import qupath.lib.scripting.QP
 
 import javafx.stage.Window
-import java.awt.event.ActionEvent
-import java.awt.geom.Point2D
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Semaphore
 import java.awt.geom.AffineTransform
-import java.awt.image.BufferedImage
-
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.stream.Collectors
 
 import javafx.stage.Modality
 import javafx.stage.Stage
 
-
-//Thoughts:
-//Have collapsible sections to a larger dialog box?
-//        Alternatively, individual dialogs for each step, but have menu options for each as well. The menu options for steps not yet reached would need to be greyed out.
 
 class QP_scope_GUI {
     static final logger = LoggerFactory.getLogger(QP_scope_GUI.class)
@@ -50,8 +36,7 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-    //static defaultSampleName = Preferences.get("SlideLabel", "First_Test")
-    //static TextField sampleLabelField = new TextField(defaultSampleName)
+
     static TextField sampleLabelField = new TextField(AutoFillPersistentPreferences.getSlideLabel())
     static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
@@ -62,8 +47,8 @@ class QP_scope_GUI {
 
 
 
-        /**********************************
-     * Starting point for an overview or "macro" image
+    /*
+        Test GUI elements for various sub-functions within the program that require everything to be running.
      */
 
     static void testGUI() {
@@ -107,7 +92,7 @@ class QP_scope_GUI {
         double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
         double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
         double pixelSizeSource = preferences.find{it.getName() == "Macro image px size"}.getValue() as Double
-        double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+        double pixelSizeFirstImagingMode = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
         double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
         String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
         String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
@@ -180,13 +165,13 @@ class QP_scope_GUI {
 
                     // Create initial scaling transform
                     AffineTransform transformation = new AffineTransform()
-                    double scale =  (pixelSizeSource)/ pixelSizeFirstScanType
+                    double scale =  (pixelSizeSource)/ pixelSizeFirstImagingMode
                     logger.info("scale is $scale")
                     transformation.scale(scale, -scale)
                     // Calculate the transformation for the current pair
                     // Calculate the offset in microns - the size of one frame in stage coordinates
-                    double offsetX = 0.5 * frameWidth * pixelSizeFirstScanType;
-                    double offsetY = 1 * frameHeight * pixelSizeFirstScanType;
+                    double offsetX = 0.5 * frameWidth * pixelSizeFirstImagingMode;
+                    double offsetY = 1 * frameHeight * pixelSizeFirstImagingMode;
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                 //todo make generic
@@ -210,13 +195,13 @@ class QP_scope_GUI {
             }
         }
     }
-/**
- * Launches a graphical user interface for macro image input in a microscopy imaging workflow. This function facilitates
- * the acquisition of necessary parameters from the user, such as coordinates, preferences, and paths for scripts and
- * environment setups. It validates user input, retrieves application preferences, executes scripts for tissue detection,
- * and manages tile configurations and stitching tasks. The GUI also handles affine transformation setup for image alignment
- * and coordinates the execution of Python scripts for microscope control and image processing.
- */
+    /**
+     * Launches a graphical user interface for macro image input in a microscopy imaging workflow. This function facilitates
+     * the acquisition of necessary parameters from the user, such as coordinates, preferences, and paths for scripts and
+     * environment setups. It validates user input, retrieves application preferences, executes scripts for tissue detection,
+     * and manages tile configurations and stitching tasks. The GUI also handles affine transformation setup for image alignment
+     * and coordinates the execution of Python scripts for microscope control and image processing.
+     */
     static void macroImageInputGUI() {
         // Create the dialog
         //Or just check if image is open with annotations
@@ -243,7 +228,7 @@ class QP_scope_GUI {
             double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
             double pixelSizeSource = AutoFillPersistentPreferences.getMacroImagePixelSizeInMicrons() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+            double pixelSizeFirstImagingMode = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
             String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
             String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
@@ -253,11 +238,11 @@ class QP_scope_GUI {
             boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
             boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
 
-// Log retrieved preference values
+            // Log retrieved preference values
             logger.info("frameWidth: $frameWidth")
             logger.info("frameHeight: $frameHeight")
             logger.info("pixelSizeSource: $pixelSizeSource")
-            logger.info("pixelSizeFirstScanType: $pixelSizeFirstScanType")
+            logger.info("pixelSizeFirstImagingMode: $pixelSizeFirstImagingMode")
             logger.info("overlapPercent: $overlapPercent")
             logger.info("projectsFolderPath: $projectsFolderPath")
             logger.info("virtualEnvPath: $virtualEnvPath")
@@ -308,12 +293,12 @@ class QP_scope_GUI {
 
                     def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
                     //Calculate the field of view size in QuPath pixels
-                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstScanType)
-                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstScanType)
+                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
+                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
 
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
-                            projectDetails.scanTypeWithIndex.toString(),
+                            projectDetails.imagingModeWithIndex.toString(),
                             frameWidthQPpixels,
                             frameHeightQPpixels,
                             overlapPercent,
@@ -349,13 +334,11 @@ class QP_scope_GUI {
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $scalingTransform")
                     List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
-                    //TODO WORKING
-                    // Calculate the offset in stage microns - the size of one frame in stage coordinates
+                    //TODO
                     // PUT THIS INFORMATION SOMEWHERE ELSE
-
                     //Offset is required due to stage having a different point to define where the FOV is (not upper left)
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstScanType)//scalingTransform.getScaleX()
-                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstScanType)//scalingTransform.getScaleY();
+                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
+                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
@@ -398,7 +381,7 @@ class QP_scope_GUI {
 
                         List<String> args = [projectsFolderPath,
                                              sampleLabel,
-                                             projectDetails.scanTypeWithIndex,
+                                             projectDetails.imagingModeWithIndex,
                                              annotation.getName(),
                         ] as List<String>
                         logger.info("Check input args for runPythonCommand")
@@ -413,7 +396,7 @@ class QP_scope_GUI {
                             String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
                                     projectsFolderPath,
                                     sampleLabel,
-                                    projectDetails.scanTypeWithIndex as String,
+                                    projectDetails.imagingModeWithIndex as String,
                                     annotation.getName(),
                                     qupathGUI,
                                     currentQuPathProject,
@@ -489,7 +472,7 @@ class QP_scope_GUI {
             //Preferences from GUI
             double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+            double pixelSizeFirstImagingMode = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
             String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
             String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
@@ -507,62 +490,60 @@ class QP_scope_GUI {
                     y2 = values[3]
                 }
             }
-
+            // Check if any needed values are missing
             if ([sampleLabel, x1, y1, x2, y2, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Incomplete data entered.")
-                dataCheck = false
+                return
             }
 
 
-            // Check if any value is empty
-            if (dataCheck) {
-                QuPathGUI qupathGUI = QPEx.getQuPath()
-                Map projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
-                Project currentQuPathProject = projectDetails.currentQuPathProject as Project
-                String tempTileDirectory = projectDetails.tempTileDirectory
-                String scanTypeWithIndex = projectDetails.scanTypeWithIndex
+            QuPathGUI qupathGUI = QPEx.getQuPath()
+            Map projectDetails = QPProjectFunctions.createAndOpenQuPathProject(qupathGUI, projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
+            Project currentQuPathProject = projectDetails.currentQuPathProject as Project
+            String tempTileDirectory = projectDetails.tempTileDirectory
+            String imagingModeWithIndex = projectDetails.imagingModeWithIndex
 
-                //Specifically for the case where there is only a bounding box provided
-                List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
-                Double frameWidthMicrons = (frameWidth ) * (pixelSizeFirstScanType )
-                Double frameHeightMicrons = (frameHeight )  * (pixelSizeFirstScanType )
-                //Input frame width/height in microns since everything is done in stage coordinates
-                UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory, scanTypeWithIndex,
-                        frameWidthMicrons,
-                        frameHeightMicrons,
-                        overlapPercent,
-                        boundingBoxValues,
-                false)
+            //Specifically for the case where there is only a bounding box provided
+            List<Double> boundingBoxValues = [x1, y1, x2, y2].collect { it.toDouble() }
+            Double frameWidthMicrons = (frameWidth ) * (pixelSizeFirstImagingMode )
+            Double frameHeightMicrons = (frameHeight )  * (pixelSizeFirstImagingMode )
+            //Input frame width/height in microns since everything is done in stage coordinates
+            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory, imagingModeWithIndex,
+                    frameWidthMicrons,
+                    frameHeightMicrons,
+                    overlapPercent,
+                    boundingBoxValues,
+            false)
 
-                //Send the scanning command to the microscope
+            //Send the scanning command to the microscope
 
-                List args = [projectsFolderPath,
-                             sampleLabel,
-                             scanTypeWithIndex,
-                             "bounds"]
-                //TODO can we create non-blocking python code
-                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+            List args = [projectsFolderPath,
+                         sampleLabel,
+                         imagingModeWithIndex,
+                         "bounds"]
 
-                // Handle image stitching and update project
+            UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
 
-                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                        sampleLabel, scanTypeWithIndex, "bounds", qupathGUI, currentQuPathProject,
-                        compressionType)
-                logger.info(stitchedImagePathStr)
+            // Handle image stitching and update project
 
-                qupathGUI.refreshProject()
-                //Check if the tiles should be deleted from the collection folder
+            String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+                    sampleLabel, imagingModeWithIndex, "bounds", qupathGUI, currentQuPathProject,
+                    compressionType)
+            logger.info(stitchedImagePathStr)
 
-                if (tileHandling == "Delete")
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                if (tileHandling == "Zip") {
-                    UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-                    UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-                }
-                //}
+            qupathGUI.refreshProject()
+            //Check if the tiles should be deleted from the collection folder
+
+            if (tileHandling == "Delete")
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+            if (tileHandling == "Zip") {
+                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
             }
+
         }
     }
+
 /**
  * Creates and returns a GridPane containing input fields for specifying a bounding box.
  * This includes fields for entering the coordinates of the top-left (X1, Y1) and bottom-right (X2, Y2) corners of the bounding box,
@@ -590,13 +571,13 @@ class QP_scope_GUI {
     }
 
 /**
- * Launches a GUI dialog for initiating a secondary modality data collection process within selected annotations of the current image.
+ * Launches a GUI dialog for initiating a secondary imaging mode data collection process within selected annotations of the current image.
  * The function gathers user input from the GUI to specify parameters for the collection, such as sample label and class filters for annotations.
  * It then calculates necessary parameters based on user preferences and initiates the data collection process for each selected annotation.
  * The process includes tiling, running a Python command for data collection, and optionally stitching the collected data.
  * Post-collection, it handles the tiles according to user preference, including deletion or compression.
  */
-    static void secondModalityGUI() {
+    static void secondImagingModeGUI() {
         //TODO check if in a project?
         def logger = LoggerFactory.getLogger(QuPathGUI.class)
         // Create the dialog
@@ -612,7 +593,7 @@ class QP_scope_GUI {
         dlg.setHeaderText("Create annotations within your image, then click Okay to proceed with a second collection within those areas.")
 
         // Set the content
-        dlg.getDialogPane().setContent(createSecondModalityGUI())
+        dlg.getDialogPane().setContent(createSecondImagingModeGUI())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -629,111 +610,259 @@ class QP_scope_GUI {
 
 
             //Preferences from GUI
-            double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
-            double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
-            double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
-            double pixelSizeSecondScanType = preferences.find{it.getName() == "2nd scan pixel size um"}.getValue() as Double
-            double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
-            String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
-            String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
-            String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
-            String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
-            String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
-            String secondScanType = preferences.find{it.getName() == "Second Scan Type"}.getValue() as String
+            double frameWidth = preferences.find { it.getName() == "Camera Frame Width #px" }.getValue() as Double
+            double frameHeight = preferences.find { it.getName() == "Camera Frame Height #px" }.getValue() as Double
+            double pixelSizeFirstImagingMode = preferences.find { it.getName() == "1st scan pixel size um" }.getValue() as Double
+            double pixelSizeSecondImagingMode = preferences.find { it.getName() == "2nd scan pixel size um" }.getValue() as Double
+            double overlapPercent = preferences.find { it.getName() == "Tile Overlap Percent" }.getValue() as Double
+            String projectsFolderPath = preferences.find { it.getName() == "Projects Folder" }.getValue() as String
+            String virtualEnvPath = preferences.find { it.getName() == "Python Environment" }.getValue() as String
+            String pythonScriptPath = preferences.find { it.getName() == "PycroManager Path" }.getValue() as String
+            String compressionType = preferences.find { it.getName() == "Compression type" }.getValue() as String
+            String tileHandling = preferences.find { it.getName() == "Tile Handling Method" }.getValue() as String
+            String secondImagingMode = preferences.find { it.getName() == "Second Scan Type" }.getValue() as String
 
             //SETUP: collect variables
             QuPathGUI qupathGUI = QPEx.getQuPath()
-            String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondScanType)
-            String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
-            Project<BufferedImage> currentQuPathProject = QP.getProject()
+            String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondImagingMode)
+            Map projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
+            Project currentQuPathProject = projectDetails.currentQuPathProject as Project
+            String tempTileDirectory = projectDetails.tempTileDirectory
             //Boolean to check whether to proceed with running the microscope data collection
             logger.info("getting annotation objects")
             def annotations = QP.getAnnotationObjects()
-            annotations = annotations.findAll{classFilter.contains(it.getPathClass().toString())}
+            annotations = annotations.findAll { classFilter.contains(it.getPathClass().toString()) }
 
             // Check if we have sufficient information to proceed
             if (annotations.isEmpty() || [sampleLabel, virtualEnvPath, pythonScriptPath].any { it == null || it.isEmpty() }) {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
-            //Convert the camera frame width/height into pixels in the image we are working on.
-            Double frameWidthQPpixels = (frameWidth ) / (pixelSizeFirstScanType ) * (pixelSizeSecondScanType )
-            Double frameHeightQPpixels = (frameHeight ) / (pixelSizeFirstScanType) * (pixelSizeSecondScanType )
+            //Callback that was removed - need to re-insert the checkValidAnnotations function here
+            UI_functions.checkValidAnnotationsGUI({ boolean check ->
+                if (!check) {
+                    logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
+                } else {
 
-            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
-                    scanTypeWithIndex,
-                    frameWidthQPpixels,
-                    frameHeightQPpixels,
-                    overlapPercent,
-                    null,
-                    true,
-                    annotations)
+                    //Calculate the field of view size in QuPath pixels
+                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
+                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
 
-            logger.info("Scan type with index: " + scanTypeWithIndex)
-            logger.info(tempTileDirectory)
+                    //Create tiles that represent individual fields of view along with desired overlap.
+                    UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
+                            projectDetails.imagingModeWithIndex.toString(),
+                            frameWidthQPpixels,
+                            frameHeightQPpixels,
+                            overlapPercent,
+                            null,
+                            true,
+                            annotations)
 
-// A semaphore to control the stitching process
-            Semaphore stitchingSemaphore = new Semaphore(1)
+                    //create a basic affine transformation, add the scaling information and a possible Y axis flip
+                    //Then create a dialog that asks the user to select a single detection tile
+                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeFirstImagingMode as Double,
+                            preferences as ObservableListWrapper)
 
+                    logger.info("Initial affine transform, scaling only: $scalingTransform")
+                    //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
+                    if (scalingTransform == null) {
+                        return
+                    }
 
-            for (annotation in annotations) {
-                String annotationName = annotation.getName()
-                List args = [projectsFolderPath,
-                             sampleLabel,
-                             scanTypeWithIndex,
-                             annotationName]
-
-
-                //Progress bar that updates by checking target folder for new images?
-                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-                //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
-                //TODO Need to check if stitching is successful, provide error
-                //while projectsFolderPath/sampleLabel/scanTypeWithIndex/annotationName does not have
-                //fileCount = number of entries in TileConfiguration_QP.txt OR getDetectionObjects().size()+1
-                //Loop checking each second for file count files within the folder
-                //Track loops, after N loops, break and end program with error.
-
-                logger.info("Finished Python Command for $annotationName")
-                // Start a new thread for stitching
-                Thread.start {
-                    try {
-                        // Acquire a permit before starting stitching
-                        stitchingSemaphore.acquire()
-
-                        logger.info("Begin stitching")
-                        String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                                sampleLabel, scanTypeWithIndex as String, annotationName,
-                                qupathGUI, currentQuPathProject, compressionType)
-                        logger.info(stitchedImagePathStr)
+                    PathObject expectedTile = QP.getSelectedObject()
+                    def detections = QP.getDetectionObjects()
+                    def topCenterTileXY = TransformationFunctions.getTopCenterTile(detections)
+                    def leftCenterTileXY = TransformationFunctions.getLeftCenterTile(detections)
 
 
-                    } catch (InterruptedException e) {
-                        logger.error("Stitching thread interrupted", e)
-                    } finally {
-                        // Release the semaphore for the next stitching process
-                        stitchingSemaphore.release()
+                    // Get the current stage coordinates to figure out the translation from the first alignment.
+                    List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()] as List<Double>
+                    if (!coordinatesQP) {
+                        logger.error("Need coordinates.")
+                        return
+                    }
+                    logger.info("user adjusted position of tile at $coordinatesQP")
+                    List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath,
+                            pythonScriptPath,
+                            null)
+                    logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
+                    logger.info("QuPath coordinates for selected tile: $coordinatesQP")
+                    logger.info("affine transform before initial alignment: $scalingTransform")
+                    List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
+                    //TODO
+                    // PUT THIS INFORMATION SOMEWHERE ELSE
+                    //Offset is required due to stage having a different point to define where the FOV is (not upper left)
+                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
+                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
+                    // Create the offset AffineTransform
+                    AffineTransform offset = new AffineTransform();
+                    offset.translate(offsetX, offsetY);
+                    AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform,
+                            coordinatesQP,
+                            currentStageCoordinates_um,
+                            offset)
+                    logger.info("affine transform after initial alignment: $scalingTransform")
+
+
+                    // Handle stage alignment for top center tile
+                    Map resultsTopCenter = UI_functions.handleStageAlignment(topCenterTileXY,
+                            qupathGUI,
+                            virtualEnvPath,
+                            pythonScriptPath,
+                            transform,
+                            offset)
+                    if (!resultsTopCenter.updatePosition) {
+                        logger.info("Window was closed, alignment cancelled.")
+                        return // Exit if position validation fails
+                    }
+                    transform = resultsTopCenter.transformation as AffineTransform
+
+                    // Handle stage alignment for left center tile
+                    Map resultsLeftCenter = UI_functions.handleStageAlignment(leftCenterTileXY, qupathGUI, virtualEnvPath, pythonScriptPath, transform, offset)
+                    if (!resultsLeftCenter.updatePosition) {
+                        logger.info("Window was closed, alignment cancelled.")
+                        return // Exit if position validation fails
+                    }
+                    transform = resultsLeftCenter.transformation as AffineTransform
+
+                    //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
+                    //It must be transformed into stage coordinates in microns
+                    logger.info("export script path string $tempTileDirectory")
+
+
+                    //Transformation here should be translating Qupath coordinates correctly into stage coordinates
+                    //However we are getting camera pixel coordinates??
+
+
+                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform)
+                    for (folder in tileconfigFolders) {
+                        logger.info("modified TileConfiguration at $folder")
+                    }
+
+                    Semaphore pythonCommandSemaphore = new Semaphore(1);
+                    annotations.each { annotation ->
+
+                        List<String> args = [projectsFolderPath,
+                                             sampleLabel,
+                                             projectDetails.imagingModeWithIndex,
+                                             annotation.getName(),
+                        ] as List<String>
+                        logger.info("Check input args for runPythonCommand")
+
+                        CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
+
+
+                        // Handle the successful completion of the Python command
+                        pythonFuture.thenAcceptAsync(stageCoordinates -> {
+                            // Process the result for successful execution
+                            logger.info("Begin stitching")
+                            String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(
+                                    projectsFolderPath,
+                                    sampleLabel,
+                                    projectDetails.imagingModeWithIndex as String,
+                                    annotation.getName(),
+                                    qupathGUI,
+                                    currentQuPathProject,
+                                    compressionType);
+                            logger.info("Stitching completed at $stitchedImagePathStr")
+                            // Ensure stitching operation is also non-blocking and async
+                        }).exceptionally(throwable -> {
+                            // Handle any exceptions from the Python command
+                            logger.error("Error during Python script execution: ${throwable.message}")
+                            UI_functions.notifyUserOfError("Error during Python script execution: ${throwable.message}", "Python Script Execution")
+                            return null; // To comply with the Function interface return type
+                        });
+                    }
+
+                    logger.info("All collections complete, tiles will be handled as $tileHandling")
+                    //Check if the tiles should be deleted from the collection folder set
+                    //tempTileDirectory is the parent folder to each annotation/bounding folder
+
+                    if (tileHandling == "Delete")
+                        UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+                    if (tileHandling == "Zip") {
+                        UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+                        UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
                     }
                 }
-
-            }
-            // Post-stitching tasks like deleting or zipping tiles
-            //Check if the tiles should be deleted from the collection folder
-            if (tileHandling == "Delete")
-                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-            if (tileHandling == "Zip") {
-                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-            }
+            })
         }
     }
+//            //Convert the camera frame width/height into pixels in the image we are working on.
+//            Double frameWidthQPpixels = (frameWidth ) / (pixelSizeFirstImagingMode ) * (pixelSizeSecondImagingMode )
+//            Double frameHeightQPpixels = (frameHeight ) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode )
+//            //Create tiles that represent individual fields of view along with desired overlap.
+//            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
+//                    imagingModeWithIndex,
+//                    frameWidthQPpixels,
+//                    frameHeightQPpixels,
+//                    overlapPercent,
+//                    null,
+//                    true,
+//                    annotations)
+//
+//            logger.info("Scan type with index: " + imagingModeWithIndex)
+//            logger.info(tempTileDirectory)
+//
+//            // A semaphore to control the stitching process - don't allow another stitching to begin while one is still running
+//            Semaphore stitchingSemaphore = new Semaphore(1)
+//
+//
+//            for (annotation in annotations) {
+//                String annotationName = annotation.getName()
+//                List args = [projectsFolderPath,
+//                             sampleLabel,
+//                             imagingModeWithIndex,
+//                             annotationName]
+//
+//
+//                //Progress bar that updates by checking target folder for new images?
+//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+//                //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
+//                //TODO Need to check if stitching is successful, provide error
+//                //while projectsFolderPath/sampleLabel/imagingModeWithIndex/annotationName does not have
+//                //fileCount = number of entries in TileConfiguration_QP.txt OR getDetectionObjects().size()+1
+//                //Loop checking each second for file count files within the folder
+//                //Track loops, after N loops, break and end program with error.
+//
+//                logger.info("Finished Python Command for $annotationName")
+//                // Start a new thread for stitching
+//                Thread.start {
+//                    try {
+//                        // Acquire a permit before starting stitching
+//                        stitchingSemaphore.acquire()
+//
+//                        logger.info("Begin stitching")
+//                        String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+//                                sampleLabel, imagingModeWithIndex as String, annotationName,
+//                                qupathGUI, currentQuPathProject, compressionType)
+//                        logger.info(stitchedImagePathStr)
+//
+//
+//                    } catch (InterruptedException e) {
+//                        logger.error("Stitching thread interrupted", e)
+//                    } finally {
+//                        // Release the semaphore for the next stitching process
+//                        stitchingSemaphore.release()
+//                    }
+//                }
+//
+//            }
+//            // Post-stitching tasks like deleting or zipping tiles
+//            //Check if the tiles should be deleted from the collection folder
+//            if (tileHandling == "Delete")
+//                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+//            if (tileHandling == "Zip") {
+//                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
+//                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
+//            }
 
 
 
 /**
  * Creates and configures a dialog for inputting macro image settings, including sample label and tissue detection script paths.
  * The dialog is designed to collect configuration settings for macro view imaging, ensuring that it stays on top of other windows
- * for better visibility and interaction. It initializes with application modal modality and sets the title and header text
- * to guide the user through the configuration process. The content of the dialog is populated with a dynamically created GUI
+ * for better visibility and interaction. The content of the dialog is populated with a dynamically created GUI
  * for input fields related to macro image settings.
  *
  * @return The configured Dialog instance ready for showing to the user.
@@ -794,7 +923,7 @@ class QP_scope_GUI {
 
 
     //Create the second interface window for performing higher resolution or alternate modality scans
-    private static GridPane createSecondModalityGUI() {
+    private static GridPane createSecondImagingModeGUI() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)

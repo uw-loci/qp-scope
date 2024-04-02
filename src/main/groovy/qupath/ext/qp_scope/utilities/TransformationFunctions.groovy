@@ -233,11 +233,11 @@ class TransformationFunctions {
     static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, ObservableListWrapper preferences) {
 
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-        double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+
 
         boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
-        double scale =  pixelSize//(pixelSizeFirstScanType)
+        double scale =  pixelSize
         double scaleX = invertedXAxis ? -scale : scale
         double scaleY = invertedYAxis ? -scale : scale
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages

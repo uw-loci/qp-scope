@@ -1,8 +1,6 @@
 package qupath.ext.qp_scope
 
-import javafx.beans.property.BooleanProperty
-import qupath.lib.gui.scripting.QPEx
-import qupath.lib.scripting.QP
+
 import javafx.scene.control.MenuItem
 import org.slf4j.LoggerFactory
 import qupath.ext.qp_scope.ui.QP_scope_GUI
@@ -70,7 +68,7 @@ class QP_scope implements QuPathExtension, GitHubProject {
         def qpScope3 = new MenuItem("Second scan type - Scan non \'Tissue\' annotations ")
         // TODO: tooltip
         qpScope3.setOnAction(e -> {
-            QP_scope_GUI.secondModalityGUI()
+            QP_scope_GUI.secondImagingModeGUI()
 
         })
         // Fourth menu item - "Use current image as macro view"

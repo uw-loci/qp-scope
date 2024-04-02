@@ -54,7 +54,7 @@ class UtilityFunctions {
      *
      * @param projectsFolderPath The path where the project is located and where the stitched image will be saved.
      * @param sampleLabel The label for the sample, used as part of the new file name.
-     * @param scanTypeWithIndex The scan type with an appended index for uniqueness, used in stitching process.
+     * @param imagingModeWithIndex The scan type with an appended index for uniqueness, used in stitching process.
      * @param annotationName The name of the annotation, used as part of the new file name unless it is "bounds".
      * @param qupathGUI The QuPath GUI instance used for updating the project.
      * @param currentQuPathProject The current QuPath project to which the stitched image will be added.
@@ -62,12 +62,12 @@ class UtilityFunctions {
      * @return The path to the renamed stitched image.
      */
     static String stitchImagesAndUpdateProject(String projectsFolderPath, String sampleLabel,
-                                               String scanTypeWithIndex, String annotationName, QuPathGUI qupathGUI,
+                                               String imagingModeWithIndex, String annotationName, QuPathGUI qupathGUI,
                                                Project currentQuPathProject,
                                                String compression = "J2K_LOSSY") {
 
         String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
-        String tileImageInputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
+        String tileImageInputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModeWithIndex
 
         logger.info("Calling stitchCore with $tileImageInputFolder")
         String stitchedImagePathStr = StitchingImplementations.stitchCore("Coordinates in TileConfiguration.txt file",
@@ -79,7 +79,7 @@ class UtilityFunctions {
                 annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
-        String adjustedFileName = sampleLabel+ '_' + scanTypeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)
+        String adjustedFileName = sampleLabel+ '_' + imagingModeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)
         File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
 
         // Rename the stitched image file
@@ -94,12 +94,14 @@ class UtilityFunctions {
             boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
             boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
             QPProjectFunctions.addImageToProject(adjustedFilePath, currentQuPathProject,invertedXAxis,invertedYAxis )
+
             def matchingImage = currentQuPathProject.getImageList().find { image ->
                 new File(image.getImageName()).name == adjustedFilePath.name
             }
 
             qupathGUI.openImageEntry(matchingImage)
             qupathGUI.setProject(currentQuPathProject)
+            //TODO CHECK IMAGE METADATA FOR PIXEL SIZE IN PROJECT
             qupathGUI.refreshProject()
         }
         return stitchedImagePathStr
