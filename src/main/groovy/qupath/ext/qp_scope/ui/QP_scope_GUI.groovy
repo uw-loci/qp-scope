@@ -362,7 +362,7 @@ class QP_scope_GUI {
                     }
                     transform = resultsLeftCenter.transformation as AffineTransform
 
-                    //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
+                    //The TileConfiguration_QP.txt file is in QuPath pixel coordinates.
                     //It must be transformed into stage coordinates in microns
                     logger.info("export script path string $tempTileDirectory")
 
@@ -725,7 +725,7 @@ class QP_scope_GUI {
                     }
                     transform = resultsLeftCenter.transformation as AffineTransform
 
-                    //The TileConfiguration_QP.txt file created by the Groovy script is in QuPath pixel coordinates.
+                    //The TileConfiguration_QP.txt file is in QuPath pixel coordinates.
                     //It must be transformed into stage coordinates in microns
                     logger.info("export script path string $tempTileDirectory")
 
