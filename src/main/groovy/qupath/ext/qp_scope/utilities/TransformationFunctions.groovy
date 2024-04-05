@@ -237,6 +237,7 @@ class TransformationFunctions {
 
         boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
+        //commented out pixel size
         double scale =  pixelSize//(pixelSizeFirstScanType)
         double scaleX = invertedXAxis ? -scale : scale
         double scaleY = invertedYAxis ? -scale : scale

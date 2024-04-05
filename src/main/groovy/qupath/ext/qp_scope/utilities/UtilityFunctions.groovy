@@ -74,7 +74,7 @@ class UtilityFunctions {
                 tileImageInputFolder,
                 stitchedImageOutputFolder,
                 compression,
-                0,
+                1.105,
                 1,
                 annotationName)
 
@@ -584,7 +584,9 @@ class UtilityFunctions {
                     tileDetection.setName(predictedTileCount.toString())
                     tileDetection.measurements.put("TileNumber", actualTileCount)
                     newTiles << tileDetection
-                    xy << [x, y]
+                    //Adjusting to middle of frame rather than upper left
+                    //xy << [x, y]
+                    xy << [x+frameWidth/2, y+frameHeight/2]
                     actualTileCount++
                 }
                 // Adjust X for next tile
