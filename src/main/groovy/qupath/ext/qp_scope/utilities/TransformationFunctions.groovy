@@ -41,14 +41,14 @@ class TransformationFunctions {
 
 
 /**
- * Transforms the coordinates in TileConfiguration_QP.txt files located in all child directories
+ * Transforms the coordinates in TileConfiguration.txt  *used to have an _QP files located in all child directories
  * of a specified parent directory, using an AffineTransform. It reads each file, applies the
  * transformation to each tile's coordinates, and writes the transformed coordinates back to a
  * new file in each directory.
  *
- * @param parentDirPath The path to the parent directory containing child directories with TileConfiguration_QP.txt files.
+ * @param parentDirPath The path to the parent directory containing child directories with TileConfiguration.txt files.
  * @param transformation The AffineTransform to be applied to each tile's coordinates.
- * @return A list of folder names that contain TileConfiguration_QP.txt files which were modified.
+ * @return A list of folder names that contain TileConfiguration.txt files which were modified.
  */
     static List<String> transformTileConfiguration(String parentDirPath, AffineTransform transformation) {
         logger.info("entering transform TileConfiguration modification function")
@@ -75,7 +75,9 @@ class TransformationFunctions {
 
         if (subdirectories) {
             subdirectories.each { File subdir ->
-                File tileConfigFile = new File(subdir, "TileConfiguration_QP.txt")
+                //For troubleshooting affine transform issues
+                //File tileConfigFile = new File(subdir, "TileConfiguration_QP.txt")
+                File tileConfigFile = new File(subdir, "TileConfiguration.txt")
                 if (tileConfigFile.exists()) {
                     // Process the TileConfiguration_QP.txt file
                     processTileConfigurationFile(tileConfigFile, transformation)
@@ -106,9 +108,14 @@ class TransformationFunctions {
 
 
         // Write the transformed lines to a new file
-        File newTileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration_transformed.txt")
-        newTileConfigFile.withWriter { writer ->
-            transformedLines.each { writer.println(it) }
+        //File newTileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration_transformed.txt")
+
+        //File tileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration.txt")
+
+        tileConfigFile.withWriter('UTF-8') { writer -> // Specifying the character encoding is a good practice
+            transformedLines.each { line ->
+                writer.println(line)
+            }
         }
     }
 
@@ -233,12 +240,11 @@ class TransformationFunctions {
     static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, ObservableListWrapper preferences) {
 
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
-        double pixelSizeFirstScanType = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
+
 
         boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
-        //commented out pixel size
-        double scale =  pixelSize//(pixelSizeFirstScanType)
+        double scale =  pixelSize
         double scaleX = invertedXAxis ? -scale : scale
         double scaleY = invertedYAxis ? -scale : scale
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages

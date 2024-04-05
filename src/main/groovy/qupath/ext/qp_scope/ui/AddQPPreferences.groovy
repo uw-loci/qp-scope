@@ -141,9 +141,9 @@ class AddQPPreferences {
         );
 
 // First Scan Type
-        StringProperty firstScanTypeProperty = PathPrefs.createPersistentPreference("firstScanTypeProperty", "4x_bf");
+        StringProperty firstImagingModeProperty = PathPrefs.createPersistentPreference("firstImagingModeProperty", "4x_bf");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(firstScanTypeProperty, String.class)
+                new PropertyItemBuilder<>(firstImagingModeProperty, String.class)
                         .name("First Scan Type")
                         .category(EXTENSION_NAME)
                         .description("Type of the first scan (e.g., magnification and method).")
@@ -151,9 +151,9 @@ class AddQPPreferences {
         );
 
 // Second Scan Type
-        StringProperty secondScanTypeProperty = PathPrefs.createPersistentPreference("secondScanTypeProperty", "20x_bf");
+        StringProperty secondImagingModeProperty = PathPrefs.createPersistentPreference("secondImagingModeProperty", "20x_bf");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(secondScanTypeProperty, String.class)
+                new PropertyItemBuilder<>(secondImagingModeProperty, String.class)
                         .name("Second Scan Type")
                         .category(EXTENSION_NAME)
                         .description("Type of the second scan (e.g., magnification and method).")
@@ -174,20 +174,12 @@ class AddQPPreferences {
                                 "\n'Delete' will delete the tiles and keep NO COPIES. Only use this if you are confident in your system and need the space.")
                         .build()
         );
-//// Pixel Size Source
-//        DoubleProperty pixelSizeSourceProperty = PathPrefs.createPersistentPreference("pixelSizeSourceProperty", 7.2);
-//        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-//                new PropertyItemBuilder<>(pixelSizeSourceProperty, Double.class)
-//                        .name("Macro image px size")
-//                        .category(EXTENSION_NAME)
-//                        .description("Pixel size of the source image, in micrometers.")
-//                        .build()
-//        );
+
 
 // Pixel Size for First Scan Type
-        DoubleProperty pixelSizeFirstScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstScanTypeProperty", 1.105);
+        DoubleProperty pixelSizeFirstImagingModeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstImagingModeProperty", 1.105);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(pixelSizeFirstScanTypeProperty, Double.class)
+                new PropertyItemBuilder<>(pixelSizeFirstImagingModeProperty, Double.class)
                         .name("1st scan pixel size um")
                         .category(EXTENSION_NAME)
                         .description("Pixel size for the first scan type, in micrometers.")
@@ -197,9 +189,9 @@ class AddQPPreferences {
 
 
 // Pixel Size for Second Scan Type
-        DoubleProperty pixelSizeSecondScanTypeProperty = PathPrefs.createPersistentPreference("pixelSizeSecondScanTypeProperty", 0.5);
+        DoubleProperty pixelSizeSecondImagingModeProperty = PathPrefs.createPersistentPreference("pixelSizeSecondImagingModeProperty", 0.5);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
-                new PropertyItemBuilder<>(pixelSizeSecondScanTypeProperty, Double.class)
+                new PropertyItemBuilder<>(pixelSizeSecondImagingModeProperty, Double.class)
                         .name("2nd scan pixel size um")
                         .category(EXTENSION_NAME)
                         .description("Pixel size for the second scan type, in micrometers.")

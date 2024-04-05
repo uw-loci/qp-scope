@@ -35,7 +35,7 @@ class QPProjectFunctions {
      * created project
      * temporary tile directory String
      * matchingImage ProjectImageEntry
-     * scanTypeWithIndex string
+     * imagingModeWithIndex string
      */
     static Map<String, Object> createAndOpenQuPathProject(QuPathGUI qupathGUI,
                                                           String projectsFolderPath,
@@ -43,11 +43,11 @@ class QPProjectFunctions {
                                                           ObservableListWrapper preferences,
                                                           boolean isSlideFlippedX=false,
                                                           boolean isSlideFlippedY=false) {
-        String firstScanType = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
+        String firstImagingMode = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
         Project currentQuPathProject = createProjectFolder(projectsFolderPath, sampleLabel)
 
-        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstScanType)
-        String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
+        String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstImagingMode)
+        String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModeWithIndex
 
         String macroImagePath = null
         ProjectImageEntry matchingImage = null
@@ -80,7 +80,7 @@ class QPProjectFunctions {
 
         return [
                 'matchingImage': matchingImage,
-                'scanTypeWithIndex': scanTypeWithIndex,
+                'imagingModeWithIndex': imagingModeWithIndex,
                 'currentQuPathProject': currentQuPathProject,
                 'tempTileDirectory': tempTileDirectory
         ]
@@ -89,14 +89,14 @@ class QPProjectFunctions {
     static Map<String, Object> getCurrentProjectInformation(String projectsFolderPath, String sampleLabel, ObservableListWrapper preferences){
 
         Project currentQuPathProject = QP.getProject()
-        String firstScanType = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
-        String scanTypeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstScanType)
-        String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + scanTypeWithIndex
+        String firstImagingMode = preferences.find{it.getName() == "First Scan Type"}.getValue() as String
+        String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstImagingMode)
+        String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModeWithIndex
         ProjectImageEntry matchingImage = QP.getProjectEntry()
 
         return [
                 'matchingImage': matchingImage,
-                'scanTypeWithIndex': scanTypeWithIndex,
+                'imagingModeWithIndex': imagingModeWithIndex,
                 'currentQuPathProject': currentQuPathProject,
                 'tempTileDirectory': tempTileDirectory
         ]
