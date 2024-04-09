@@ -238,6 +238,8 @@ class QP_scope_GUI {
             boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
             boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
             String firstImagingMode = preferences.find { it.getName() == "First Scan Type" }.getValue() as String
+            //TODO add entry in GUI to get annotation labels
+            def classLabels = ["Tissue"]
             // Log retrieved preference values
             logger.info("frameWidth: $frameWidth")
             logger.info("frameHeight: $frameHeight")
@@ -286,12 +288,12 @@ class QP_scope_GUI {
             }
 
             //Callback that was removed - need to re-insert the checkValidAnnotations function here
-            UI_functions.checkValidAnnotationsGUI({ boolean check ->
+            UI_functions.checkValidAnnotationsGUI(classLabels,{ boolean check ->
                 if (!check) {
                     logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
                 } else {
 
-                    def annotations = QP.getAnnotationObjects().findAll { it.getPathClass().toString().equals("Tissue") }
+                    def annotations = QP.getAnnotationObjects().findAll { classLabels.contains(it.getPathClass().toString()) }
                     //Calculate the field of view size in QuPath pixels
                     Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
                     Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
