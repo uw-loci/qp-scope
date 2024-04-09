@@ -76,8 +76,8 @@ class TransformationFunctions {
         if (subdirectories) {
             subdirectories.each { File subdir ->
                 //For troubleshooting affine transform issues
-                //File tileConfigFile = new File(subdir, "TileConfiguration_QP.txt")
-                File tileConfigFile = new File(subdir, "TileConfiguration.txt")
+                File tileConfigFile = new File(subdir, "TileConfiguration_QP.txt")
+                //File tileConfigFile = new File(subdir, "TileConfiguration.txt")
                 if (tileConfigFile.exists()) {
                     // Process the TileConfiguration_QP.txt file
                     processTileConfigurationFile(tileConfigFile, transformation)
@@ -90,6 +90,7 @@ class TransformationFunctions {
     }
 
     private static void processTileConfigurationFile(File tileConfigFile, AffineTransform transformation) {
+        logger.info("Processing Tile Configuration File")
         List<String> transformedLines = []
         Pattern pattern = Pattern.compile("\\d+\\.tif; ; \\((.*),\\s*(.*)\\)")
 
@@ -108,15 +109,15 @@ class TransformationFunctions {
 
 
         // Write the transformed lines to a new file
-        //File newTileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration_transformed.txt")
+        File newTileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration.txt")
 
-        //File tileConfigFile = new File(tileConfigFile.getParent(), "TileConfiguration.txt")
 
-        tileConfigFile.withWriter('UTF-8') { writer -> // Specifying the character encoding is a good practice
+        newTileConfigFile.withWriter('UTF-8') { writer -> // Specifying the character encoding is a good practice
             transformedLines.each { line ->
                 writer.println(line)
             }
         }
+
     }
 
 

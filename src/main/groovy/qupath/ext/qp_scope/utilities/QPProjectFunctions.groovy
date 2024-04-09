@@ -86,11 +86,10 @@ class QPProjectFunctions {
         ]
     }
 
-    static Map<String, Object> getCurrentProjectInformation(String projectsFolderPath, String sampleLabel, ObservableListWrapper preferences, String imagingModality){
+    static Map<String, Object> getCurrentProjectInformation(String projectsFolderPath, String sampleLabel, String imagingModality){
 
         Project currentQuPathProject = QP.getProject()
-        String firstImagingMode = preferences.find{it.getName() == imagingModality}.getValue() as String
-        String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + firstImagingMode)
+        String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModality)
         String tempTileDirectory = projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModeWithIndex
         ProjectImageEntry matchingImage = QP.getProjectEntry()
 

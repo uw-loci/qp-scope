@@ -273,7 +273,7 @@ class QP_scope_GUI {
                         preferences as ObservableListWrapper, isSlideFlippedX, isSlideFlippedY)
             }else{
                 //If the project already exists and an image is open, return that information
-                projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper, firstImagingMode)
+                projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, firstImagingMode)
             }
             Project currentQuPathProject = projectDetails.currentQuPathProject as Project
             String tempTileDirectory = projectDetails.tempTileDirectory
@@ -631,7 +631,8 @@ class QP_scope_GUI {
             QuPathGUI qupathGUI = QPEx.getQuPath()
             //String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondImagingMode)
             //TODO CHANGE TO ACCESS CURRENT IMAGING MODE
-            Map projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper, secondImagingMode)
+            logger.info("Imaging modality: $secondImagingMode")
+            Map projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, secondImagingMode)
             Project currentQuPathProject = projectDetails.currentQuPathProject as Project
             String tempTileDirectory = projectDetails.tempTileDirectory
             //Boolean to check whether to proceed with running the microscope data collection
