@@ -281,4 +281,12 @@ class AutoFillPersistentPreferences{
         this.macroImagePixelSizeInMicrons.value = macroImagePixelSizeInMicrons
     }
 
+    private static StringProperty classListSaved = PathPrefs.createPersistentPreference("classList", "Tumor, Stroma, Immune");
+
+    public static String getClassList(){
+        return classListSaved.value
+    }
+    public static void setClassList(final String classListSaved){
+        this.classListSaved.value = classListSaved
+    }
 }

@@ -38,7 +38,7 @@ class QP_scope_GUI {
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
 
     static TextField sampleLabelField = new TextField(AutoFillPersistentPreferences.getSlideLabel())
-    static TextField classFilterField = new TextField("Tumor, Immune, PDAC")
+    static TextField classFilterField = new TextField(AutoFillPersistentPreferences.getClassList())
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
@@ -237,7 +237,7 @@ class QP_scope_GUI {
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
             boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
             boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
-
+            String firstImagingMode = preferences.find { it.getName() == "First Scan Type" }.getValue() as String
             // Log retrieved preference values
             logger.info("frameWidth: $frameWidth")
             logger.info("frameHeight: $frameHeight")
@@ -271,7 +271,7 @@ class QP_scope_GUI {
                         preferences as ObservableListWrapper, isSlideFlippedX, isSlideFlippedY)
             }else{
                 //If the project already exists and an image is open, return that information
-                projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
+                projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper, firstImagingMode)
             }
             Project currentQuPathProject = projectDetails.currentQuPathProject as Project
             String tempTileDirectory = projectDetails.tempTileDirectory
@@ -606,6 +606,9 @@ class QP_scope_GUI {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields
             def sampleLabel = sampleLabelField.getText()
+            //Store the current value for the next run
+            AutoFillPersistentPreferences.setClassList(classFilterField.getText())
+
             def classFilter = classFilterField.getText().split(',').collect { it.trim() }
 
 
@@ -624,12 +627,13 @@ class QP_scope_GUI {
 
             //SETUP: collect variables
             QuPathGUI qupathGUI = QPEx.getQuPath()
-            String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondImagingMode)
-            Map projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper)
+            //String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondImagingMode)
+            //TODO CHANGE TO ACCESS CURRENT IMAGING MODE
+            Map projectDetails = QPProjectFunctions.getCurrentProjectInformation(projectsFolderPath, sampleLabel, preferences as ObservableListWrapper, secondImagingMode)
             Project currentQuPathProject = projectDetails.currentQuPathProject as Project
             String tempTileDirectory = projectDetails.tempTileDirectory
             //Boolean to check whether to proceed with running the microscope data collection
-            logger.info("getting annotation objects")
+            logger.info("getting annotation objects contained in $classFilter ")
             def annotations = QP.getAnnotationObjects()
             annotations = annotations.findAll { classFilter.contains(it.getPathClass().toString()) }
 
@@ -639,7 +643,7 @@ class QP_scope_GUI {
                 return
             }
             //Callback that was removed - need to re-insert the checkValidAnnotations function here
-            UI_functions.checkValidAnnotationsGUI({ boolean check ->
+            UI_functions.checkValidAnnotationsGUI(classFilter,{ boolean check ->
                 if (!check) {
                     logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
                 } else {
