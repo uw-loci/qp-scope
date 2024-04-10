@@ -334,14 +334,14 @@ class UI_functions {
         logger.info("QuPath pixel coordinates: $QPPixelCoordinates")
         logger.info("Transformed into stage coordinates: $expectedStageXYPositionMicrons")
         // Move the stage to the new coordinates
-        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons as List<String>)
+        UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons as List<String>, "moveStageToCoordinates.py")
         qupathGUI.getViewer().setCenterPixelLocation(tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY())
 
         // Validate the position that was moved to or update with an adjusted position
         def updatePosition = stageToQuPathAlignmentGUI2()
         if (updatePosition.equals("Use adjusted position")) {
             // Get access to current stage coordinates and update transformation
-            List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+            List currentStageCoordinates_um = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null, "getStageCoordinates.py")
 
             transformation = TransformationFunctions.addTranslationToScaledAffine(transformation, QPPixelCoordinates as List<Double>, currentStageCoordinates_um as List<Double>, offset)
         }
