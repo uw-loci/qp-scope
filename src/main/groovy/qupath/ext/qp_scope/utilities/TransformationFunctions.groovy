@@ -232,20 +232,20 @@ class TransformationFunctions {
  * Sets up an AffineTransform for the QuPath project based on pixel size and slide orientation,
  * and performs an initial stage alignment validation.
  *
- * @param pixelSize The size of the pixels in the image.
+ * @param pixelSize The ratio of pixel size in current image to pixel size in image to be acquired
  * @param isSlideFlipped A boolean indicating if the slide is flipped.
  * @param preferences A map containing user preferences and settings.
  * @param qupathGUI The QuPath GUI instance used for executing GUI-related operations.
  * @return An AffineTransform object set up based on the provided parameters, or null if the user cancels the operation.
  */
-    static AffineTransform setupAffineTransformationAndValidationGUI(double pixelSize, ObservableListWrapper preferences) {
+    static AffineTransform setupAffineTransformationAndValidationGUI(double relativePixelSize, ObservableListWrapper preferences) {
 
         AffineTransform transformation = new AffineTransform() // Start with the identity matrix
 
 
         boolean invertedXAxis = preferences.find{it.getName() == "Inverted X stage"}.getValue() as Boolean
         boolean invertedYAxis = preferences.find{it.getName() == "Inverted Y stage"}.getValue() as Boolean
-        double scale =  pixelSize
+        double scale =  relativePixelSize
         double scaleX = invertedXAxis ? -scale : scale
         double scaleY = invertedYAxis ? -scale : scale
         //Inversion is usually going to be true because the Y axis in images is 0 at the top and Height at the bottom, while stages
