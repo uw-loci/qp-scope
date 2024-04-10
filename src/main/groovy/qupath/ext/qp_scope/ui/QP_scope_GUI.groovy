@@ -658,6 +658,8 @@ class QP_scope_GUI {
                     Double frameHeightQPpixels = (frameHeight) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
                     logger.info("Frame width in pixels within a QuPath 4x image should be about half of a 4x tile, or $frameWidthQPpixels")
                     //Create tiles that represent individual fields of view along with desired overlap.
+                    //Remove previous tiles
+                    QP.clearDetections()
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                             projectDetails.imagingModeWithIndex.toString(),
                             frameWidthQPpixels,
