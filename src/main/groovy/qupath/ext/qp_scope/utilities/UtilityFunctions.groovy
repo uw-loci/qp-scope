@@ -64,7 +64,9 @@ class UtilityFunctions {
     static String stitchImagesAndUpdateProject(String projectsFolderPath, String sampleLabel,
                                                String imagingModeWithIndex, String annotationName, QuPathGUI qupathGUI,
                                                Project currentQuPathProject,
-                                               String compression = "J2K_LOSSY") {
+                                               String compression = "J2K_LOSSY",
+                                               double pixelSizeMicrons = 0,
+                                               int downsample = 1) {
 
         String stitchedImageOutputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + "SlideImages"
         String tileImageInputFolder = projectsFolderPath + File.separator + sampleLabel + File.separator + imagingModeWithIndex
@@ -74,12 +76,12 @@ class UtilityFunctions {
                 tileImageInputFolder,
                 stitchedImageOutputFolder,
                 compression,
-                1.105,
-                1,
+                pixelSizeMicrons,
+                downsample,
                 annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
-        String adjustedFileName = sampleLabel+ '_' + imagingModeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)
+        String adjustedFileName = sampleLabel+ '_' + imagingModeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)+".ome.tif"
         File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
 
         // Rename the stitched image file

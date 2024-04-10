@@ -191,7 +191,7 @@ class UI_functions {
                     Platform.runLater(() -> {
                         // Assuming QP.getAnnotationObjects() is the correct method to retrieve the current annotations
                         // This might need to be adjusted based on your actual API for accessing annotations
-                        int annotationCount = QP.getAnnotationObjects().findAll { validAnnotationNames.contains(it.getPathClass().getName())}.size();
+                        int annotationCount = QP.getAnnotationObjects().findAll { validAnnotationNames.contains(it?.getPathClass()?.toString())}.size();
                         infoLabel.setText("Total Annotation count in image to be processed: " + annotationCount +
                                 "\nADD, MODIFY or DELETE annotations to select regions to be scanned." +
                                 "\nEnsure that any newly created annotations are classified as 'Tissue'");

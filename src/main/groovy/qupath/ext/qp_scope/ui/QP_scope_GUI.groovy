@@ -402,7 +402,9 @@ class QP_scope_GUI {
                                     annotation.getName(),
                                     qupathGUI,
                                     currentQuPathProject,
-                                    compressionType);
+                                    compressionType,
+                                    pixelSizeFirstImagingMode,
+                            1);
                             logger.info("Stitching completed at $stitchedImagePathStr")
                             // Ensure stitching operation is also non-blocking and async
                         }).exceptionally(throwable -> {
@@ -530,7 +532,7 @@ class QP_scope_GUI {
 
             String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
                     sampleLabel, imagingModeWithIndex, "bounds", qupathGUI, currentQuPathProject,
-                    compressionType)
+                    compressionType, pixelSizeFirstImagingMode, 1)
             logger.info(stitchedImagePathStr)
 
             qupathGUI.refreshProject()
@@ -654,7 +656,7 @@ class QP_scope_GUI {
                     //Calculate the field of view size in QuPath pixels
                     Double frameWidthQPpixels = (frameWidth) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
                     Double frameHeightQPpixels = (frameHeight) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
-
+                    logger.info("Frame width in pixels within a QuPath 4x image should be about half of a 4x tile, or $frameWidthQPpixels")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                             projectDetails.imagingModeWithIndex.toString(),
@@ -667,7 +669,7 @@ class QP_scope_GUI {
 
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
-                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeFirstImagingMode as Double,
+                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSecondImagingMode as Double,
                             preferences as ObservableListWrapper)
 
                     logger.info("Initial affine transform, scaling only: $scalingTransform")
@@ -770,7 +772,9 @@ class QP_scope_GUI {
                                     annotation.getName(),
                                     qupathGUI,
                                     currentQuPathProject,
-                                    compressionType);
+                                    compressionType,
+                                    pixelSizeSecondImagingMode,
+                            1);
                             logger.info("Stitching completed at $stitchedImagePathStr")
                             // Ensure stitching operation is also non-blocking and async
                         }).exceptionally(throwable -> {
