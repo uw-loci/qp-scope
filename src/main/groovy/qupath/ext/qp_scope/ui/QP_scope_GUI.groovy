@@ -344,8 +344,10 @@ class QP_scope_GUI {
                     //TODO
                     // PUT THIS INFORMATION SOMEWHERE ELSE
                     //Offset is required due to stage having a different point to define where the FOV is (not upper left)
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
-                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
+//                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
+//                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
+                    double offsetX = -0.5 * frameWidth * (pixelSizeFirstImagingMode)
+                    double offsetY =-0.5 * frameHeight * (pixelSizeFirstImagingMode)
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
