@@ -127,12 +127,12 @@ class UtilityFunctions {
  * This method can handle different scripts and arguments, including cases where no arguments are provided and two values are expected from the output.
  *
  * @param anacondaEnvPath The path to the Python virtual environment.
- * @param pythonScriptPath The path to the Python script.
+ * @param pythonScriptPath The path to the Python script. This should be a directory if a specific script is not being passed.
  * @param arguments A list of arguments to pass to the Python script; can be null.
+ * @param script The specific Python script to run, can be null to use default behavior based on arguments.
  * @return A List<String> with the output values if specific output handling is required; otherwise, null.
  */
-
-    static List<String> runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List<String> arguments) {
+    static List<String> runPythonCommand(String anacondaEnvPath, String pythonScriptPath, List<String> arguments, String script=null) {
         AtomicInteger tifCount = new AtomicInteger(0);
 
         AtomicReference<String> value1 = new AtomicReference<>();
@@ -145,24 +145,16 @@ class UtilityFunctions {
 
         try {
             String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
-            File scriptFile = new File(pythonScriptPath);
+            String scriptPath = script != null ? new File(new File(pythonScriptPath).getParent(), script).getCanonicalPath() : pythonScriptPath;
+            logger.info("Running $script");
 
-            // Adjust script path and logger message for null arguments or specific size of arguments
-            if (arguments == null) {
-                pythonScriptPath = new File(new File(pythonScriptPath).getParent(), "getStageCoordinates.py").getCanonicalPath();
-                logger.info("Running getStageCoordinates script");
-            } else if (arguments.size() == 2) {
-                logger.info("Running moveStageToCoordinates script");
-                pythonScriptPath = new File(scriptFile.getParent(), "moveStageToCoordinates.py").getCanonicalPath();
-            } else {
-                logger.info("Performing collection using $arguments")
+            if (script == null){
+                logger.info("Performing collection using $arguments");
                 totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
-                progressBar = true
-                //logger.info("SHOWING PROGRESS BAR NOW FOR $totalTifFiles TIFF FILES after")
+                progressBar = true;
             }
 
-
-            String command = String.format("\"%s\" -u \"%s\" %s", pythonExecutable, pythonScriptPath, argsJoined);
+            String command = String.format("\"%s\" -u \"%s\" %s", pythonExecutable, scriptPath, argsJoined);
             logger.info("Running Python Command as follows")
             logger.info("$command")
             Process process = Runtime.getRuntime().exec(command);

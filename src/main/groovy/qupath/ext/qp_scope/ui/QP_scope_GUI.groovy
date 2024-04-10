@@ -297,7 +297,7 @@ class QP_scope_GUI {
                     //Calculate the field of view size in QuPath pixels
                     Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
                     Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
-
+                    UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
                             projectDetails.imagingModeWithIndex.toString(),
@@ -331,7 +331,10 @@ class QP_scope_GUI {
                         return
                     }
                     logger.info("user adjusted position of tile at $coordinatesQP")
-                    List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, null)
+                    List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath,
+                            pythonScriptPath,
+                            null,
+                            "getStageCoordinates.py")
                     logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $scalingTransform")
@@ -483,7 +486,7 @@ class QP_scope_GUI {
             String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
-
+            String firstImagingMode = preferences.find { it.getName() == "First Scan Type" }.getValue() as String
             // Continue with previous behavior using coordinates
             if (boxString != "") {
                 def values = boxString.replaceAll("[^0-9.,]", "").split(",")
@@ -518,7 +521,7 @@ class QP_scope_GUI {
                     overlapPercent,
                     boundingBoxValues,
             false)
-
+            UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
             //Send the scanning command to the microscope
 
             List args = [projectsFolderPath,
@@ -526,7 +529,7 @@ class QP_scope_GUI {
                          imagingModeWithIndex,
                          "bounds"]
 
-            UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
+            UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args, null)
 
             // Handle image stitching and update project
 
@@ -647,6 +650,7 @@ class QP_scope_GUI {
                 Dialogs.showWarningNotification("Warning!", "Insufficient data to send command to microscope!")
                 return
             }
+            UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [secondImagingMode], "swap_objective_lens.py")
             //Callback that was removed - need to re-insert the checkValidAnnotations function here
             UI_functions.checkValidAnnotationsGUI(classFilter,{ boolean check ->
                 if (!check) {
@@ -695,7 +699,8 @@ class QP_scope_GUI {
                     logger.info("user adjusted position of tile at $coordinatesQP")
                     List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath,
                             pythonScriptPath,
-                            null)
+                            null,
+                    "getStageCoordinates.py")
                     logger.info("Obtained stage coordinates: $currentStageCoordinates_um_String")
                     logger.info("QuPath coordinates for selected tile: $coordinatesQP")
                     logger.info("affine transform before initial alignment: $scalingTransform")
