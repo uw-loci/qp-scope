@@ -310,7 +310,7 @@ class QP_scope_GUI {
 
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
-                    
+
                     def relativePixelSize = pixelSizeSource/pixelSizeFirstImagingMode
                     AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(relativePixelSize as Double, preferences as ObservableListWrapper)
 
@@ -713,8 +713,8 @@ class QP_scope_GUI {
                     //TODO
                     // PUT THIS INFORMATION SOMEWHERE ELSE
                     //Offset is required due to stage having a different point to define where the FOV is (not upper left)
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
-                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
+                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeSecondImagingMode)
+                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeSecondImagingMode)
                     // Create the offset AffineTransform
                     AffineTransform offset = new AffineTransform();
                     offset.translate(offsetX, offsetY);
