@@ -9,6 +9,10 @@ import qupath.lib.gui.QuPathGUI
 import qupath.lib.gui.extensions.GitHubProject
 import qupath.lib.gui.extensions.QuPathExtension
 import qupath.ext.qp_scope.ui.AddQPPreferences
+import qupath.ext.qp_scope.tests.CoordinateTransformationTest;
+import javafx.application.Platform;
+
+
 /**
  * Built from the QuPath extension template - an extension to control a microscope through a Python interface
  */
@@ -75,7 +79,13 @@ class QP_scope implements QuPathExtension, GitHubProject {
         def qpScope4 = new MenuItem("Dummy menu option for troubleshooting")
         // TODO: tooltip
         qpScope4.setOnAction(e -> {
-            QP_scope_GUI.testGUI()
+
+            new Thread(() -> {
+                logger.info("Starting Coordinate Transformation Test...")
+                CoordinateTransformationTest.main(null)  // Execute the test in a separate thread
+                Platform.runLater(() -> logger.info("Test completed."))
+            }).start();
+            //QP_scope_GUI.testGUI()
             // Directly toggle the property to test listener reaction
 //            def qppreferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
 //            logger.info("Toggling enableExtension");

@@ -456,7 +456,9 @@ class UtilityFunctions {
                                                   Collection<PathObject> annotations = []) {
 
         QP.mkdirs(modalityIndexFolder)
+        //Sets a half frame buffer around the imaging area
         boolean buffer = true
+        //If bounding box coordinates are provided, use those instead of attempting an annotation based tiling
         if (boundingBoxCoordinates) {
             // Tiling logic when bounding box coordinates are provided
             def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")

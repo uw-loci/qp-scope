@@ -326,7 +326,7 @@ class UI_functions {
 
     static Map<String, Object> handleStageAlignment(PathObject tileXY, QuPathGUI qupathGUI,
                                                             String virtualEnvPath, String pythonScriptPath,
-                                                            AffineTransform transformation, AffineTransform offset) {
+                                                            AffineTransform transformation, List<Double> offset) {
         QP.selectObjects(tileXY)
         // Transform the QuPath coordinates into stage coordinates
         def QPPixelCoordinates = [tileXY.getROI().getCentroidX(), tileXY.getROI().getCentroidY()]

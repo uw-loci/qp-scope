@@ -69,25 +69,6 @@ class QP_scope_GUI {
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
 
-//
-//        AtomicInteger progressCounter = new AtomicInteger(0);
-//        int totalFiles = 5
-//
-//        UI_functions.showProgressBar(progressCounter, totalFiles)
-//        new Thread(() -> {
-//            while (progressCounter.get() < totalFiles) {
-//                logger.info(Integer.toString(progressCounter.get()));
-//                try {
-//                    Thread.sleep(1000); // Sleep for 1 second
-//                } catch (InterruptedException e) {
-//                    Thread.currentThread().interrupt(); // Restore interrupted status
-//                    logger.error("Thread interrupted", e);
-//                }
-//                progressCounter.incrementAndGet();
-//            }
-//        }).start();
-
-
         // Preferences from GUI
         double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
         double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
@@ -287,7 +268,7 @@ class QP_scope_GUI {
                 //At this point the tissue should be outlined in an annotation
             }
 
-            //Callback that was removed - need to re-insert the checkValidAnnotations function here
+            //Verify that the user is happy with the current annotations, then proceed with alignment and acquisition
             UI_functions.checkValidAnnotationsGUI(classLabels,{ boolean check ->
                 if (!check) {
                     logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")
@@ -326,13 +307,14 @@ class QP_scope_GUI {
                     def leftCenterTileXY = TransformationFunctions.getLeftCenterTile(detections)
 
 
-                    // Get the current stage coordinates to figure out the translation from the first alignment.
+                    //Get the coordinates of the upper left corner of the selected tile
                     List coordinatesQP = [expectedTile.getROI().getBoundsX(), expectedTile.getROI().getBoundsY()] as List<Double>
                     if (!coordinatesQP) {
                         logger.error("Need coordinates.")
                         return
                     }
                     logger.info("user adjusted position of tile at $coordinatesQP")
+                    // Get the current stage coordinates to figure out the translation from the first alignment.
                     List<String> currentStageCoordinates_um_String = UtilityFunctions.runPythonCommand(virtualEnvPath,
                             pythonScriptPath,
                             null,
@@ -348,9 +330,7 @@ class QP_scope_GUI {
 //                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
                     double offsetX = -0.5 * frameWidth * (pixelSizeFirstImagingMode)
                     double offsetY =-0.5 * frameHeight * (pixelSizeFirstImagingMode)
-                    // Create the offset AffineTransform
-                    AffineTransform offset = new AffineTransform();
-                    offset.translate(offsetX, offsetY);
+                    def offset = [offsetX, offsetY]
                     AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
                     logger.info("affine transform after initial alignment: $scalingTransform")
 
