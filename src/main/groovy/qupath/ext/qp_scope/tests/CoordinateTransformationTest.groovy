@@ -21,10 +21,10 @@ class CoordinateTransformationTest {
     static final String TEST_FOLDER = "C:/ImageAnalysis/QPExtension0.5.0/data/test"
     static final int IMAGE_WIDTH = 1000
     static final int IMAGE_HEIGHT = 1000
-    static final double BASE_PIXEL_SIZE_MICRONS = 10.0
-    static final double ACQUIRED_PIXEL_SIZE_MICRONS = 2.0
-    static final int CAMERA_WIDTH_PIXELS = 100
-    static final int CAMERA_HEIGHT_PIXELS = 60
+    static final double BASE_PIXEL_SIZE_MICRONS = 7.2
+    static final double ACQUIRED_PIXEL_SIZE_MICRONS = 1.105
+    static final int CAMERA_WIDTH_PIXELS = 1392
+    static final int CAMERA_HEIGHT_PIXELS = 1040
 
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
 
@@ -32,7 +32,7 @@ class CoordinateTransformationTest {
         // Step 1: Setup the image and annotation properties
         println("Starting transformation test...")
         def plane = ImagePlane.getDefaultPlane()
-        def roi = ROIs.createRectangleROI(400, 400, 200, 400, plane)
+        def roi = ROIs.createRectangleROI(200, 200, 600, 600, plane)
         def tissue = PathObjects.createAnnotationObject(roi, QP.getPathClass("Tissue"))
         tissue.setName("Default box")
         //The tiling function expects an array
@@ -41,8 +41,9 @@ class CoordinateTransformationTest {
         Double acquiredImageFrameHeight = ACQUIRED_PIXEL_SIZE_MICRONS*CAMERA_HEIGHT_PIXELS
 
         // Step 2: Transform QuPath annotation to stage coordinates
-        Double frameWidthQPpixels = (CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)
-        Double frameHeightQPpixels = (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameWidthQPpixels = (CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameHeightQPpixels = (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        //TODO THE ERROR IS IN THE TILING
         UtilityFunctions.performTilingAndSaveConfiguration(TEST_FOLDER,
                 "test_1",
                 frameWidthQPpixels,
@@ -71,7 +72,7 @@ class CoordinateTransformationTest {
 //////////////////////////////////
         //Assume user has moved stage to the "correct" position, 5000, 5000
         //Assume the tile selected is the upper left one, at "400", "400"
-        List<Double> coordinatesQP = [400.0d, 400.0d]
+        List<Double> coordinatesQP = [200.0d, 200.0d]
         coordinatesQP.each { item -> logger.info("Type of qpCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
 
 
@@ -88,7 +89,7 @@ class CoordinateTransformationTest {
         AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
         logger.info("affine transform after initial alignment: $scalingTransform")
         logger.info("offsets: $offset")
-        def listOfQuPathTileCoordinates = [[400,400], [420, 400], [440, 400]]
+        def listOfQuPathTileCoordinates = [[200,200], [436, 200], [672, 200]]
         def listOfExpectedStageCoordinates = [[5100, 5060], [5200, 5060],[5400, 5060]]
 
         def tileconfigFolders = TransformationFunctions.transformTileConfiguration(TEST_FOLDER, transform)
@@ -100,7 +101,12 @@ class CoordinateTransformationTest {
             transformedPoint.add(TransformationFunctions.QPtoMicroscopeCoordinates(point as List<Double>, transform))
         }
         logger.info("Converted $listOfQuPathTileCoordinates to $transformedPoint")
-        logger.info("Expected value was: ${listOfExpectedStageCoordinates}")
+        def firstPoint = (transformedPoint[0] as List<Double>)[0]
+        def secondPoint = (transformedPoint[1] as List<Double>)[0]
+        logger.info("first point $firstPoint")
+        logger.info("second point $secondPoint")
+        def difference = (firstPoint - secondPoint)
+        logger.info("Difference in X is : ${difference}, expecting 1538 ish")
 
         println("Transformation test completed.")
     }

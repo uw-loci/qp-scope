@@ -153,10 +153,7 @@ class QP_scope_GUI {
                     // Calculate the offset in microns - the size of one frame in stage coordinates
                     double offsetX = 0.5 * frameWidth * pixelSizeFirstImagingMode;
                     double offsetY = 1 * frameHeight * pixelSizeFirstImagingMode;
-                    // Create the offset AffineTransform
-                    AffineTransform offset = new AffineTransform();
-                //todo make generic
-                    offset.translate(offsetX/scale, offsetY/scale);
+                    def offset = [offsetX, offsetY]
                     transformation = TransformationFunctions.addTranslationToScaledAffine(
                             transformation,
                             qpTestCoords,
@@ -276,8 +273,8 @@ class QP_scope_GUI {
 
                     def annotations = QP.getAnnotationObjects().findAll { classLabels.contains(it.getPathClass().toString()) }
                     //Calculate the field of view size in QuPath pixels
-                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
-                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeSource) * (pixelSizeFirstImagingMode)
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
+                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
                     UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
@@ -642,8 +639,9 @@ class QP_scope_GUI {
                 } else {
 
                     //Calculate the field of view size in QuPath pixels
-                    Double frameWidthQPpixels = (frameWidth) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
-                    Double frameHeightQPpixels = (frameHeight) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
+
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
+                    Double frameHeightQPpixels = (frameHeight)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
                     logger.info("Frame width in pixels within a QuPath 4x image should be about half of a 4x tile, or $frameWidthQPpixels")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     //Remove previous tiles
