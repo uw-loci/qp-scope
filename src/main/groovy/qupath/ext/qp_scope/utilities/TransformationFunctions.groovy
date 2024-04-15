@@ -163,12 +163,12 @@ class TransformationFunctions {
         logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
 
         // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
-        double tx = (mmPoint[0] - scaledQpPoint.x - offset[0]) /scalingTransform.getScaleX();
-        double ty = (mmPoint[1] - scaledQpPoint.y - offset[1])  /scalingTransform.getScaleY();
+        double tx = (mmPoint[0] - scaledQpPoint.x+ offset[0]) /scalingTransform.getScaleX();
+        double ty = (mmPoint[1] - scaledQpPoint.y- offset[1])  /scalingTransform.getScaleY();
 
         //Handle single frame offset to center camera
-        //tx = tx - offset[0]
-        //ty = ty - offset[1]
+        //tx = tx
+        //ty = ty
 
         logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
 

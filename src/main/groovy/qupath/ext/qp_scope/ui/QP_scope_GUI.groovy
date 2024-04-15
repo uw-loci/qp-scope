@@ -696,8 +696,7 @@ class QP_scope_GUI {
                     double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeSecondImagingMode)
                     double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeSecondImagingMode)
                     // Create the offset AffineTransform
-                    AffineTransform offset = new AffineTransform();
-                    offset.translate(offsetX, offsetY);
+                    def offset = [offsetX, offsetY]
                     AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform,
                             coordinatesQP,
                             currentStageCoordinates_um,
