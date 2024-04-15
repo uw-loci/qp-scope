@@ -21,8 +21,8 @@ class CoordinateTransformationTest {
     static final String TEST_FOLDER = "C:/ImageAnalysis/QPExtension0.5.0/data/test"
     static final int IMAGE_WIDTH = 1000
     static final int IMAGE_HEIGHT = 1000
-    static final double BASE_PIXEL_SIZE_MICRONS = 7.2
-    static final double ACQUIRED_PIXEL_SIZE_MICRONS = 1.105
+    static final double BASE_PIXEL_SIZE_MICRONS = 1.108
+    static final double ACQUIRED_PIXEL_SIZE_MICRONS = 0.2201
     static final int CAMERA_WIDTH_PIXELS = 1392
     static final int CAMERA_HEIGHT_PIXELS = 1040
 
@@ -41,8 +41,9 @@ class CoordinateTransformationTest {
         Double acquiredImageFrameHeight = ACQUIRED_PIXEL_SIZE_MICRONS*CAMERA_HEIGHT_PIXELS
 
         // Step 2: Transform QuPath annotation to stage coordinates
-        Double frameWidthQPpixels = (CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)* (ACQUIRED_PIXEL_SIZE_MICRONS)
-        Double frameHeightQPpixels = (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS)* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameWidthQPpixels = (CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS) //* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameHeightQPpixels = (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS) //* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        logger.info("frameWidthQPPixels = $frameWidthQPpixels")
         //TODO THE ERROR IS IN THE TILING
         UtilityFunctions.performTilingAndSaveConfiguration(TEST_FOLDER,
                 "test_1",
@@ -89,8 +90,8 @@ class CoordinateTransformationTest {
         AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
         logger.info("affine transform after initial alignment: $scalingTransform")
         logger.info("offsets: $offset")
-        def listOfQuPathTileCoordinates = [[200,200], [436, 200], [672, 200]]
-        def listOfExpectedStageCoordinates = [[5100, 5060], [5200, 5060],[5400, 5060]]
+        def listOfQuPathTileCoordinates = [[200,200], [476.5, 200], [753, 200]]
+        def listOfExpectedStageCoordinates = [[5100, 5153], [5406, 5153],[5712, 5153]]
 
         def tileconfigFolders = TransformationFunctions.transformTileConfiguration(TEST_FOLDER, transform)
         for (folder in tileconfigFolders) {
@@ -106,7 +107,7 @@ class CoordinateTransformationTest {
         logger.info("first point $firstPoint")
         logger.info("second point $secondPoint")
         def difference = (firstPoint - secondPoint)
-        logger.info("Difference in X is : ${difference}, expecting 1538 ish")
+        logger.info("Difference in X is : ${difference}, expecting 306 ish")
 
         println("Transformation test completed.")
     }

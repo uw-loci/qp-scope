@@ -273,8 +273,8 @@ class QP_scope_GUI {
 
                     def annotations = QP.getAnnotationObjects().findAll { classLabels.contains(it.getPathClass().toString()) }
                     //Calculate the field of view size in QuPath pixels
-                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
-                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
+                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
                     UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
@@ -642,7 +642,7 @@ class QP_scope_GUI {
 
                     Double frameWidthQPpixels = (frameWidth)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
                     Double frameHeightQPpixels = (frameHeight)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
-                    logger.info("Frame width in pixels within a QuPath 4x image should be about half of a 4x tile, or $frameWidthQPpixels")
+                    logger.info("Frame width in pixels within a QuPath 20x image should be about a quarter of a 4x tile, or $frameWidthQPpixels")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     //Remove previous tiles
                     QP.clearDetections()
