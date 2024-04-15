@@ -575,7 +575,7 @@ class UtilityFunctions {
             // Loop through X-axis with conditional direction for serpentine tiling
             while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
                 def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
-                // Check if tile intersects the given ROI or bounding box
+                // Check if tile intersects the given ROI or bounding box (null)
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
 
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
