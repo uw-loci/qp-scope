@@ -273,8 +273,8 @@ class QP_scope_GUI {
 
                     def annotations = QP.getAnnotationObjects().findAll { classLabels.contains(it.getPathClass().toString()) }
                     //Calculate the field of view size in QuPath pixels
-                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
-                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
+                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
                     UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
@@ -639,9 +639,10 @@ class QP_scope_GUI {
                 } else {
 
                     //Calculate the field of view size in QuPath pixels
-
-                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
-                    Double frameHeightQPpixels = (frameHeight)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode)
+//TODO
+                    //TODO WHY IS THE PIXEL SIZE CALCULATION DIFFERENT IN 4X AND 20X??
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) //* (pixelSizeSecondImagingMode)
+                    Double frameHeightQPpixels = (frameHeight)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) //* (pixelSizeSecondImagingMode)
                     logger.info("Frame width in pixels within a QuPath 20x image should be about a quarter of a 4x tile, or $frameWidthQPpixels")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     //Remove previous tiles
@@ -693,8 +694,8 @@ class QP_scope_GUI {
                     //TODO
                     // PUT THIS INFORMATION SOMEWHERE ELSE
                     //Offset is required due to stage having a different point to define where the FOV is (not upper left)
-                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeSecondImagingMode)
-                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeSecondImagingMode)
+                    double offsetX = -0.5 * frameWidth * (pixelSizeSecondImagingMode)
+                    double offsetY =-0.5 * frameHeight * (pixelSizeSecondImagingMode)
                     // Create the offset AffineTransform
                     def offset = [offsetX, offsetY]
                     AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform,
