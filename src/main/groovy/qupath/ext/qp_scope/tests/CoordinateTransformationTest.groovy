@@ -41,10 +41,10 @@ class CoordinateTransformationTest {
         Double acquiredImageFrameHeight = ACQUIRED_PIXEL_SIZE_MICRONS*CAMERA_HEIGHT_PIXELS
 
         // Step 2: Transform QuPath annotation to stage coordinates
-        Double frameWidthQPpixels = (CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS) //* (ACQUIRED_PIXEL_SIZE_MICRONS)
-        Double frameHeightQPpixels = (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) * (ACQUIRED_PIXEL_SIZE_MICRONS) //* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameWidthQPpixels = (ACQUIRED_PIXEL_SIZE_MICRONS)*(CAMERA_WIDTH_PIXELS) / (BASE_PIXEL_SIZE_MICRONS)  //* (ACQUIRED_PIXEL_SIZE_MICRONS)
+        Double frameHeightQPpixels = (ACQUIRED_PIXEL_SIZE_MICRONS)* (CAMERA_HEIGHT_PIXELS) / (BASE_PIXEL_SIZE_MICRONS) //* (ACQUIRED_PIXEL_SIZE_MICRONS)
         logger.info("frameWidthQPPixels = $frameWidthQPpixels")
-        //TODO THE ERROR IS IN THE TILING
+
         UtilityFunctions.performTilingAndSaveConfiguration(TEST_FOLDER,
                 "test_1",
                 frameWidthQPpixels,
@@ -83,7 +83,7 @@ class CoordinateTransformationTest {
         logger.info("affine transform before initial alignment: $scalingTransform")
         List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
 
-        //Handle offsets
+        //Create offsets beteween QuPath's idea of the center of a tile and the stage position
         double offsetX = -0.5 * CAMERA_WIDTH_PIXELS * (ACQUIRED_PIXEL_SIZE_MICRONS)
         double offsetY =-0.5 * CAMERA_HEIGHT_PIXELS * (ACQUIRED_PIXEL_SIZE_MICRONS)
         def offset = [offsetX, offsetY]
