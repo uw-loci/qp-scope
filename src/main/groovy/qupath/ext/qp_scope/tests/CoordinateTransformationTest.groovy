@@ -53,7 +53,7 @@ class CoordinateTransformationTest {
                 true,
                 tissue)
 
-        def relativePixelSize = 1/ORIGINAL_PIXEL_SIZE_MICRONS
+        def relativePixelSize =ORIGINAL_PIXEL_SIZE_MICRONS
         ///////////////////////////////////////////////
         //AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(relativePixelSize as Double, preferences as ObservableListWrapper)
         AffineTransform scalingTransform = new AffineTransform() // Start with the identity matrix
@@ -83,19 +83,27 @@ class CoordinateTransformationTest {
         List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
 
         //Create offsets beteween QuPath's idea of the center of a tile and the stage position
-        double offsetX = -0.5 * CAMERA_WIDTH_PIXELS * (ACQUISITION_PIXEL_SIZE_MICRONS)
-        double offsetY =-0.5 * CAMERA_HEIGHT_PIXELS * (ACQUISITION_PIXEL_SIZE_MICRONS)
+        double offsetX = 0.5 * CAMERA_WIDTH_PIXELS * (ACQUISITION_PIXEL_SIZE_MICRONS)
+        double offsetY =0.5 * CAMERA_HEIGHT_PIXELS * (ACQUISITION_PIXEL_SIZE_MICRONS)
         def offset = [offsetX, offsetY]
         AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
         logger.info("affine transform after initial alignment: $transform")
         logger.info("offsets: $offset")
-        def listOfQuPathTileCoordinates = [[1133.7d, 4253.0d], [1548.5, 4150], [1272, 4356.5]]
-        def listOfExpectedStageCoordinates = [[18838, 13730], [19143, 13954],[18838, 13709]]
+        def listOfQuPathTileCoordinates = [[1133.7d, 4253.0d], [1410.2, 4150], [1133.7, 4356.5]]
+        def listOfExpectedStageCoordinatesBeforeOffset = [[18838, 13730], [19143, 13954],[18838, 13709]]
 
-        def tileconfigFolders = TransformationFunctions.transformTileConfiguration(TEST_FOLDER, transform)
+
+        def listOfExpectedStageCoordinates = []
+        for (coords in listOfExpectedStageCoordinatesBeforeOffset){
+            listOfExpectedStageCoordinates.add(TransformationFunctions.applyOffset(coords, [0,0], false))
+        }
+        def tileconfigFolders = TransformationFunctions.transformTileConfiguration(TEST_FOLDER, transform, offset)
         for (folder in tileconfigFolders) {
             logger.info("modified TileConfiguration at $folder")
         }
+
+
+
         def transformedPoint = []
         for (point in listOfQuPathTileCoordinates) {
             transformedPoint.add(TransformationFunctions.QPtoMicroscopeCoordinates(point as List<Double>, transform))

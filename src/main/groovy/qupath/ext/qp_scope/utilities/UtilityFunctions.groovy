@@ -530,6 +530,7 @@ class UtilityFunctions {
 /**
  * Creates tile configuration for a given region of interest and saves it as a TileConfiguration_QP.txt file.
  * This function either processes a specific ROI or the entire bounding box.
+ * Each entry in the TileConfiguration_QP.txt file represents the CENTROID of a QuPath based tile.
  *
  * @param bBoxX The X-coordinate of the top-left corner of the bounding box or ROI.
  * @param bBoxY The Y-coordinate of the top-left corner of the bounding box or ROI.
@@ -560,6 +561,7 @@ class UtilityFunctions {
         List xy = []
         int yline = 0
         List newTiles = []
+        //Start in the upper left corner of the bounding box
         double x = bBoxX
         double y = bBoxY
         logger.info("frameHeight: $frameHeight")
@@ -573,6 +575,7 @@ class UtilityFunctions {
         // Loop through Y-axis
         while (y < bBoxY + bBoxH) {
             // Loop through X-axis with conditional direction for serpentine tiling
+            // While this doesn't matter from QuPath's perspective, it can speed up collection when micromanager acquires the tiles in this order
             while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
                 def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
                 // Check if tile intersects the given ROI or bounding box (null)
@@ -584,7 +587,7 @@ class UtilityFunctions {
                     newTiles << tileDetection
                     //Adjusting to middle of frame rather than upper left
                     //xy << [x, y]
-                    xy << [x+frameWidth/2, y+frameHeight/2]
+                    xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
                     actualTileCount++
                 }
                 // Adjust X for next tile

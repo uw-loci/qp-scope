@@ -50,7 +50,7 @@ class TransformationFunctions {
  * @param transformation The AffineTransform to be applied to each tile's coordinates.
  * @return A list of folder names that contain TileConfiguration.txt files which were modified.
  */
-    static List<String> transformTileConfiguration(String parentDirPath, AffineTransform transformation) {
+    static List<String> transformTileConfiguration(String parentDirPath, AffineTransform transformation, List<Double> offset = null) {
         logger.info("entering transform TileConfiguration modification function")
         logger.info(parentDirPath)
         logger.info(transformation.toString())
@@ -80,7 +80,7 @@ class TransformationFunctions {
                 //File tileConfigFile = new File(subdir, "TileConfiguration.txt")
                 if (tileConfigFile.exists()) {
                     // Process the TileConfiguration_QP.txt file
-                    processTileConfigurationFile(tileConfigFile, transformation)
+                    processTileConfigurationFile(tileConfigFile, transformation, offset)
                     modifiedFolders.add(subdir.name)
                 }
             }
@@ -89,7 +89,7 @@ class TransformationFunctions {
         return modifiedFolders
     }
 
-    private static void processTileConfigurationFile(File tileConfigFile, AffineTransform transformation) {
+    private static void processTileConfigurationFile(File tileConfigFile, AffineTransform transformation, List<Double> offset) {
         logger.info("Processing Tile Configuration File")
         List<String> transformedLines = []
         Pattern pattern = Pattern.compile("\\d+\\.tif; ; \\((.*),\\s*(.*)\\)")
@@ -101,6 +101,7 @@ class TransformationFunctions {
                 double y1 = Double.parseDouble(m.group(2))
                 List<Double> qpCoordinates = [x1, y1]
                 List<Double> transformedCoords = QPtoMicroscopeCoordinates(qpCoordinates, transformation)
+                transformedCoords = applyOffset(transformedCoords, offset, true)
                 transformedLines.add(line.replaceFirst("\\(.*\\)", "(${transformedCoords[0]}, ${transformedCoords[1]})"))
             } else {
                 transformedLines.add(line) // Add line as is if no coordinate match
@@ -137,7 +138,6 @@ class TransformationFunctions {
 
         logger.info("Input scaling transform: " + scalingTransform);
         logger.info("qpCoordinatesList: " + qpCoordinatesList);
-        logger.info("Input offset: " + offset);
 
         qpCoordinatesList.each { item -> logger.info("Type of qpCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
         stageCoordinatesList.each { item -> logger.info("Type of stageCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
@@ -153,8 +153,6 @@ class TransformationFunctions {
         logger.info("Converted qpPoint: ${Arrays.toString(qpPoint)}")
         logger.info("Converted mmPoint: ${Arrays.toString(mmPoint)}")
 
-        logger.info("Parsed qpPoint: [" + qpPoint[0] + ", " + qpPoint[1] + "]");
-        logger.info("Parsed mmPoint: [" + mmPoint[0] + ", " + mmPoint[1] + "]");
 
         // Apply scaling transform to QuPath point to convert to intermediate stage coordinates
         Point2D.Double scaledQpPoint = new Point2D.Double();
@@ -163,12 +161,9 @@ class TransformationFunctions {
         logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
 
         // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
-        double tx = (mmPoint[0] - scaledQpPoint.x+ offset[0]) /scalingTransform.getScaleX();
-        double ty = (mmPoint[1] - scaledQpPoint.y- offset[1])  /scalingTransform.getScaleY();
+        double tx = (mmPoint[0] - scaledQpPoint.x) /scalingTransform.getScaleX();
+        double ty = (mmPoint[1] - scaledQpPoint.y)  /scalingTransform.getScaleY();
 
-        //Handle single frame offset to center camera
-        //tx = tx
-        //ty = ty
 
         logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
 
@@ -271,6 +266,32 @@ class TransformationFunctions {
             return null // End function early if the user cancels
         }
         return transformation
+    }
+
+    /**
+     * Applies an offset to the given coordinates based on the direction of transformation.
+     *
+     * @param inputCoordinates An array of doubles representing the original coordinates.
+     * @param offsets An array of doubles representing the offsets to be applied.
+     * @param sendToStage A boolean indicating whether the coordinates are being sent to the stage (true) or retrieved (false).
+     * @return An array of doubles representing the adjusted coordinates.
+     */
+    static double[] applyOffset(List<Double> inputCoordinates, List<Double> offsets, boolean sendToStage) {
+        if (inputCoordinates.size() != offsets.size()) {
+            throw new IllegalArgumentException("inputCoordinates and offsets must be of the same length.")
+        }
+
+        double[] adjustedCoordinates = new double[inputCoordinates.size()]
+
+        for (int i = 0; i < inputCoordinates.size(); i++) {
+            if (sendToStage) {
+                adjustedCoordinates[i] = inputCoordinates[i] + offsets[i]  // Add the offset for sending to stage
+            } else {
+                adjustedCoordinates[i] = inputCoordinates[i] - offsets[i]  // Subtract the offset for retrieving original coordinates
+            }
+        }
+
+        return adjustedCoordinates
     }
 
 

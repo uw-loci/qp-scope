@@ -323,13 +323,12 @@ class QP_scope_GUI {
                     List<Double> currentStageCoordinates_um = MinorFunctions.convertListToDouble(currentStageCoordinates_um_String)
                     //TODO
                     // PUT THIS INFORMATION SOMEWHERE ELSE
-                    //Offset is required due to stage having a different point to define where the FOV is (not upper left)
-//                    double offsetX = -0.5 * frameWidthQPpixels * (pixelSizeFirstImagingMode)
-//                    double offsetY =-0.5 * frameHeightQPpixels * (pixelSizeFirstImagingMode)
-                    double offsetX = -0.5 * frameWidth * (pixelSizeFirstImagingMode)
-                    double offsetY =-0.5 * frameHeight * (pixelSizeFirstImagingMode)
+                    //Offset is required due to stage having a different point to define where the FOV is vs the centroid of the QuPath tile
+
+                    double offsetX = 0.5 * frameWidth * (pixelSizeFirstImagingMode)
+                    double offsetY = -0.5 * frameHeight * (pixelSizeFirstImagingMode)
                     def offset = [offsetX, offsetY]
-                    AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um, offset)
+                    AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um)
                     logger.info("affine transform after initial alignment: $scalingTransform")
 
 
@@ -358,7 +357,7 @@ class QP_scope_GUI {
                     //However we are getting camera pixel coordinates??
 
 
-                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform)
+                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform, offset)
                     for (folder in tileconfigFolders) {
                         logger.info("modified TileConfiguration at $folder")
                     }
@@ -736,7 +735,7 @@ class QP_scope_GUI {
                     //However we are getting camera pixel coordinates??
 
 
-                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform)
+                    def tileconfigFolders = TransformationFunctions.transformTileConfiguration(tempTileDirectory, transform, offset)
                     for (folder in tileconfigFolders) {
                         logger.info("modified TileConfiguration at $folder")
                     }
