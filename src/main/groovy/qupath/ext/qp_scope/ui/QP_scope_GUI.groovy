@@ -290,8 +290,7 @@ class QP_scope_GUI {
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
 
-                    def relativePixelSize = pixelSizeSource/pixelSizeFirstImagingMode
-                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(relativePixelSize as Double, preferences as ObservableListWrapper)
+                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI(pixelSizeSource as Double, preferences as ObservableListWrapper)
 
                     logger.info("Initial affine transform, scaling only: $scalingTransform")
                     //If user exited out of the dialog, the transformation should be null, and we do not want to continue.
@@ -659,9 +658,7 @@ class QP_scope_GUI {
                     //create a basic affine transformation, add the scaling information and a possible Y axis flip
                     //Then create a dialog that asks the user to select a single detection tile
 
-                    //relationship between image pixel size acquired in first image and pixel size of expected second image
-                    def relativePixelSize = pixelSizeFirstImagingMode/pixelSizeSecondImagingMode
-                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI( relativePixelSize as Double,
+                    AffineTransform scalingTransform = TransformationFunctions.setupAffineTransformationAndValidationGUI( pixelSizeFirstImagingMode as Double,
                             preferences as ObservableListWrapper)
 
                     logger.info("Initial affine transform, scaling only: $scalingTransform")
