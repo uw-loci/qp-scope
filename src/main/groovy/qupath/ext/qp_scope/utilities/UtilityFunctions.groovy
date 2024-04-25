@@ -491,6 +491,7 @@ class UtilityFunctions {
             def imagingModality = imagingModalityWithIndex.replaceAll(/(_\d+)$/, "")
             logger.info("Removing old tiles that class match $imagingModality")
             //QP.clearDetections()
+            //TODO check for closure error 
             def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().toLowerCase().contains{imagingModality}}
             logger.info("Removing ${relevantTiles.size()} tiles")
             QP.removeObjects(relevantTiles, true)
