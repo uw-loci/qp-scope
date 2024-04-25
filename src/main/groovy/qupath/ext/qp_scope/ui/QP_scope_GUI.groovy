@@ -36,13 +36,13 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-    static TextField groovyScriptDetectField = new TextField();
-    static TextField modalityField = new TextField();
+    static TextField groovyScriptDetectField = new TextField(AutoFillPersistentPreferences.getAnalysisScriptForAutomation());
+    static TextField modalityField = new TextField(AutoFillPersistentPreferences.getModalityForAutomation());
     static TextField sampleLabelField = new TextField(AutoFillPersistentPreferences.getSlideLabel())
     static TextField classFilterField = new TextField(AutoFillPersistentPreferences.getClassList())
 
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
-    static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
+    static TextField groovyScriptField = new TextField(preferences.find{it.getName() == "Tissue Detection Script"}.getValue().toString())
 
     static TextField pixelSizeField = new TextField(AutoFillPersistentPreferences.getMacroImagePixelSizeInMicrons())
     static CheckBox nonIsotropicCheckBox = new CheckBox("Non-isotropic pixels")
@@ -58,7 +58,7 @@ class QP_scope_GUI {
         def dlg = new Dialog<ButtonType>()
         dlg.initModality(Modality.APPLICATION_MODAL)
         dlg.setTitle("qp_scope")
-        //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
+
         dlg.setOnShown(event -> {
             Window window = dlg.getDialogPane().getScene().getWindow();
             if (window instanceof Stage) {

@@ -7,6 +7,7 @@ import javafx.beans.property.ObjectProperty
 import javafx.beans.property.Property
 import javafx.beans.property.StringProperty
 import javafx.beans.property.DoubleProperty
+import javafx.scene.control.TextField
 import qupath.lib.gui.scripting.QPEx
 import qupath.fx.prefs.controlsfx.PropertyItemBuilder;
 import qupath.lib.gui.QuPathGUI
@@ -129,14 +130,18 @@ class AddQPPreferences {
                         .build()
         );
 
-        //TODO change to file path rather than locking in a location within the installation
+
 // Tissue Detection Script
-        StringProperty tissueDetectionScriptProperty = PathPrefs.createPersistentPreference("tissueDetectionScriptProperty", "DetectTissue.groovy");
+
+        def groovyScript = extensionPathProperty.getValue().toString()+"/src/main/groovyScripts/DetectTissue.groovy"
+
+        StringProperty tissueDetectionScriptProperty = PathPrefs.createPersistentPreference("tissueDetectionScriptProperty", groovyScript);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(tissueDetectionScriptProperty, String.class)
+                .propertyType(PropertyItemBuilder.PropertyType.FILE)
                         .name("Tissue Detection Script")
                         .category(EXTENSION_NAME)
-                        .description("Name f the tissue detection script.")
+                        .description("Tissue detection script.")
                         .build()
         );
 
@@ -289,4 +294,23 @@ class AutoFillPersistentPreferences{
     public static void setClassList(final String classListSaved){
         this.classListSaved.value = classListSaved
     }
+
+    private static StringProperty modalityForAutomationSaved = PathPrefs.createPersistentPreference("modalityForAutomation", "20x_bf");
+
+    public static String getModalityForAutomation(){
+        return modalityForAutomationSaved.value
+    }
+    public static void setModalityForAutomation(final String modalityForAutomationSaved){
+        this.modalityForAutomationSaved.value = modalityForAutomationSaved
+    }
+//TODO shift this to an actual preference so it can be a file dialog
+    private static StringProperty analysisScriptForAutomationSaved = PathPrefs.createPersistentPreference("analysisScriptForAutomation", "DetectROI.groovy");
+
+    public static String getAnalysisScriptForAutomation(){
+        return analysisScriptForAutomationSaved.value
+    }
+    public static void setAnalysisScriptForAutomation(final String analysisScriptForAutomationSaved){
+        this.analysisScriptForAutomationSaved.value = analysisScriptForAutomationSaved
+    }
+
 }
