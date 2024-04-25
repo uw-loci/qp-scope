@@ -692,7 +692,7 @@ class QP_scope_GUI {
                     // PUT THIS INFORMATION SOMEWHERE ELSE
                     //Offset is required due to stage having a different point to define where the FOV is (not upper left)
                     double offsetX = -0.5 * frameWidth * (pixelSizeSecondImagingMode)
-                    double offsetY =-0.5 * frameHeight * (pixelSizeSecondImagingMode)
+                    double offsetY = 0.5 * frameHeight * (pixelSizeSecondImagingMode)
                     // Create the offset AffineTransform
                     def offset = [offsetX, offsetY]
                     AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform,
