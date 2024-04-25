@@ -439,7 +439,7 @@ class UtilityFunctions {
  * Performs tiling and saves configuration based on either bounding box coordinates or existing annotations.
  *
  * @param baseDirectory The base directory where the tiles will be saved.
- * @param imagingModality The type of imaging modality used, e.g., '4x-bf'.
+ * @param imagingModalityWithIndex The type of imaging modality used, e.g., '4x_bf'.
  * @param frameWidth The width of each tile in either pixels (annotations) or microns (bounding box).
  * @param frameHeight The height of each tile in in either pixels (annotations) or microns (bounding box).
  * @param overlapPercent The percent overlap between adjacent tiles.
@@ -447,7 +447,7 @@ class UtilityFunctions {
  * @param createTiles Flag to determine if tiles should be created.
  */
     static void performTilingAndSaveConfiguration(String modalityIndexFolder,
-                                                  String imagingModality,
+                                                  String imagingModalityWithIndex,
                                                   double frameWidth,
                                                   double frameHeight,
                                                   double overlapPercent,
@@ -482,15 +482,17 @@ class UtilityFunctions {
             // Create an ROI for the bounding box
             def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
             // Create tile configuration based on the bounding box, bBox value are in microns
-            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
+            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModalityWithIndex, createTiles)
 
         } else {
             // Tiling logic for existing annotations
 
             //Remove the indexing from the modality.
-            imagingModality = imagingModality.replaceAll(/(_\d+)$/, "")
+            def imagingModality = imagingModalityWithIndex.replaceAll(/(_\d+)$/, "")
+            logger.info("Removing old tiles that class match $imagingModality")
             //QP.clearDetections()
-            def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().equals{imagingModality}}
+            def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().toLowerCase().contains{imagingModality}}
+            logger.info("Removing ${relevantTiles.size()} tiles")
             QP.removeObjects(relevantTiles, true)
             // Retrieve all annotations
 

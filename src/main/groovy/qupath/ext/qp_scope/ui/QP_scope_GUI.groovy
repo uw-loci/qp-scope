@@ -276,8 +276,8 @@ class QP_scope_GUI {
                     def annotations = QP.getAnnotationObjects().findAll { classLabels.contains(it.getPathClass().toString()) }
                     //Calculate the field of view size in QuPath pixels
 
-                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
-                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) * pixelSizeFirstImagingMode
+                    Double frameWidthQPpixels = (frameWidth)* (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
+                    Double frameHeightQPpixels = (frameHeight) * (pixelSizeFirstImagingMode / pixelSizeSource) //* pixelSizeFirstImagingMode
                     UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
                     //Create tiles that represent individual fields of view along with desired overlap.
                     UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
@@ -326,8 +326,8 @@ class QP_scope_GUI {
                     // PUT THIS INFORMATION SOMEWHERE ELSE
                     //Offset is required due to stage having a different point to define where the FOV is vs the centroid of the QuPath tile
 
-                    double offsetX = 0.5 * frameWidth * (pixelSizeFirstImagingMode)
-                    double offsetY = -0.5 * frameHeight * (pixelSizeFirstImagingMode)
+                    double offsetX = -0.5 * frameWidth * (pixelSizeFirstImagingMode)
+                    double offsetY = 0.5 * frameHeight * (pixelSizeFirstImagingMode)
                     def offset = [offsetX, offsetY]
                     AffineTransform transform = TransformationFunctions.addTranslationToScaledAffine(scalingTransform, coordinatesQP, currentStageCoordinates_um)
                     logger.info("affine transform after initial alignment: $scalingTransform")
