@@ -43,10 +43,7 @@ class UI_functions {
     static void addToGrid(GridPane pane, Node node, int rowIndex) {
         pane.add(node, 0, rowIndex, 2, 1) // The node spans 2 columns
     }
-    // Helper method to check if input is numeric
-    static boolean isValidInput(String input) {
-        return input.matches("\\d*")
-    }
+
 
 
 

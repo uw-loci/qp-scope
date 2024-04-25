@@ -36,9 +36,11 @@ class QP_scope_GUI {
     static TextField y2Field = new TextField("")
     static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
-
+    static TextField groovyScriptDetectField = new TextField();
+    static TextField modalityField = new TextField();
     static TextField sampleLabelField = new TextField(AutoFillPersistentPreferences.getSlideLabel())
     static TextField classFilterField = new TextField(AutoFillPersistentPreferences.getClassList())
+
     static def extensionPath = preferences.find{it.getName() == "Extension Location"}.getValue().toString()
     static TextField groovyScriptField = new TextField(extensionPath+"/src/main/groovyScripts/DetectTissue.groovy")
 
@@ -899,24 +901,59 @@ class QP_scope_GUI {
  *
  * @return A GridPane containing the configured UI components for macro image input settings.
  */
+//    private static GridPane createMacroImageInputGUI() {
+//        GridPane pane = new GridPane()
+//        pane.setHgap(10)
+//        pane.setVgap(10)
+//        def row = 0
+//
+//        // Add new components for the checkbox and Groovy script path
+//        UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
+//        // Add components for Python environment and script path
+//
+//        UI_functions.addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
+//        // Add new components for pixel size and non-isotropic pixels checkbox on the same line
+//        HBox pixelSizeBox = new HBox(10)
+//        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
+//        UI_functions.addToGrid(pane, pixelSizeBox, row++)
+//
+//
+//        return pane
+//    }
     private static GridPane createMacroImageInputGUI() {
-        GridPane pane = new GridPane()
-        pane.setHgap(10)
-        pane.setVgap(10)
-        def row = 0
+        GridPane pane = new GridPane();
+        pane.setHgap(10);
+        pane.setVgap(10);
+        int row = 0;
 
-        // Add new components for the checkbox and Groovy script path
         UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
-        // Add components for Python environment and script path
 
+        // Tissue Detection Script Field
         UI_functions.addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
-        // Add new components for pixel size and non-isotropic pixels checkbox on the same line
-        HBox pixelSizeBox = new HBox(10)
-        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
-        UI_functions.addToGrid(pane, pixelSizeBox, row++)
+
+        // Checkbox for Automatic Second Modality Scan
+        CheckBox modalityCheckBox = new CheckBox("Automatic second modality scan");
+        pane.add(modalityCheckBox, 0, row++, 2, 1);
+
+        // Additional fields for Groovy script and modality
+        Label groovyScriptLabel = new Label("Groovy script to detect ROIs:");
+
+        Label modalityLabel = new Label("Modality:");
 
 
-        return pane
+        // Add fields to the grid but set them initially invisible
+        pane.add(groovyScriptLabel, 0, row);
+        pane.add(groovyScriptDetectField, 1, row++);
+        pane.add(modalityLabel, 0, row);
+        pane.add(modalityField, 1, row++);
+
+        // Binding visibility of fields to the checkbox state
+        groovyScriptLabel.visibleProperty().bind(modalityCheckBox.selectedProperty());
+        groovyScriptDetectField.visibleProperty().bind(modalityCheckBox.selectedProperty());
+        modalityLabel.visibleProperty().bind(modalityCheckBox.selectedProperty());
+        modalityField.visibleProperty().bind(modalityCheckBox.selectedProperty());
+
+        return pane;
     }
 
 
