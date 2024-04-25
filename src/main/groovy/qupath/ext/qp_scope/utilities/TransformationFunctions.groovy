@@ -121,61 +121,107 @@ class TransformationFunctions {
 
     }
 
-
 /**
- * Adjusts an existing scaling affine transformation by adding a translation to align with stage coordinates more accurately.
+ * Adjusts an existing scaling affine transformation by setting translation parts to zero and then adding a new translation
+ * to align with stage coordinates more accurately.
  *
  * @param scalingTransform The initial AffineTransform object representing the scaling, in QuPath to stage coordinate space.
- * @param qpCoordinatesList A list of strings representing the coordinates in the QuPath coordinate system (pixels).
- * @param stageCoordinatesList A list of strings representing the coordinates in the stage coordinate system (microns/distance).
- * @param offset An AffineTransform object representing the additional offset (translation) to be applied, in stage coordinates.
+ * @param qpCoordinatesList A list of doubles representing the coordinates in the QuPath coordinate system (pixels).
+ * @param stageCoordinatesList A list of doubles representing the coordinates in the stage coordinate system (microns/distance).
+ * @param offset An optional list representing the additional offset (translation) to be applied, in stage coordinates.
  * @return An AffineTransform object representing the combined scaling, translation, and additional offset.
  */
     public static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
                                                                List<Double> qpCoordinatesList,
                                                                List<Double> stageCoordinatesList,
-                                                               List<Double> offset = [0,0]) {
+                                                               List<Double> offset = [0.0, 0.0]) {
+        logger.info("Input scaling transform: $scalingTransform")
+        logger.info("qpCoordinatesList: $qpCoordinatesList")
+        logger.info("stageCoordinatesList: $stageCoordinatesList")
 
-        logger.info("Input scaling transform: " + scalingTransform);
-        logger.info("qpCoordinatesList: " + qpCoordinatesList);
-
-        qpCoordinatesList.each { item -> logger.info("Type of qpCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
-        stageCoordinatesList.each { item -> logger.info("Type of stageCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
-
-        double[] qpPoint = qpCoordinatesList.stream()
-                .mapToDouble(Double::doubleValue)
-                .toArray();
-        double[] mmPoint = stageCoordinatesList.stream()
-                .mapToDouble(Double::doubleValue)
-                .toArray();
-
-        // Log the arrays for debugging
-        logger.info("Converted qpPoint: ${Arrays.toString(qpPoint)}")
-        logger.info("Converted mmPoint: ${Arrays.toString(mmPoint)}")
-
+        // Extract points from lists
+        double qpX = qpCoordinatesList.get(0)
+        double qpY = qpCoordinatesList.get(1)
+        double mmX = stageCoordinatesList.get(0)
+        double mmY = stageCoordinatesList.get(1)
 
         // Apply scaling transform to QuPath point to convert to intermediate stage coordinates
-        Point2D.Double scaledQpPoint = new Point2D.Double();
-        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint);
-
-        logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
+        Point2D.Double scaledQpPoint = new Point2D.Double()
+        scalingTransform.transform(new Point2D.Double(qpX, qpY), scaledQpPoint)
 
         // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
-        double tx = (mmPoint[0] - scaledQpPoint.x) /scalingTransform.getScaleX();
-        double ty = (mmPoint[1] - scaledQpPoint.y)  /scalingTransform.getScaleY();
+        double tx = mmX - scaledQpPoint.x
+        double ty = mmY - scaledQpPoint.y
 
+        logger.info("Calculated translation vector: tx = $tx, ty = $ty")
 
-        logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
+        // Reset translation components of the original transform
+        AffineTransform modifiedTransform = new AffineTransform(scalingTransform.getScaleX(), scalingTransform.getShearY(),
+                scalingTransform.getShearX(), scalingTransform.getScaleY(),
+                0, 0) // Reset translations to zero
 
-        // Create the combined transform (scaling and translation) and apply the offset
-        AffineTransform transform = new AffineTransform(scalingTransform);
-        transform.translate(tx, ty);
+        // Apply new translation
+        modifiedTransform.translate(tx, ty)
 
-//transform.set transform.getTranslateX()
-        logger.info("Final AffineTransform: " + transform);
+        logger.info("Final AffineTransform with new translation: $modifiedTransform")
 
-        return transform;
+        return modifiedTransform
     }
+
+///**
+// * Adjusts an existing scaling affine transformation by adding a translation to align with stage coordinates more accurately.
+// *
+// * @param scalingTransform The initial AffineTransform object representing the scaling, in QuPath to stage coordinate space.
+// * @param qpCoordinatesList A list of strings representing the coordinates in the QuPath coordinate system (pixels).
+// * @param stageCoordinatesList A list of strings representing the coordinates in the stage coordinate system (microns/distance).
+// * @param offset An AffineTransform object representing the additional offset (translation) to be applied, in stage coordinates.
+// * @return An AffineTransform object representing the combined scaling, translation, and additional offset.
+// */
+//    public static AffineTransform addTranslationToScaledAffine(AffineTransform scalingTransform,
+//                                                               List<Double> qpCoordinatesList,
+//                                                               List<Double> stageCoordinatesList,
+//                                                               List<Double> offset = [0,0]) {
+//
+//        logger.info("Input scaling transform: " + scalingTransform);
+//        logger.info("qpCoordinatesList: " + qpCoordinatesList);
+//
+//        qpCoordinatesList.each { item -> logger.info("Type of qpCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
+//        stageCoordinatesList.each { item -> logger.info("Type of stageCoordinatesList item: ${item.getClass().getName()} - Value: $item") }
+//
+//        double[] qpPoint = qpCoordinatesList.stream()
+//                .mapToDouble(Double::doubleValue)
+//                .toArray();
+//        double[] mmPoint = stageCoordinatesList.stream()
+//                .mapToDouble(Double::doubleValue)
+//                .toArray();
+//
+//        // Log the arrays for debugging
+//        logger.info("Converted qpPoint: ${Arrays.toString(qpPoint)}")
+//        logger.info("Converted mmPoint: ${Arrays.toString(mmPoint)}")
+//
+//
+//        // Apply scaling transform to QuPath point to convert to intermediate stage coordinates
+//        Point2D.Double scaledQpPoint = new Point2D.Double();
+//        scalingTransform.transform(new Point2D.Double(qpPoint[0], qpPoint[1]), scaledQpPoint);
+//
+//        logger.info("Scaled qpPoint to stage coordinates: " + scaledQpPoint);
+//
+//        // Calculate the translation vector needed to match the scaled QuPath point to the actual stage coordinates
+//        double tx = (mmPoint[0] - scaledQpPoint.x) /scalingTransform.getScaleX();
+//        double ty = (mmPoint[1] - scaledQpPoint.y)  /scalingTransform.getScaleY();
+//
+//
+//        logger.info("Calculated translation vector: tx = " + tx + ", ty = " + ty);
+//
+//        // Create the combined transform (scaling and translation) and apply the offset
+//        AffineTransform transform = new AffineTransform(scalingTransform);
+//        transform.translate(tx, ty);
+//
+////transform.set transform.getTranslateX()
+//        logger.info("Final AffineTransform: " + transform);
+//
+//        return transform;
+//    }
 
 
     /**
