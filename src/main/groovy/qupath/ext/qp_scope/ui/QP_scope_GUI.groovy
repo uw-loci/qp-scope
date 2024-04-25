@@ -261,9 +261,10 @@ class QP_scope_GUI {
 
             if (QP.getAnnotationObjects().findAll{it.getPathClass() == QP.getPathClass("Tissue")}.size() == 0) {
                 String tissueDetectScript = UtilityFunctions.modifyTissueDetectScript(groovyScriptPath, pixelSizeSource as String, jsonTissueClassifierPathString)
-                //logger.info(tissueDetectScript)
+                logger.info(tissueDetectScript)
                 // Run the modified script
-                QuPathGUI.getInstance().runScript(null, tissueDetectScript)
+                //TODO runScript mistakenly treats the script as having a null language sometimes.
+                qupathGUI.runScript(null, tissueDetectScript)
                 //At this point the tissue should be outlined in an annotation
             }
 
