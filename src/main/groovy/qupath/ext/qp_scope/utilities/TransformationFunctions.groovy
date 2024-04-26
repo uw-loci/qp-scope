@@ -325,22 +325,22 @@ class TransformationFunctions {
      * @param sendToStage A boolean indicating whether the coordinates are being sent to the stage (true) or retrieved (false).
      * @return An array of doubles representing the adjusted coordinates.
      */
-    static double[] applyOffset(List<Double> inputCoordinates, List<Double> offsets, boolean sendToStage) {
+    static double[] applyOffset(List<Double> inputCoordinates, List<Double> offset, boolean sendToStage) {
 
-        if (inputCoordinates.size() != offsets.size()) {
+        if (inputCoordinates.size() != offset.size()) {
             throw new IllegalArgumentException("inputCoordinates and offsets must be of the same length.")
         }
 
         double[] adjustedCoordinates = new double[inputCoordinates.size()]
         logger.info("Applying offsets")
         logger.info(inputCoordinates.toString())
-        logger.info(offsets.toString())
+        logger.info(offset.toString())
 
         for (int i = 0; i < inputCoordinates.size(); i++) {
             if (sendToStage) {
-                adjustedCoordinates[i] = inputCoordinates[i] + offsets[i]  // Add the offset for sending to stage
+                adjustedCoordinates[i] = inputCoordinates[i] as double + offset[i] as double  // Add the offset for sending to stage
             } else {
-                adjustedCoordinates[i] = inputCoordinates[i] - offsets[i]  // Subtract the offset for retrieving original coordinates
+                adjustedCoordinates[i] = inputCoordinates[i] as double - offset[i] as double  // Subtract the offset for retrieving original coordinates
             }
         }
 
