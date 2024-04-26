@@ -353,8 +353,13 @@ class TransformationFunctions {
      * @param args - any other arguments needed to handle flipping etc.
      * @return adjustedTransform An AffineTransform that connects the current QuPath image to the stage
      */
-    static AffineTransform calculateNewImageTransform(AffineTransform originalTransform){
+    static AffineTransform calculateNewImageTransform(AffineTransform originalTransform, List<Double> upperLeftStageCoord, List<Double> offset, double pixelSize){
+        def adjustedTransform = new AffineTransform()
 
-        return
+        //TODO adjust the incoming transform from lowres image to stage, to match the highres to stage
+
+        //Use the new pixel size
+
+        return adjustedTransform
     }
 }
