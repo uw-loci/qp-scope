@@ -347,5 +347,14 @@ class TransformationFunctions {
         return adjustedCoordinates
     }
 
+    /**
+    * Creates an expected transform based on the location of an image taken from within a previous image
+    * @param originalTransform An AffineTransform that connects an image to the stage coordinate system
+     * @param args - any other arguments needed to handle flipping etc.
+     * @return adjustedTransform An AffineTransform that connects the current QuPath image to the stage
+     */
+    static AffineTransform calculateNewImageTransform(AffineTransform originalTransform){
 
+        return
+    }
 }
