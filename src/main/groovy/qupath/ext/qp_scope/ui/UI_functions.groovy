@@ -14,6 +14,7 @@ import qupath.ext.qp_scope.utilities.MinorFunctions
 import qupath.ext.qp_scope.utilities.TransformationFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
 import qupath.lib.gui.QuPathGUI
+import qupath.lib.gui.viewer.tools.PathTools
 import qupath.lib.objects.PathObject
 import qupath.lib.scripting.QP
 
@@ -219,6 +220,14 @@ class UI_functions {
     static boolean stageToQuPathAlignmentGUI1() {
         boolean validTile = false;
         Optional<ButtonType> result;
+
+        // Get the current QuPath GUI instance
+        QuPathGUI gui = QuPathGUI.getInstance()
+
+        // Retrieve the move tool
+        def moveTool = PathTools.getTool("move")
+        // Get the tool manager from the GUI and set the selected tool
+        gui.getToolManager().setSelectedTool(moveTool)
 
         while (!validTile) {
             // Create and configure the dialog inside the loop
