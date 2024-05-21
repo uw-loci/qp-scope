@@ -145,13 +145,11 @@ class QPProjectFunctions {
         def imageRegionStore = QPEx.getQuPath().getImageRegionStore()
         def imageType = GuiTools.estimateImageType(imageData.getServer(), imageRegionStore.getThumbnail(imageData.getServer(), 0, 0, true));
         imageData.setImageType(imageType)
-        imageEntry.saveImageData(imageData)
-
-
-
         // Add an entry name (the filename)
         imageEntry.setImageName(stitchedImagePath.getName())
         project.syncChanges()
+        //TODO validate whether this should be before or after project.syncChanges
+        imageEntry.saveImageData(imageData)
         return true
 
     }
