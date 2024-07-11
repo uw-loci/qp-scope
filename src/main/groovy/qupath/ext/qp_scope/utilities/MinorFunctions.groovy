@@ -4,11 +4,11 @@ import javafx.scene.control.Alert
 import javafx.stage.Modality
 import org.slf4j.LoggerFactory
 import com.google.gson.Gson
-import org.yaml.snakeyaml.Yaml
+//import org.yaml.snakeyaml.Yaml
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
+//import java.util.concurrent.CompletableFuture
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import com.google.gson.reflect.TypeToken;
@@ -52,21 +52,21 @@ class MinorFunctions {
         alert.showAndWait()
     }
 
-    /**
-     * Reads a YAML file and parses it into a Groovy map or list structure.
-     * This method uses the SnakeYAML library to parse the YAML content,
-     * enabling the handling of complex, nested YAML structures.
-     *
-     * @param filePath The path to the YAML file to be read and parsed.
-     * @return A map or list representation of the YAML file's content,
-     *         allowing for multi-layered maps if the YAML is nested.
-     */
-    static def readYamlFileToMap(String filePath) {
-        Yaml yaml = new Yaml()
-        String content = new String(Files.readAllBytes(Paths.get(filePath)))
-        def data = yaml.load(content)
-        return data
-    }
+//    /**
+//     * Reads a YAML file and parses it into a Groovy map or list structure.
+//     * This method uses the SnakeYAML library to parse the YAML content,
+//     * enabling the handling of complex, nested YAML structures.
+//     *
+//     * @param filePath The path to the YAML file to be read and parsed.
+//     * @return A map or list representation of the YAML file's content,
+//     *         allowing for multi-layered maps if the YAML is nested.
+//     */
+//    static def readYamlFileToMap(String filePath) {
+//        Yaml yaml = new Yaml()
+//        String content = new String(Files.readAllBytes(Paths.get(filePath)))
+//        def data = yaml.load(content)
+//        return data
+//    }
 
 /**
  * Reads a JSON file and parses it into a multi-layered map using Gson.

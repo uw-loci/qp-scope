@@ -11,8 +11,12 @@ import qupath.lib.gui.extensions.QuPathExtension
 import qupath.ext.qp_scope.ui.AddQPPreferences
 import qupath.ext.qp_scope.tests.CoordinateTransformationTest;
 import javafx.application.Platform;
-
-
+import qupath.ext.qp_scope.utilities.MinorFunctions
+import java.nio.file.Files
+import qupath.lib.gui.scripting.QPEx
+import java.nio.file.Path
+import java.nio.file.Paths
+import qupath.ext.qp_scope.utilities.MicroscopeConfigManager
 /**
  * Built from the QuPath extension template - an extension to control a microscope through a Python interface
  */
@@ -30,8 +34,53 @@ class QP_scope implements QuPathExtension, GitHubProject {
 
     @Override
     void installExtension(QuPathGUI qupath) {
-        addMenuItems(qupath)
-        AddQPPreferences preferences = AddQPPreferences.getInstance();
+
+        // Initialize and load config
+        try {
+            addMenuItems(qupath)
+            AddQPPreferences.getInstance();
+            def preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
+            String pycromanagerFilePath = preferences.find { it.getName() == "PycroManager Path" }.getValue().toString()
+            logger.info("Retrieved PycroManager Path: $pycromanagerFilePath")
+
+            if (pycromanagerFilePath != null) {
+                Path filePath = Paths.get(pycromanagerFilePath);
+                Path folderPath = filePath.getParent();
+                //TODO need a preference for the microscope name
+                //Nice to be a dropdown of config_NAME options in the config folder
+
+                Path yamlPath = folderPath.resolve("config/config_CAMM.yml");
+                logger.info("Constructed YAML Path: $yamlPath")
+
+                if (Files.exists(yamlPath)) {
+                    def configManager = MicroscopeConfigManager.getInstance(yamlPath.toString())
+                    logger.info("Config Manager initialized.")
+                    // Retrieve specific configuration items
+                    def lowerXlimitStage = configManager.getConfigItem("stage", "xlimit", "low")
+                    def objectiveLens = configManager.getConfigItem("objectiveLens")
+                    def lampIntensity = configManager.getConfigItem("imagingMode", "lampIntensity")
+
+                    logger.info("lowerXlimitStage: $lowerXlimitStage")
+                    logger.info("objectiveLens: $objectiveLens")
+                    logger.info("lampIntensity: $lampIntensity")
+                } else {
+                    logger.warn("YAML file not found at: $yamlPath")
+                    Platform.runLater(() -> {
+                        MinorFunctions.showAlertDialog("YAML file not found at: $yamlPath")
+                    });
+                }
+            } else {
+                logger.error("PycroManager Path is null or not set.")
+                Platform.runLater(() -> {
+                    MinorFunctions.showAlertDialog("PycroManager Path is not configured. Please check your settings.")
+                });
+            }
+        } catch (Exception e) {
+            logger.error("Error during extension installation", e)
+        }
+
+        logger.info("QP_scope extension installation completed.")
+
     }
 
 
@@ -40,7 +89,6 @@ class QP_scope implements QuPathExtension, GitHubProject {
         // Check for dependencies and QuPath version
         logger.info("QuPath Version")
         logger.info(getQuPathVersion().toString())
-
         // TODO: how to check if version is supported?
 
         // Get or create the menu
