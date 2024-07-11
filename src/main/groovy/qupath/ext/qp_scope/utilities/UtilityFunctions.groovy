@@ -150,7 +150,9 @@ class UtilityFunctions {
 
             if (script == null){
                 logger.info("Performing collection using $arguments");
+                logger.info("Performing collection using $argsJoined");
                 totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
+                logger.info("File count will be $totalTifFiles")
                 progressBar = true;
             }
 
@@ -458,9 +460,11 @@ class UtilityFunctions {
         QP.mkdirs(modalityIndexFolder)
         //Sets a half frame buffer around the imaging area
         boolean buffer = true
+        logger.info(boundingBoxCoordinates.toString())
         //If bounding box coordinates are provided, use those instead of attempting an annotation based tiling
         if (boundingBoxCoordinates) {
             // Tiling logic when bounding box coordinates are provided
+            logger.info("Use bounding box coordinates to create TileConfiguration.txt file")
             def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")
             QP.mkdirs(tilePath)
             // Extract coordinates from the bounding box, all in microns
@@ -482,6 +486,7 @@ class UtilityFunctions {
             // Create an ROI for the bounding box
             def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
             // Create tile configuration based on the bounding box, bBox value are in microns
+            tilePath = QP.buildFilePath(tilePath, "TileConfiguration.txt")
             createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModalityWithIndex, createTiles)
 
         } else {
@@ -490,8 +495,7 @@ class UtilityFunctions {
             //Remove the indexing from the modality.
             def imagingModality = imagingModalityWithIndex.replaceAll(/(_\d+)$/, "")
             logger.info("Removing old tiles that class match $imagingModality")
-            //QP.clearDetections()
-            //TODO check for closure error 
+            //TODO check for closure error
             def relevantTiles = QP.getDetectionObjects().findAll{it.getPathClass().toString().toLowerCase().contains(imagingModality)}
             logger.info("Removing ${relevantTiles.size()} tiles")
             QP.removeObjects(relevantTiles, true)
@@ -525,6 +529,8 @@ class UtilityFunctions {
                     bBoxW = bBoxW + frameWidth
                 }
                 // Create tile configuration for each annotation, bBox and frame values are in QuPath image pixels
+                // A different TileConfiguration_QP file name is useful here to distinguish the QuPath coordinate system from the stage coordinate system
+                tilePath = QP.buildFilePath(tilePath, "TileConfiguration_QP.txt")
                 createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
         }
@@ -583,7 +589,6 @@ class UtilityFunctions {
                 def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
                 // Check if tile intersects the given ROI or bounding box (null)
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
-
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
                     tileDetection.setName(predictedTileCount.toString())
                     tileDetection.measurements.put("TileNumber", actualTileCount)
@@ -605,7 +610,10 @@ class UtilityFunctions {
 
         // Writing TileConfiguration_QP.txt file
         String header = "dim = 2\n"
-        new File(QP.buildFilePath(tilePath, "TileConfiguration_QP.txt")).withWriter { fw ->
+        logger.info("Writing out file to $tilePath")
+        logger.info("Predicted tile count $predictedTileCount")
+        logger.info("Actual tile count $actualTileCount")
+        new File(tilePath).withWriter { fw ->
             fw.writeLine(header)
             xy.eachWithIndex { coords, index ->
                 String line = "${index}.tif; ; (${coords[0]}, ${coords[1]})"
