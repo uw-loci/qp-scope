@@ -4,7 +4,6 @@ import com.sun.javafx.collections.ObservableListWrapper
 
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
-import javafx.scene.layout.HBox
 import org.slf4j.LoggerFactory
 import qupath.ext.qp_scope.utilities.QPProjectFunctions
 import qupath.ext.qp_scope.utilities.UtilityFunctions
@@ -66,7 +65,7 @@ class QP_scope_GUI {
             }
         });
         // Set the content
-        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+        dlg.getDialogPane().setContent(createBoundingBoxInputDialog())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -438,7 +437,7 @@ class QP_scope_GUI {
         //dlg.setHeaderText("Enter details (LOOK MA! " + BasicStitchingExtension.class.getName() + "!):");
 
         // Set the content
-        dlg.getDialogPane().setContent(createBoundingBoxInputGUI())
+        dlg.getDialogPane().setContent(createBoundingBoxInputDialog())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -464,6 +463,8 @@ class QP_scope_GUI {
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
             double pixelSizeFirstImagingMode = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
+            boolean isInvertedYProperty = preferences.find{it.getName() == "isInvertedYProperty"}.getValue()
+            boolean isInvertedXProperty = preferences.find{it.getName() == "isInvertedXProperty"}.getValue()
             String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
             String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
             String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
@@ -503,7 +504,11 @@ class QP_scope_GUI {
                     frameHeightMicrons,
                     overlapPercent,
                     boundingBoxValues,
-            false)
+                    false,
+                    [], //No annotations for a bounding box
+                    isInvertedYProperty,
+                    isInvertedXProperty,
+            )
             UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
             //Send the scanning command to the microscope
 
@@ -541,7 +546,7 @@ class QP_scope_GUI {
  *
  * @return GridPane with labeled input fields for bounding box specification.
  */
-    private static GridPane createBoundingBoxInputGUI() {
+    private static GridPane createBoundingBoxInputDialog() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)
@@ -583,7 +588,7 @@ class QP_scope_GUI {
         dlg.setHeaderText("Create annotations within your image, then click Okay to proceed with a second collection within those areas.")
 
         // Set the content
-        dlg.getDialogPane().setContent(createSecondImagingModeGUI())
+        dlg.getDialogPane().setContent(createSecondImagingModeDialog())
 
         // Add Okay and Cancel buttons
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
@@ -641,8 +646,6 @@ class QP_scope_GUI {
                 } else {
 
                     //Calculate the field of view size in QuPath pixels
-//TODO
-                    //TODO WHY IS THE PIXEL SIZE CALCULATION DIFFERENT IN 4X AND 20X??
                     Double frameWidthQPpixels = (frameWidth)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) //* (pixelSizeSecondImagingMode)
                     Double frameHeightQPpixels = (frameHeight)* (pixelSizeSecondImagingMode / pixelSizeFirstImagingMode) //* (pixelSizeSecondImagingMode)
                     logger.info("Frame width in pixels within a QuPath 20x image should be about a quarter of a 4x tile, or $frameWidthQPpixels")
@@ -791,75 +794,6 @@ class QP_scope_GUI {
             })
         }
     }
-//            //Convert the camera frame width/height into pixels in the image we are working on.
-//            Double frameWidthQPpixels = (frameWidth ) / (pixelSizeFirstImagingMode ) * (pixelSizeSecondImagingMode )
-//            Double frameHeightQPpixels = (frameHeight ) / (pixelSizeFirstImagingMode) * (pixelSizeSecondImagingMode )
-//            //Create tiles that represent individual fields of view along with desired overlap.
-//            UtilityFunctions.performTilingAndSaveConfiguration(tempTileDirectory,
-//                    imagingModeWithIndex,
-//                    frameWidthQPpixels,
-//                    frameHeightQPpixels,
-//                    overlapPercent,
-//                    null,
-//                    true,
-//                    annotations)
-//
-//            logger.info("Scan type with index: " + imagingModeWithIndex)
-//            logger.info(tempTileDirectory)
-//
-//            // A semaphore to control the stitching process - don't allow another stitching to begin while one is still running
-//            Semaphore stitchingSemaphore = new Semaphore(1)
-//
-//
-//            for (annotation in annotations) {
-//                String annotationName = annotation.getName()
-//                List args = [projectsFolderPath,
-//                             sampleLabel,
-//                             imagingModeWithIndex,
-//                             annotationName]
-//
-//
-//                //Progress bar that updates by checking target folder for new images?
-//                UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args)
-//                //TODO how can we distinguish between a hung python run and one that is taking a long time? - possibly check for new files in target folder?
-//                //TODO Need to check if stitching is successful, provide error
-//                //while projectsFolderPath/sampleLabel/imagingModeWithIndex/annotationName does not have
-//                //fileCount = number of entries in TileConfiguration_QP.txt OR getDetectionObjects().size()+1
-//                //Loop checking each second for file count files within the folder
-//                //Track loops, after N loops, break and end program with error.
-//
-//                logger.info("Finished Python Command for $annotationName")
-//                // Start a new thread for stitching
-//                Thread.start {
-//                    try {
-//                        // Acquire a permit before starting stitching
-//                        stitchingSemaphore.acquire()
-//
-//                        logger.info("Begin stitching")
-//                        String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-//                                sampleLabel, imagingModeWithIndex as String, annotationName,
-//                                qupathGUI, currentQuPathProject, compressionType)
-//                        logger.info(stitchedImagePathStr)
-//
-//
-//                    } catch (InterruptedException e) {
-//                        logger.error("Stitching thread interrupted", e)
-//                    } finally {
-//                        // Release the semaphore for the next stitching process
-//                        stitchingSemaphore.release()
-//                    }
-//                }
-//
-//            }
-//            // Post-stitching tasks like deleting or zipping tiles
-//            //Check if the tiles should be deleted from the collection folder
-//            if (tileHandling == "Delete")
-//                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-//            if (tileHandling == "Zip") {
-//                UtilityFunctions.zipTilesAndMove(tempTileDirectory)
-//                UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
-//            }
-
 
 
 /**
@@ -882,7 +816,7 @@ class QP_scope_GUI {
         });
         dlg.setTitle("Macro View Configuration")
         dlg.setHeaderText("Configure settings for macro view.")
-        dlg.getDialogPane().setContent(createMacroImageInputGUI())
+        dlg.getDialogPane().setContent(createMacroImageDialogContent())
         dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL)
         // Accessing the Window of the Dialog to set always on top
         dlg.setOnShown(event -> {
@@ -902,26 +836,8 @@ class QP_scope_GUI {
  *
  * @return A GridPane containing the configured UI components for macro image input settings.
  */
-//    private static GridPane createMacroImageInputGUI() {
-//        GridPane pane = new GridPane()
-//        pane.setHgap(10)
-//        pane.setVgap(10)
-//        def row = 0
-//
-//        // Add new components for the checkbox and Groovy script path
-//        UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
-//        // Add components for Python environment and script path
-//
-//        UI_functions.addToGrid(pane, new Label('Tissue detection script:'), groovyScriptField, row++)
-//        // Add new components for pixel size and non-isotropic pixels checkbox on the same line
-//        HBox pixelSizeBox = new HBox(10)
-//        pixelSizeBox.getChildren().addAll(new Label('Pixel Size XY um:'), pixelSizeField, nonIsotropicCheckBox)
-//        UI_functions.addToGrid(pane, pixelSizeBox, row++)
-//
-//
-//        return pane
-//    }
-    private static GridPane createMacroImageInputGUI() {
+
+    private static GridPane createMacroImageDialogContent() {
         GridPane pane = new GridPane();
         pane.setHgap(10);
         pane.setVgap(10);
@@ -961,7 +877,7 @@ class QP_scope_GUI {
 
 
     //Create the second interface window for performing higher resolution or alternate modality scans
-    private static GridPane createSecondImagingModeGUI() {
+    private static GridPane createSecondImagingModeDialog() {
         GridPane pane = new GridPane()
         pane.setHgap(10)
         pane.setVgap(10)

@@ -455,7 +455,9 @@ class UtilityFunctions {
                                                   double overlapPercent,
                                                   List<Double> boundingBoxCoordinates = [],
                                                   boolean createTiles = true,
-                                                  Collection<PathObject> annotations = []) {
+                                                  Collection<PathObject> annotations = [],
+                                                  boolean invertYAxis = false,
+                                                  boolean invertXAxis = false) {
 
         QP.mkdirs(modalityIndexFolder)
         //Sets a half frame buffer around the imaging area
@@ -463,31 +465,67 @@ class UtilityFunctions {
         logger.info(boundingBoxCoordinates.toString())
         //If bounding box coordinates are provided, use those instead of attempting an annotation based tiling
         if (boundingBoxCoordinates) {
-            // Tiling logic when bounding box coordinates are provided
-            logger.info("Use bounding box coordinates to create TileConfiguration.txt file")
+//            // Tiling logic when bounding box coordinates are provided
+//            logger.info("Use bounding box coordinates to create TileConfiguration.txt file")
+//            def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")
+//            QP.mkdirs(tilePath)
+//            // Extract coordinates from the bounding box, all in microns
+//            double bBoxX = boundingBoxCoordinates[0]
+//            double bBoxY = boundingBoxCoordinates[1]
+//            double x2 = boundingBoxCoordinates[2]
+//            double y2 = boundingBoxCoordinates[3]
+//            double bBoxW = x2 - bBoxX
+//            double bBoxH = y2 - bBoxY
+//            //Create a half frame bounds around the area of interest
+//            if (buffer) {
+//                bBoxX = bBoxX - frameWidth / 2
+//                bBoxY = bBoxY - frameHeight/2
+//                //One extra full frame, since half frame on each side.
+//                bBoxH = bBoxH + frameHeight
+//                bBoxW = bBoxW + frameWidth
+//            }
+//
+//            // Create an ROI for the bounding box
+//            def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
+//            // Create tile configuration based on the bounding box, bBox value are in microns
+//            tilePath = QP.buildFilePath(tilePath, "TileConfiguration.txt")
+//            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModalityWithIndex, createTiles)
+            logger.info("Using bounding box coordinates to create TileConfiguration.txt file")
             def tilePath = QP.buildFilePath(modalityIndexFolder, "bounds")
             QP.mkdirs(tilePath)
+
             // Extract coordinates from the bounding box, all in microns
-            double bBoxX = boundingBoxCoordinates[0]
-            double bBoxY = boundingBoxCoordinates[1]
+            double x1 = boundingBoxCoordinates[0]
+            double y1 = boundingBoxCoordinates[1]
             double x2 = boundingBoxCoordinates[2]
             double y2 = boundingBoxCoordinates[3]
-            double bBoxW = x2 - bBoxX
-            double bBoxH = y2 - bBoxY
-            //Create a half frame bounds around the area of interest
-            if (buffer) {
-                bBoxX = bBoxX - frameWidth / 2
-                bBoxY = bBoxY - frameHeight/2
-                //One extra full frame, since half frame on each side.
-                bBoxH = bBoxH + frameHeight
-                bBoxW = bBoxW + frameWidth
-            }
 
-            // Create an ROI for the bounding box
-            def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
-            // Create tile configuration based on the bounding box, bBox value are in microns
+            // Calculate top-left and bottom-right coordinates based on min/max
+            double minX = Math.min(x1, x2)
+            double maxX = Math.max(x1, x2)
+            double minY = Math.min(y1, y2)
+            double maxY = Math.max(y1, y2)
+            logger.info("Calculated min and max coordinates: minX={}, maxX={}, minY={}, maxY={}", minX, maxX, minY, maxY)
+
+            // Apply inversion logic
+            double startX = invertXAxis ? maxX : minX;
+            double endX = invertXAxis ? minX : maxX;
+            double startY = invertYAxis ? maxY : minY;
+            double endY = invertYAxis ? minY : maxY;
+            logger.info("Adjusted coordinates after applying axis inversion: startX={}, endX={}, startY={}, endY={}", startX, endX, startY, endY)
+
+            // Adjust coordinates for buffering and ensure positive dimensions
+            startX -= frameWidth / 2;
+            startY -= frameHeight / 2;
+            double width = (endX - startX) + frameWidth;
+            double height = (endY - startY) + frameHeight;
+            logger.info("Final bounding box dimensions after buffering: startX={}, startY={}, width={}, height={}", startX, startY, width, height)
+
+            def annotationROI = new RectangleROI(startX, startY, width, height, ImagePlane.getDefaultPlane())
             tilePath = QP.buildFilePath(tilePath, "TileConfiguration.txt")
-            createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModalityWithIndex, createTiles)
+            createTileConfiguration(startX, startY, width, height, frameWidth, frameHeight, overlapPercent,
+                    tilePath, annotationROI, imagingModalityWithIndex, createTiles, invertYAxis, invertXAxis)
+            logger.info("Tile configuration created at {}", tilePath)
 
         } else {
             // Tiling logic for existing annotations
@@ -563,49 +601,84 @@ class UtilityFunctions {
                                         String tilePath,
                                         ROI annotationROI,
                                         String imagingModality,
-                                        boolean createTiles = true) {
+                                        boolean createTiles = true,
+                                        boolean invertYAxis = false,
+                                        boolean invertXAxis = false) {
         logger.info("TileConfig setup")
         int predictedTileCount = 0
         int actualTileCount = 0
         List xy = []
         int yline = 0
         List newTiles = []
-        //Start in the upper left corner of the bounding box
-        double x = bBoxX
-        double y = bBoxY
+
         logger.info("frameHeight: $frameHeight")
         logger.info("frameWidth: $frameWidth")
         // Calculate step size for X and Y based on frame size and overlap
         double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
         double yStep = frameHeight - (overlapPercent / 100 * frameHeight)
 
+        double startX = invertXAxis ? bBoxX + bBoxW : bBoxX;
+        double endX = invertXAxis ? bBoxX : bBoxX + bBoxW;
+        double startY = invertYAxis ? bBoxY + bBoxH : bBoxY;
+        double endY = invertYAxis ? bBoxY : bBoxY + bBoxH;
+
+        // Handle step direction based on axis inversion
+        xStep = invertXAxis ? -xStep : xStep;
+        yStep = invertYAxis ? -yStep : yStep;
+
         logger.info("xStep size: $xStep")
         logger.info("yStep size: $yStep")
+
+        double y = startY;
         // Loop through Y-axis
-        while (y < bBoxY + bBoxH) {
-            // Loop through X-axis with conditional direction for serpentine tiling
-            // While this doesn't matter from QuPath's perspective, it can speed up collection when micromanager acquires the tiles in this order
-            while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
-                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
-                // Check if tile intersects the given ROI or bounding box (null)
+//        while (y < bBoxY + bBoxH) {
+//            // Loop through X-axis with conditional direction for serpentine tiling
+//            // While this doesn't matter from QuPath's perspective, it can speed up collection when micromanager acquires the tiles in this order
+//            while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
+//                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
+//                // Check if tile intersects the given ROI or bounding box (null)
+//                if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
+//                    PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
+//                    tileDetection.setName(predictedTileCount.toString())
+//                    tileDetection.measurements.put("TileNumber", actualTileCount)
+//                    newTiles << tileDetection
+//                    //Adjusting to middle of frame rather than upper left
+//                    //xy << [x, y]
+//                    xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
+//                    actualTileCount++
+//                }
+//                // Adjust X for next tile
+//                x = (yline % 2 == 0) ? x + xStep : x - xStep
+//                predictedTileCount++
+//            }
+//            // Adjust Y for next line and reset X
+//            y += yStep
+//            x = (yline % 2 == 0) ? x - xStep : x + xStep
+//            yline++
+//        }
+
+        boolean reverseX = false; // Used for serpentine tiling
+
+        while ((invertYAxis ? y >= endY : y <= endY)) {
+            double x = reverseX ? endX : startX; // Start from the reverse end if required
+            //Need to double check that there is a buffer on the reverse direction
+            while ((invertXAxis ? x >= startX : x <= endX)) {
+                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane());
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
                     tileDetection.setName(predictedTileCount.toString())
                     tileDetection.measurements.put("TileNumber", actualTileCount)
                     newTiles << tileDetection
-                    //Adjusting to middle of frame rather than upper left
-                    //xy << [x, y]
                     xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
                     actualTileCount++
                 }
-                // Adjust X for next tile
-                x = (yline % 2 == 0) ? x + xStep : x - xStep
-                predictedTileCount++
+                // Move X in the current direction
+                x += (reverseX ? -xStep : xStep);
+                predictedTileCount++;
             }
-            // Adjust Y for next line and reset X
-            y += yStep
-            x = (yline % 2 == 0) ? x - xStep : x + xStep
-            yline++
+            // Prepare for the next line
+            y += yStep;
+            reverseX = !reverseX; // Reverse the direction for the next row
         }
 
         // Writing TileConfiguration_QP.txt file
