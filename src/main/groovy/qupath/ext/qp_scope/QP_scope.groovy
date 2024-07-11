@@ -1,5 +1,5 @@
 package qupath.ext.qp_scope
-
+//TODO Change instances of 4x_bf to bf_4x, and adjust corresponding Python code
 
 import javafx.scene.control.MenuItem
 import org.slf4j.LoggerFactory
