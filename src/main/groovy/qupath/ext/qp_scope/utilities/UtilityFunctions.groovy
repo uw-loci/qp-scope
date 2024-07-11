@@ -517,14 +517,14 @@ class UtilityFunctions {
             // Adjust coordinates for buffering and ensure positive dimensions
             startX -= frameWidth / 2;
             startY -= frameHeight / 2;
-            double width = (endX - startX) + frameWidth;
-            double height = (endY - startY) + frameHeight;
+            double width = Math.abs((endX - startX) + frameWidth);
+            double height = Math.abs((endY - startY) + frameHeight);
             logger.info("Final bounding box dimensions after buffering: startX={}, startY={}, width={}, height={}", startX, startY, width, height)
 
             def annotationROI = new RectangleROI(startX, startY, width, height, ImagePlane.getDefaultPlane())
             tilePath = QP.buildFilePath(tilePath, "TileConfiguration.txt")
             createTileConfiguration(startX, startY, width, height, frameWidth, frameHeight, overlapPercent,
-                    tilePath, annotationROI, imagingModalityWithIndex, createTiles, invertYAxis, invertXAxis)
+                    tilePath, annotationROI, imagingModalityWithIndex, createTiles)
             logger.info("Tile configuration created at {}", tilePath)
 
         } else {
@@ -617,10 +617,10 @@ class UtilityFunctions {
         double xStep = frameWidth - (overlapPercent / 100 * frameWidth)
         double yStep = frameHeight - (overlapPercent / 100 * frameHeight)
 
-        double startX = invertXAxis ? bBoxX + bBoxW : bBoxX;
-        double endX = invertXAxis ? bBoxX : bBoxX + bBoxW;
-        double startY = invertYAxis ? bBoxY + bBoxH : bBoxY;
-        double endY = invertYAxis ? bBoxY : bBoxY + bBoxH;
+//        double startX = invertXAxis ? bBoxX + bBoxW : bBoxX;
+//        double endX = invertXAxis ? bBoxX : bBoxX + bBoxW;
+//        double startY = invertYAxis ? bBoxY + bBoxH : bBoxY;
+//        double endY = invertYAxis ? bBoxY : bBoxY + bBoxH;
 
         // Handle step direction based on axis inversion
         xStep = invertXAxis ? -xStep : xStep;
@@ -629,56 +629,57 @@ class UtilityFunctions {
         logger.info("xStep size: $xStep")
         logger.info("yStep size: $yStep")
 
-        double y = startY;
-        // Loop through Y-axis
-//        while (y < bBoxY + bBoxH) {
-//            // Loop through X-axis with conditional direction for serpentine tiling
-//            // While this doesn't matter from QuPath's perspective, it can speed up collection when micromanager acquires the tiles in this order
-//            while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
-//                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
-//                // Check if tile intersects the given ROI or bounding box (null)
-//                if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
-//                    PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
-//                    tileDetection.setName(predictedTileCount.toString())
-//                    tileDetection.measurements.put("TileNumber", actualTileCount)
-//                    newTiles << tileDetection
-//                    //Adjusting to middle of frame rather than upper left
-//                    //xy << [x, y]
-//                    xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
-//                    actualTileCount++
-//                }
-//                // Adjust X for next tile
-//                x = (yline % 2 == 0) ? x + xStep : x - xStep
-//                predictedTileCount++
-//            }
-//            // Adjust Y for next line and reset X
-//            y += yStep
-//            x = (yline % 2 == 0) ? x - xStep : x + xStep
-//            yline++
-//        }
-
-        boolean reverseX = false; // Used for serpentine tiling
-
-        while ((invertYAxis ? y > endY : y < endY)) {
-            double x = reverseX ? endX : startX; // Start from the reverse end if required
-            //Need to double check that there is a buffer on the reverse direction
-            while ((reverseX ? x >= startX : x <= endX)) {
-                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane());
+        double y = bBoxY;
+        double x = bBoxX
+         //Loop through Y-axis
+        while (y < bBoxY + bBoxH) {
+            // Loop through X-axis with conditional direction for serpentine tiling
+            // While this doesn't matter from QuPath's perspective, it can speed up collection when micromanager acquires the tiles in this order
+            while ((x <= bBoxX + bBoxW) && (x >= bBoxX - bBoxW * overlapPercent / 100)) {
+                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane())
+                // Check if tile intersects the given ROI or bounding box (null)
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
                     tileDetection.setName(predictedTileCount.toString())
                     tileDetection.measurements.put("TileNumber", actualTileCount)
                     newTiles << tileDetection
+                    //Adjusting to middle of frame rather than upper left
+                    //xy << [x, y]
                     xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
                     actualTileCount++
                 }
-                x += reverseX ? -xStep : xStep;  // Change direction based on reverseX
-                predictedTileCount++;
+                // Adjust X for next tile
+                x = (yline % 2 == 0) ? x + xStep : x - xStep
+                predictedTileCount++
             }
-            y += yStep;  // Increment Y at the end of a row
-            reverseX = !reverseX;  // Toggle the direction for serpentine effect
-            // Reset x to start or end depending on the direction for the next row
+            // Adjust Y for next line and reset X
+            y += yStep
+            x = (yline % 2 == 0) ? x - xStep : x + xStep
+            yline++
         }
+
+//        boolean reverseX = false; // Used for serpentine tiling
+//
+//        while ((invertYAxis ? y > endY : y < endY)) {
+//            double x = reverseX ? endX : startX; // Start from the reverse end if required
+//            //Need to double check that there is a buffer on the reverse direction
+//            while ((reverseX ? x >= startX : x <= endX)) {
+//                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane());
+//                if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
+//                    PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
+//                    tileDetection.setName(predictedTileCount.toString())
+//                    tileDetection.measurements.put("TileNumber", actualTileCount)
+//                    newTiles << tileDetection
+//                    xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
+//                    actualTileCount++
+//                }
+//                x += reverseX ? -xStep : xStep;  // Change direction based on reverseX
+//                predictedTileCount++;
+//            }
+//            y += yStep;  // Increment Y at the end of a row
+//            reverseX = !reverseX;  // Toggle the direction for serpentine effect
+//            // Reset x to start or end depending on the direction for the next row
+//        }
 
         // Writing TileConfiguration_QP.txt file
         String header = "dim = 2\n"
