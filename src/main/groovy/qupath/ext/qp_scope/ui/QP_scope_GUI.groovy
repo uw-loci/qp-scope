@@ -463,8 +463,8 @@ class QP_scope_GUI {
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
             double pixelSizeFirstImagingMode = preferences.find{it.getName() == "1st scan pixel size um"}.getValue() as Double
             double overlapPercent = preferences.find{it.getName() == "Tile Overlap Percent"}.getValue() as Double
-            boolean isInvertedYProperty = preferences.find{it.getName() == "isInvertedYProperty"}.getValue()
-            boolean isInvertedXProperty = preferences.find{it.getName() == "isInvertedXProperty"}.getValue()
+            boolean isInvertedYProperty = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
+            boolean isInvertedXProperty = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
             String projectsFolderPath = preferences.find{it.getName() == "Projects Folder"}.getValue() as String
             String virtualEnvPath =  preferences.find{it.getName() == "Python Environment"}.getValue() as String
             String pythonScriptPath =  preferences.find{it.getName() == "PycroManager Path"}.getValue() as String
