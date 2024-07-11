@@ -501,24 +501,24 @@ class UtilityFunctions {
             double y2 = boundingBoxCoordinates[3]
 
             // Calculate top-left and bottom-right coordinates based on min/max
-            double minX = Math.min(x1, x2)
-            double maxX = Math.max(x1, x2)
-            double minY = Math.min(y1, y2)
-            double maxY = Math.max(y1, y2)
-            logger.info("Calculated min and max coordinates: minX={}, maxX={}, minY={}, maxY={}", minX, maxX, minY, maxY)
+            double startX = Math.min(x1, x2)
+            double endX = Math.max(x1, x2)
+            double startY = Math.min(y1, y2)
+            double endY = Math.max(y1, y2)
+            //logger.info("Calculated min and max coordinates: minX={}, maxX={}, minY={}, maxY={}", minX, maxX, minY, maxY)
 
             // Apply inversion logic
-            double startX = invertXAxis ? maxX : minX;
-            double endX = invertXAxis ? minX : maxX;
-            double startY = invertYAxis ? maxY : minY;
-            double endY = invertYAxis ? minY : maxY;
-            logger.info("Adjusted coordinates after applying axis inversion: startX={}, endX={}, startY={}, endY={}", startX, endX, startY, endY)
+//            double startX = invertXAxis ? minX : maxX;
+//            double endX = invertXAxis ? maxX : minX;
+//            double startY = invertYAxis ? minY : maxY;
+//            double endY = invertYAxis ? maxY : minY;
+//            logger.info("Adjusted coordinates after applying axis inversion: startX={}, endX={}, startY={}, endY={}", startX, endX, startY, endY)
 
             // Adjust coordinates for buffering and ensure positive dimensions
             startX -= frameWidth / 2;
             startY -= frameHeight / 2;
-            double width = Math.abs((endX - startX) + frameWidth);
-            double height = Math.abs((endY - startY) + frameHeight);
+            double width = Math.abs((endX - startX)) + frameWidth;
+            double height = Math.abs((endY - startY)) + frameHeight;
             logger.info("Final bounding box dimensions after buffering: startX={}, startY={}, width={}, height={}", startX, startY, width, height)
 
             def annotationROI = new RectangleROI(startX, startY, width, height, ImagePlane.getDefaultPlane())
@@ -622,12 +622,6 @@ class UtilityFunctions {
 //        double startY = invertYAxis ? bBoxY + bBoxH : bBoxY;
 //        double endY = invertYAxis ? bBoxY : bBoxY + bBoxH;
 
-        // Handle step direction based on axis inversion
-        xStep = invertXAxis ? -xStep : xStep;
-        yStep = invertYAxis ? -yStep : yStep;
-
-        logger.info("xStep size: $xStep")
-        logger.info("yStep size: $yStep")
 
         double y = bBoxY;
         double x = bBoxX
