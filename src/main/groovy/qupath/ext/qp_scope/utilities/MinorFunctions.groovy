@@ -97,15 +97,20 @@ class MinorFunctions {
      */
     static int countTifEntriesInTileConfig(List<String> arguments) {
         // Construct the path to the TileConfiguration.txt file
-        String tileConfigPath = arguments.join("/") + "/TileConfiguration_transformed.txt"
+        String tileConfigPath = arguments.join("/") + "/TileConfiguration_QP.txt"
+
         File tileConfigFile = new File(tileConfigPath)
 
-        // Check if the TileConfiguration.txt file exists
+        // Check if the TileConfiguration.txt or TileConfiguration_QP.txt file exists
         if (!tileConfigFile.exists()) {
-            println "TileConfiguration.txt file not found at: $tileConfigPath"
-            return 0
+            tileConfigPath = arguments.join("/") + "/TileConfiguration.txt"
+            tileConfigFile = new File(tileConfigPath)
         } else { logger.info("Reading file at $tileConfigPath")}
 
+        if (!tileConfigFile.exists()) {
+            println "TileConfiguration file not found at: $tileConfigPath"
+            return 0
+        } else { logger.info("Reading file at $tileConfigPath")}
         // Count .tif entries in the file
         int tifCount = 0
         int totalLines = 0
