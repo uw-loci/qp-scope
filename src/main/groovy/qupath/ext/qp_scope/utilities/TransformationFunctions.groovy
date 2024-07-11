@@ -332,9 +332,9 @@ class TransformationFunctions {
         }
 
         double[] adjustedCoordinates = new double[inputCoordinates.size()]
-        logger.info("Applying offsets")
-        logger.info(inputCoordinates.toString())
-        logger.info(offset.toString())
+        //logger.info("Applying offsets")
+        //logger.info(inputCoordinates.toString())
+        //logger.info(offset.toString())
 
         for (int i = 0; i < inputCoordinates.size(); i++) {
             if (sendToStage) {

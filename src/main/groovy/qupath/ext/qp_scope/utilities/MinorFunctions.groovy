@@ -125,8 +125,8 @@ class MinorFunctions {
     public static Map<String, String> calculateScriptPaths(String groovyScriptPath) {
         Path groovyScriptDirectory = Paths.get(groovyScriptPath).getParent()
         groovyScriptDirectory = groovyScriptDirectory.resolveSibling("groovyScripts")
-
-        Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("Tissue-lowres.json")
+        //TODO THIS CANNOT BE HARD CODED
+        Path jsonTissueClassfierPath = groovyScriptDirectory.resolve("TissueCAMM.json")
         Path exportScriptPath = groovyScriptDirectory.resolve("save4xMacroTiling.groovy")
 
         return [

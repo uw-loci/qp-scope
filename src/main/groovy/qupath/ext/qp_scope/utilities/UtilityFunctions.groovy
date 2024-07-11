@@ -150,7 +150,9 @@ class UtilityFunctions {
 
             if (script == null){
                 logger.info("Performing collection using $arguments");
+                logger.info("Performing collection using $argsJoined");
                 totalTifFiles = MinorFunctions.countTifEntriesInTileConfig(arguments);
+                logger.info("File count will be $totalTifFiles")
                 progressBar = true;
             }
 
@@ -482,6 +484,7 @@ class UtilityFunctions {
             // Create an ROI for the bounding box
             def annotationROI = new RectangleROI(bBoxX, bBoxY, bBoxW, bBoxH, ImagePlane.getDefaultPlane())
             // Create tile configuration based on the bounding box, bBox value are in microns
+            tilePath = QP.buildFilePath(tilePath, "TileConfiguration.txt")
             createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModalityWithIndex, createTiles)
 
         } else {
@@ -525,6 +528,8 @@ class UtilityFunctions {
                     bBoxW = bBoxW + frameWidth
                 }
                 // Create tile configuration for each annotation, bBox and frame values are in QuPath image pixels
+                // A different TileConfiguration_QP file name is useful here to distinguish the QuPath coordinate system from the stage coordinate system
+                tilePath = QP.buildFilePath(tilePath, "TileConfiguration_QP.txt")
                 createTileConfiguration(bBoxX, bBoxY, bBoxW, bBoxH, frameWidth, frameHeight, overlapPercent, tilePath, annotationROI, imagingModality, createTiles)
             }
         }
@@ -605,7 +610,7 @@ class UtilityFunctions {
 
         // Writing TileConfiguration_QP.txt file
         String header = "dim = 2\n"
-        new File(QP.buildFilePath(tilePath, "TileConfiguration_QP.txt")).withWriter { fw ->
+        new File(tilePath).withWriter { fw ->
             fw.writeLine(header)
             xy.eachWithIndex { coords, index ->
                 String line = "${index}.tif; ; (${coords[0]}, ${coords[1]})"

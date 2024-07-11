@@ -3,4 +3,4 @@ setColorDeconvolutionStains('{"Name" : "H&E default", "Stain 1" : "Hematoxylin",
 //Set pixel size
 setPixelSizeMicrons(2.0, 2.0)
 //createFullImageAnnotation(true)
-createAnnotationsFromPixelClassifier("C:/ImageAnalysis/python/Tissue-lowres.json", 5000000.0, 50000.0, "SPLIT", "SELECT_NEW")
+createAnnotationsFromPixelClassifier("C:/ImageAnalysis/python/TissueCAMM.json", 40000000.0, 0.0, "SPLIT", "SELECT_NEW")
