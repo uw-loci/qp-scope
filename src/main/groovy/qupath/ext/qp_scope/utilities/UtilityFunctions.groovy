@@ -607,7 +607,7 @@ class UtilityFunctions {
         logger.info("TileConfig setup")
         int predictedTileCount = 0
         int actualTileCount = 0
-        List xy = []
+        List<Double[]> xy = []
         int yline = 0
         List newTiles = []
 
@@ -659,10 +659,10 @@ class UtilityFunctions {
 
         boolean reverseX = false; // Used for serpentine tiling
 
-        while ((invertYAxis ? y >= endY : y <= endY)) {
+        while ((invertYAxis ? y > endY : y < endY)) {
             double x = reverseX ? endX : startX; // Start from the reverse end if required
             //Need to double check that there is a buffer on the reverse direction
-            while ((invertXAxis ? x >= startX : x <= endX)) {
+            while ((reverseX ? x >= startX : x <= endX)) {
                 def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane());
                 if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
                     PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
@@ -672,13 +672,12 @@ class UtilityFunctions {
                     xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
                     actualTileCount++
                 }
-                // Move X in the current direction
-                x += (reverseX ? -xStep : xStep);
+                x += reverseX ? -xStep : xStep;  // Change direction based on reverseX
                 predictedTileCount++;
             }
-            // Prepare for the next line
-            y += yStep;
-            reverseX = !reverseX; // Reverse the direction for the next row
+            y += yStep;  // Increment Y at the end of a row
+            reverseX = !reverseX;  // Toggle the direction for serpentine effect
+            // Reset x to start or end depending on the direction for the next row
         }
 
         // Writing TileConfiguration_QP.txt file
