@@ -162,7 +162,7 @@ class UtilityFunctions {
             Process process = Runtime.getRuntime().exec(command);
             //Only show progress bars for collections
             if (progressBar && totalTifFiles != 0) {
-                UI_functions.showProgressBar(tifCount, totalTifFiles, process, 10000)
+                UI_functions.showProgressBar(tifCount, totalTifFiles, process, 20000)
                 //UI_functions.showProgressBar(tifCount, totalTifFiles)
             }
 
