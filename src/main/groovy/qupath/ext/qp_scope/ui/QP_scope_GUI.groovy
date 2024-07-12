@@ -743,6 +743,9 @@ class QP_scope_GUI {
                         logger.info("modified TileConfiguration at $folder")
                     }
 
+                    //Ensure data is saved so there is no popup interrupting automated acquisition
+                    QPProjectFunctions.saveCurrentImageData()
+
                     Semaphore pythonCommandSemaphore = new Semaphore(1);
                     annotations.each { annotation ->
 

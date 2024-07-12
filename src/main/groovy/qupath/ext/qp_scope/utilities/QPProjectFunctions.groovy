@@ -198,5 +198,9 @@ class QPProjectFunctions {
 
         return project
     }
+    static void saveCurrentImageData() {
+        def imageEntry = QP.getProjectEntry()
+        imageEntry.saveImageData(QP.getCurrentImageData())
+    }
 
 }
