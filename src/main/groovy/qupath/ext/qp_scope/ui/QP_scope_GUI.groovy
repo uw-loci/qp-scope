@@ -639,7 +639,9 @@ class QP_scope_GUI {
                 return
             }
             UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [secondImagingMode], "swap_objective_lens.py")
-            //Callback that was removed - need to re-insert the checkValidAnnotations function here
+
+            //TODO locate the stage coordinates that related to the current image, so that the stage can be moved to the approximate coordinate
+
             UI_functions.checkValidAnnotationsGUI(classFilter,{ boolean check ->
                 if (!check) {
                     logger.info("Returned false from GUI status check checkValidAnnotationsGUI.")

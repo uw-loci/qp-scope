@@ -121,6 +121,49 @@ class TransformationFunctions {
 
     }
 
+
+/**
+ * Finds the smallest and largest X and Y coordinates in a tile configuration file.
+ * This function is useful for determining the bounding box of all tiles in terms of stage coordinates,
+ * which can be crucial for planning imaging operations or analyzing the spatial layout of tiles.
+ *
+ * @param tileConfigFile A File object representing the tile configuration file, which lists tile positions.
+ * @return A list containing two lists: the first holds the smallest X and Y coordinates,
+ *         and the second holds the largest X and Y coordinates.
+ */
+    private static List<List<Double>> findImageBoundaries(File tileConfigFile) {
+        logger.info("Finding extremes in Tile Configuration File")
+        // Initialize variables to hold the smallest and largest coordinates.
+        // We start with extreme values so any real coordinate will be less or more accordingly.
+        double minX = Double.POSITIVE_INFINITY
+        double minY = Double.POSITIVE_INFINITY
+        double maxX = Double.NEGATIVE_INFINITY
+        double maxY = Double.NEGATIVE_INFINITY
+
+        // Regex pattern to extract coordinates from lines in the format "index.tif; ; (x, y)"
+        Pattern pattern = Pattern.compile("\\d+\\.tif; ; \\((.*),\\s*(.*)\\)")
+
+        // Read through each line of the file
+        tileConfigFile.eachLine { line ->
+            Matcher m = pattern.matcher(line)
+            if (m.find()) {  // If the line contains coordinate information
+                double x = Double.parseDouble(m.group(1))  // Extract and parse the X coordinate
+                double y = Double.parseDouble(m.group(2))  // Extract and parse the Y coordinate
+
+                // Update the min and max values based on extracted coordinates
+                minX = Math.min(minX, x)
+                minY = Math.min(minY, y)
+                maxX = Math.max(maxX, x)
+                maxY = Math.max(maxY, y)
+            }
+        }
+
+        // Prepare the list of extreme coordinates to return
+        List<List<Double>> extremes = [[minX, minY], [maxX, maxY]]
+        return extremes
+    }
+
+
 /**
  * Adjusts an existing scaling affine transformation by setting translation parts to zero and then adding a new translation
  * to align with stage coordinates more accurately.
