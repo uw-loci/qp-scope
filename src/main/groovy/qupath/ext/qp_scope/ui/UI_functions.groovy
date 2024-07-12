@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
-
+import javafx.event.ActionEvent;
 import java.util.stream.Collectors
 
 
@@ -217,53 +217,107 @@ class UI_functions {
      *
      * @return true if a valid tile is selected and the user confirms the selection; false if the user cancels the operation.
      */
+//    static boolean stageToQuPathAlignmentGUI1() {
+//        boolean validTile = false;
+//        Optional<ButtonType> result;
+//
+//        // Get the current QuPath GUI instance
+//        QuPathGUI gui = QuPathGUI.getInstance()
+//
+//        // Retrieve the move tool
+//        def moveTool = PathTools.getTool("move")
+//        // Get the tool manager from the GUI and set the selected tool
+//        gui.getToolManager().setSelectedTool(moveTool)
+//
+//        while (!validTile) {
+//            // Create and configure the dialog inside the loop
+//            Dialog<ButtonType> dlg = new Dialog<>();
+//            dlg.initModality(Modality.NONE);
+//            dlg.setTitle("Align QuPath and Microscope");
+//            dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
+//            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+//            dlg.setOnShown(event -> {
+//                Window window = dlg.getDialogPane().getScene().getWindow();
+//                if (window instanceof Stage) {
+//                    ((Stage) window).setAlwaysOnTop(true);
+//                }
+//            });
+//
+//            // Show the dialog and wait for the user response
+//            result = dlg.showAndWait();
+//
+//            if (result.isPresent() && result.get() == ButtonType.OK) {
+//                List selectedObjects = QP.getSelectedObjects().stream()
+//                        .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
+//                        .collect(Collectors.toList());
+//
+//                if (selectedObjects.size() != 1) {
+//                    MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.");
+//                } else {
+//                    validTile = true;
+//                }
+//            } else {
+//                // User cancelled or closed the dialog
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
     static boolean stageToQuPathAlignmentGUI1() {
         boolean validTile = false;
-        Optional<ButtonType> result;
 
         // Get the current QuPath GUI instance
-        QuPathGUI gui = QuPathGUI.getInstance()
+        QuPathGUI gui = QuPathGUI.getInstance();
 
-        // Retrieve the move tool
-        def moveTool = PathTools.getTool("move")
-        // Get the tool manager from the GUI and set the selected tool
-        gui.getToolManager().setSelectedTool(moveTool)
+        // Create and configure the dialog
+        Dialog<Boolean> dlg = new Dialog<>();
+        dlg.initModality(Modality.NONE);
+        dlg.setTitle("Identify Location");
+        dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
+        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        while (!validTile) {
-            // Create and configure the dialog inside the loop
-            Dialog<ButtonType> dlg = new Dialog<>();
-            dlg.initModality(Modality.NONE);
-            dlg.setTitle("Identify Location");
-            dlg.setHeaderText("Select one tile (a detection) and match the Live View in uManager to the location of that tile, as closely as possible.\n This will be used for matching QuPath's coordinate system to the microscope stage coordinate system, so be as careful as you can!");
-            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            dlg.setOnShown(event -> {
-                Window window = dlg.getDialogPane().getScene().getWindow();
-                if (window instanceof Stage) {
-                    ((Stage) window).setAlwaysOnTop(true);
-                }
-            });
+        // Add a custom button that does not close the dialog
+        ButtonType moveButtonType = new ButtonType("Attempt move to selected Tile", ButtonBar.ButtonData.APPLY);
+        dlg.getDialogPane().getButtonTypes().add(moveButtonType);
 
-            // Show the dialog and wait for the user response
-            result = dlg.showAndWait();
+        Button moveButton = (Button) dlg.getDialogPane().lookupButton(moveButtonType);
+        moveButton.addEventFilter(ActionEvent.ACTION, event -> {
+            // Prevent the dialog from closing
+            event.consume();
+            // Implement your move to tile logic here
+            moveStageToSelectedTile();
+        });
 
-            if (result.isPresent() && result.get() == ButtonType.OK) {
+        dlg.setOnShown(event -> {
+            Window window = dlg.getDialogPane().getScene().getWindow();
+            if (window instanceof Stage) {
+                ((Stage) window).setAlwaysOnTop(true);
+            }
+        });
+
+        // Define the dialog result converter
+        dlg.setResultConverter(dialogButton -> {
+            if (dialogButton == ButtonType.OK) {
                 List selectedObjects = QP.getSelectedObjects().stream()
                         .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
                         .collect(Collectors.toList());
 
                 if (selectedObjects.size() != 1) {
                     MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.");
+                    return false; // Keep dialog open
                 } else {
-                    validTile = true;
+                    return true; // Proper selection, close dialog
                 }
-            } else {
-                // User cancelled or closed the dialog
-                return false;
+            } else if (dialogButton == ButtonType.CANCEL) {
+                return false; // Cancel and close dialog
             }
-        }
-        return true;
-    }
+            return null; // Other actions, do not close dialog
+        });
 
+        // Show the dialog and handle the result
+        Optional<Boolean> result = dlg.showAndWait();
+        return result.orElse(false); // Return the result of the dialog, default to false if closed unexpectedly
+    }
 
 /**
  * Displays a dialog to confirm the accuracy of the current stage position in comparison with the live view.

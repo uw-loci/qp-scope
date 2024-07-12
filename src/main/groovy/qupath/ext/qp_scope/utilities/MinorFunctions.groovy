@@ -189,4 +189,74 @@ class MinorFunctions {
         }
     }
 
+/**
+ * Writes the smallest and largest X and Y coordinates to a text file named similarly to the provided image file path,
+ * replacing the original extension with '_StageCoordinates.txt'.
+ * This function supports outputting the bounding box of all tiles in stage coordinates
+ * to a simple text format for easy reference or further processing.
+ *
+ * @param imagePath The path to the image file, used to determine the location and name for the coordinates file.
+ * @param extremes A list containing two lists: the first holds the smallest X and Y coordinates,
+ *                 and the second holds the largest X and Y coordinates.
+ */
+    public static void writeTileExtremesToFile(String imagePath, List<List<Double>> extremes) {
+        // Strip the original file extension and append '_StageCoordinates.txt'
+        String baseFilePath = imagePath.replaceAll('\\.[^\\.]+$', '') + "_StageCoordinates.txt"
+        logger.info("Writing tile extremes to file at: $baseFilePath")
+
+        File outputFile = new File(baseFilePath)
+        outputFile.withWriter('UTF-8') { writer ->
+            // Extracting the smallest and largest coordinates from the list
+            double minX = extremes[0][0]
+            double minY = extremes[0][1]
+            double maxX = extremes[1][0]
+            double maxY = extremes[1][1]
+
+            // Writing the coordinates to the file in the specified format
+            writer.write(String.format("%f, %f\n", minX, minY))
+            writer.write(String.format("%f, %f", maxX, maxY))
+        }
+        logger.info("Successfully wrote tile extremes to file")
+    }
+
+
+/**
+ * Reads the smallest and largest X and Y coordinates from a text file named similarly to the provided image file path,
+ * with '_StageCoordinates.txt'. The function assumes the file contains two lines, each with two double values separated by commas.
+ *
+ * @param imagePath The path to the image file, used to determine the location and name for the coordinates file.
+ * @return A list containing two lists: the first holds the smallest X and Y coordinates,
+ *         and the second holds the largest X and Y coordinates. Returns null if any error occurs.
+ */
+    public static List<List<Double>> readTileExtremesFromFile(String imagePath) {
+        String baseFilePath = imagePath.replaceAll('\\.[^\\.]+$', '') + "_StageCoordinates.txt"
+        File coordinateFile = new File(baseFilePath)
+
+        if (!coordinateFile.exists()) {
+            logger.error("Coordinate file does not exist: $baseFilePath")
+            return null
+        }
+
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(baseFilePath))
+            if (lines.size() != 2) {
+                logger.error("Expected 2 lines in the file, found ${lines.size()}: $baseFilePath")
+                return null
+            }
+
+            List<List<Double>> extremes = new ArrayList<>()
+            lines.each { line ->
+                String[] coords = line.split(', ')
+                List<Double> coordinatePair = coords.collect { Double.parseDouble(it.trim()) }
+                extremes.add(coordinatePair)
+            }
+
+            logger.info("Successfully read tile extremes from file: $extremes")
+            return extremes
+        } catch (Exception e) {
+            logger.error("Failed to read or parse the coordinates file: $baseFilePath", e)
+            return null
+        }
+    }
+
 }

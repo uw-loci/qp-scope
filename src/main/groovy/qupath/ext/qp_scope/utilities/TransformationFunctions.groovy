@@ -131,7 +131,7 @@ class TransformationFunctions {
  * @return A list containing two lists: the first holds the smallest X and Y coordinates,
  *         and the second holds the largest X and Y coordinates.
  */
-    private static List<List<Double>> findImageBoundaries(File tileConfigFile) {
+    static List<List<Double>> findImageBoundaries(File tileConfigFile) {
         logger.info("Finding extremes in Tile Configuration File")
         // Initialize variables to hold the smallest and largest coordinates.
         // We start with extreme values so any real coordinate will be less or more accordingly.

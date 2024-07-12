@@ -652,29 +652,6 @@ class UtilityFunctions {
             yline++
         }
 
-//        boolean reverseX = false; // Used for serpentine tiling
-//
-//        while ((invertYAxis ? y > endY : y < endY)) {
-//            double x = reverseX ? endX : startX; // Start from the reverse end if required
-//            //Need to double check that there is a buffer on the reverse direction
-//            while ((reverseX ? x >= startX : x <= endX)) {
-//                def tileROI = new RectangleROI(x, y, frameWidth, frameHeight, ImagePlane.getDefaultPlane());
-//                if (annotationROI == null || annotationROI.getGeometry().intersects(tileROI.getGeometry())) {
-//                    PathObject tileDetection = PathObjects.createDetectionObject(tileROI, QP.getPathClass(imagingModality))
-//                    tileDetection.setName(predictedTileCount.toString())
-//                    tileDetection.measurements.put("TileNumber", actualTileCount)
-//                    newTiles << tileDetection
-//                    xy << [tileROI.getCentroidX(), tileROI.getCentroidY()]
-//                    actualTileCount++
-//                }
-//                x += reverseX ? -xStep : xStep;  // Change direction based on reverseX
-//                predictedTileCount++;
-//            }
-//            y += yStep;  // Increment Y at the end of a row
-//            reverseX = !reverseX;  // Toggle the direction for serpentine effect
-//            // Reset x to start or end depending on the direction for the next row
-//        }
-
         // Writing TileConfiguration_QP.txt file
         String header = "dim = 2\n"
         logger.info("Writing out file to $tilePath")
@@ -694,7 +671,48 @@ class UtilityFunctions {
         }
     }
 
+    static void moveStageToSelectedTile() {
+        List selectedObjects = QP.getSelectedObjects().stream()
+                .filter(object -> object.isDetection() && object.getROI() instanceof qupath.lib.roi.RectangleROI)
+                .collect(Collectors.toList());
 
+        if (selectedObjects.size() != 1) {
+            MinorFunctions.showAlertDialog("There needs to be exactly one tile selected.");
+            return; // Keep dialog open
+        }
+        //Get the position of the current object
+        ROI tileROI = QP.getSelectedObjects()[0].getROI()
+        def tileLocation = [tileROI.getBoundsX(), tileROI.getBoundsY()]
+        //Get the image name
+        def imageName = QP.getCurrentServerPath()
+        //Get the _StageCoordinates.txt file for the image
+        def uriList = QP.getCurrentServer().getURIs()
+        def uri = uriList[0].toString() // Assuming there's only one URI for simplicity
+
+        // Convert URI to a decoded file path
+        def decodedPath = URLDecoder.decode(uri, "UTF-8").replace("file:/", "")
+        //Find the bounding box of the image in stage coordinates
+        def stageBounds = MinorFunctions.readTileExtremesFromFile(decodedPath)
+        def imageWidth=QP.getCurrentServer().getMetadata().getWidth()
+        def imageHeight= QP.getCurrentServer().getMetadata().getHeight()
+
+        //Interpolate the position of the current tile with the image bounds
+        // Calculate scaling factors based on stage and image dimensions
+        double scaleX = (stageBounds[1][0] - stageBounds[0][0]) / imageWidth
+        double scaleY = (stageBounds[1][1] - stageBounds[0][1]) / imageHeight
+
+        // Calculate the stage coordinates of the tile
+        double tileStageX = stageBounds[0][0] + tileLocation[0] * scaleX
+        double tileStageY = stageBounds[0][1] + tileLocation[1] * scaleY
+        def expectedStageXYPositionMicrons = [tileStageX, tileStageY] as List<String>
+
+        def preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
+        String virtualEnvPath = preferences.find { it.getName() == "Python Environment" }.getValue() as String
+        String pythonScriptPath = preferences.find { it.getName() == "PycroManager Path" }.getValue() as String
+        runPythonCommand(virtualEnvPath, pythonScriptPath, expectedStageXYPositionMicrons, "moveStageToCoordinates.py")
+        logger.info("Moving stage to selected tile...");
+
+    }
 
 
 

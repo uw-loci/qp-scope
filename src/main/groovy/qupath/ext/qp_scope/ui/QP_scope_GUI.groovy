@@ -18,6 +18,8 @@ import qupath.lib.scripting.QP
 
 import javafx.stage.Window
 
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Semaphore
 import java.awt.geom.AffineTransform
@@ -373,7 +375,8 @@ class QP_scope_GUI {
                         ] as List<String>
                         logger.info("Check input args for runPythonCommand")
 
-                        CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
+                        CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath,
+                                pythonScriptPath, args, pythonCommandSemaphore);
 
 
                         // Handle the successful completion of the Python command
@@ -391,11 +394,20 @@ class QP_scope_GUI {
                                     pixelSizeFirstImagingMode,
                             1);
                             logger.info("Stitching completed at $stitchedImagePathStr")
+                            Path tileConfigPath = Paths.get(projectsFolderPath, sampleLabel,
+                                    projectDetails.imagingModeWithIndex as String, annotation.getName(),
+                                    "TileConfiguration.txt")
+
+                            File tileConfigFile = tileConfigPath.toFile()
+                            def extremes = TransformationFunctions.findImageBoundaries(tileConfigFile)
+
+                            MinorFunctions.writeTileExtremesToFile(stitchedImagePathStr, extremes)
                             // Ensure stitching operation is also non-blocking and async
                         }).exceptionally(throwable -> {
                             // Handle any exceptions from the Python command
                             logger.error("Error during Python script execution: ${throwable.message}")
-                            UI_functions.notifyUserOfError("Error during Python script execution: ${throwable.message}", "Python Script Execution")
+                            UI_functions.notifyUserOfError("Error during Python script execution: ${throwable.message}",
+                                    "Python Script Execution")
                             return null; // To comply with the Function interface return type
                         });
                     }
@@ -525,7 +537,12 @@ class QP_scope_GUI {
                     sampleLabel, imagingModeWithIndex, "bounds", qupathGUI, currentQuPathProject,
                     compressionType, pixelSizeFirstImagingMode, 1)
             logger.info(stitchedImagePathStr)
+            Path tileConfigPath = Paths.get(projectsFolderPath, sampleLabel, imagingModeWithIndex, "bounds", "TileConfiguration.txt")
 
+            File tileConfigFile = tileConfigPath.toFile()
+            def extremes = TransformationFunctions.findImageBoundaries(tileConfigFile)
+
+            MinorFunctions.writeTileExtremesToFile(stitchedImagePathStr, extremes)
             qupathGUI.refreshProject()
             //Check if the tiles should be deleted from the collection folder
 
@@ -641,6 +658,9 @@ class QP_scope_GUI {
             UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [secondImagingMode], "swap_objective_lens.py")
 
             //TODO locate the stage coordinates that related to the current image, so that the stage can be moved to the approximate coordinate
+
+            //Access current image name, stageCoordinates.txt?
+            //Access metadata for 4x type?
 
             UI_functions.checkValidAnnotationsGUI(classFilter,{ boolean check ->
                 if (!check) {
@@ -776,6 +796,12 @@ class QP_scope_GUI {
                                     pixelSizeSecondImagingMode,
                             1);
                             logger.info("Stitching completed at $stitchedImagePathStr")
+                            Path tileConfigPath = Paths.get(projectsFolderPath, sampleLabel, projectDetails.imagingModeWithIndex as String, annotation.getName(), "TileConfiguration.txt")
+
+                            File tileConfigFile = tileConfigPath.toFile()
+                            def extremes = TransformationFunctions.findImageBoundaries(tileConfigFile)
+
+                            MinorFunctions.writeTileExtremesToFile(stitchedImagePathStr, extremes)
                             // Ensure stitching operation is also non-blocking and async
                         }).exceptionally(throwable -> {
                             // Handle any exceptions from the Python command
