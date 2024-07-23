@@ -58,7 +58,7 @@ class UI_functions {
  */
     static void showProgressBar(AtomicInteger progressCounter, int totalFiles, Process pythonProcess, int timeout) { // Added Process pythonProcess parameter
         logger.info("begin showProgressBar")
-        Platform.runLater(() -> {
+        //Platform.runLater(() -> {
             logger.info("inside platform.runLater showProgressBar")
             //long startTime = System.currentTimeMillis(); // Capture start time
             AtomicLong startTime = new AtomicLong();
@@ -149,7 +149,7 @@ class UI_functions {
                 }
 
             }, 200, 200, TimeUnit.MILLISECONDS);
-        });
+        //});
     }
 
     static void notifyUserOfError(String errorMessage, String actionContext) {
