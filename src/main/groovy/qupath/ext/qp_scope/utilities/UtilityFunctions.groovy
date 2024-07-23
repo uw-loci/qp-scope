@@ -81,7 +81,7 @@ class UtilityFunctions {
                 annotationName)
 
         File stitchedImagePath = new File(stitchedImagePathStr)
-        String adjustedFileName = sampleLabel+ '_' + imagingModeWithIndex + '_'+ (annotationName.equals("bounds") ? "" : annotationName)+".ome.tif"
+        String adjustedFileName = sampleLabel+ '_' + imagingModeWithIndex +  (annotationName.equals("bounds") ? "" : '_'+annotationName)+".ome.tif"
         File adjustedFilePath = new File(stitchedImagePath.parent, adjustedFileName)
 
         // Rename the stitched image file

@@ -277,6 +277,16 @@ class AutoFillPersistentPreferences{
         this.slideLabelSaved.value = slideLabelSaved
     }
 
+    private static StringProperty boundingBoxString = PathPrefs.createPersistentPreference("BoundingBox", "27000,7000,20000,10000");
+
+    public static String getBoundingBoxString(){
+        return boundingBoxString.value
+    }
+    public static void setBoundingBoxString(final String boundingBoxString){
+        this.boundingBoxString.value = boundingBoxString
+    }
+
+
     private static StringProperty macroImagePixelSizeInMicrons = PathPrefs.createPersistentPreference("macroImagePixelSizeInMicrons", "7.2");
 
     public static String getMacroImagePixelSizeInMicrons(){

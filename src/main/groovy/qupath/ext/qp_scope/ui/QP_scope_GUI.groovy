@@ -31,11 +31,11 @@ import javafx.stage.Stage
 class QP_scope_GUI {
     static final logger = LoggerFactory.getLogger(QP_scope_GUI.class)
     // GUI elements
-    static TextField x1Field = new TextField("")
-    static TextField y1Field = new TextField("")
-    static TextField x2Field = new TextField("")
-    static TextField y2Field = new TextField("")
-    static TextField scanBox = new TextField("-13316,-1580,-14854,-8474")
+//    static TextField x1Field = new TextField("")
+//    static TextField y1Field = new TextField("")
+//    static TextField x2Field = new TextField("")
+//    static TextField y2Field = new TextField("")
+    static TextField scanBox = new TextField(AutoFillPersistentPreferences.getBoundingBoxString())
     static preferences = QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems()
     static TextField groovyScriptDetectField = new TextField(AutoFillPersistentPreferences.getAnalysisScriptForAutomation());
     static TextField modalityField = new TextField(AutoFillPersistentPreferences.getModalityForAutomation());
@@ -102,10 +102,10 @@ class QP_scope_GUI {
             // Retrieve values from text fields
             def sampleLabel = sampleLabelField.getText()
 
-            def x1 = x1Field.getText()
-            def y1 = y1Field.getText()
-            def x2 = x2Field.getText()
-            def y2 = y2Field.getText()
+            def x1 = ""
+            def y1 = ""
+            def x2 = ""
+            def y2 = ""
             // Handle full bounding box input
             def boxString = scanBox.getText()
             //Boolean to check whether to proceed with running the microscope data collection
@@ -461,15 +461,21 @@ class QP_scope_GUI {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             // Retrieve values from text fields
             def sampleLabel = sampleLabelField.getText()
-            def x1 = x1Field.getText()
-            def y1 = y1Field.getText()
-            def x2 = x2Field.getText()
-            def y2 = y2Field.getText()
+//            def x1 = x1Field.getText()
+//            def y1 = y1Field.getText()
+//            def x2 = x2Field.getText()
+//            def y2 = y2Field.getText()
+            def autofillBoundingBox = AutoFillPersistentPreferences
+            def x1 = ""
+            def y1 = ""
+            def x2 = ""
+            def y2 = ""
             // Handle full bounding box input
             def boxString = scanBox.getText()
-            //Boolean to check whether to proceed with running the microscope data collection
-            boolean dataCheck = true
 
+            //Save current data to auto-populate in future
+            AutoFillPersistentPreferences.setBoundingBoxString(boxString)
+            AutoFillPersistentPreferences.setSlideLabel(sampleLabel)
             //Preferences from GUI
             double frameWidth = preferences.find{it.getName() == "Camera Frame Width #px"}.getValue() as Double
             double frameHeight = preferences.find{it.getName() == "Camera Frame Height #px"}.getValue() as Double
@@ -529,22 +535,33 @@ class QP_scope_GUI {
                          imagingModeWithIndex,
                          "bounds"]
 
+            Semaphore pythonCommandSemaphore = new Semaphore(1);
+
             UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, args, null)
+            CompletableFuture<List<String>> pythonFuture = runPythonCommandAsync(virtualEnvPath, pythonScriptPath, args, pythonCommandSemaphore);
+            pythonFuture.thenAcceptAsync(stageCoordinates -> {
+                // Process the result for successful execution
+                logger.info("Begin stitching")
+                // Handle image stitching and update project
 
-            // Handle image stitching and update project
+                String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
+                        sampleLabel, imagingModeWithIndex, "bounds", qupathGUI, currentQuPathProject,
+                        compressionType, pixelSizeFirstImagingMode, 1)
+                logger.info(stitchedImagePathStr)
+                Path tileConfigPath = Paths.get(projectsFolderPath, sampleLabel, imagingModeWithIndex, "bounds", "TileConfiguration.txt")
 
-            String stitchedImagePathStr = UtilityFunctions.stitchImagesAndUpdateProject(projectsFolderPath,
-                    sampleLabel, imagingModeWithIndex, "bounds", qupathGUI, currentQuPathProject,
-                    compressionType, pixelSizeFirstImagingMode, 1)
-            logger.info(stitchedImagePathStr)
-            Path tileConfigPath = Paths.get(projectsFolderPath, sampleLabel, imagingModeWithIndex, "bounds", "TileConfiguration.txt")
+                File tileConfigFile = tileConfigPath.toFile()
+                def extremes = TransformationFunctions.findImageBoundaries(tileConfigFile)
 
-            File tileConfigFile = tileConfigPath.toFile()
-            def extremes = TransformationFunctions.findImageBoundaries(tileConfigFile)
-
-            MinorFunctions.writeTileExtremesToFile(stitchedImagePathStr, extremes)
-            qupathGUI.refreshProject()
-            //Check if the tiles should be deleted from the collection folder
+                MinorFunctions.writeTileExtremesToFile(stitchedImagePathStr, extremes)
+                qupathGUI.refreshProject()
+                //Check if the tiles should be deleted from the collection folder
+            }).exceptionally(throwable -> {
+                // Handle any exceptions from the Python command
+                logger.error("Error during Python script execution: ${throwable.message}")
+                UI_functions.notifyUserOfError("Error during Python script execution: ${throwable.message}", "Python Script Execution")
+                return null; // To comply with the Function interface return type
+            });
 
             if (tileHandling == "Delete")
                 UtilityFunctions.deleteTilesAndFolder(tempTileDirectory)
@@ -573,10 +590,10 @@ class QP_scope_GUI {
         UI_functions.addToGrid(pane, new Label('Sample Label:'), sampleLabelField, row++)
 
         // Add existing components to the grid
-        UI_functions.addToGrid(pane, new Label('X1:'), x1Field, row++)
-        UI_functions.addToGrid(pane, new Label('Y1:'), y1Field, row++)
-        UI_functions.addToGrid(pane, new Label('X2:'), x2Field, row++)
-        UI_functions.addToGrid(pane, new Label('Y2:'), y2Field, row++)
+//        UI_functions.addToGrid(pane, new Label('X1:'), x1Field, row++)
+//        UI_functions.addToGrid(pane, new Label('Y1:'), y1Field, row++)
+//        UI_functions.addToGrid(pane, new Label('X2:'), x2Field, row++)
+//        UI_functions.addToGrid(pane, new Label('Y2:'), y2Field, row++)
         UI_functions.addToGrid(pane, new Label('Full bounding box:'), scanBox, row++)
 
         return pane
