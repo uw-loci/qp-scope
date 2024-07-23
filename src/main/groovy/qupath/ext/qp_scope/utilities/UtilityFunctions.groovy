@@ -146,7 +146,7 @@ class UtilityFunctions {
         try {
             String pythonExecutable = new File(anacondaEnvPath, "python.exe").getCanonicalPath();
             String scriptPath = script != null ? new File(new File(pythonScriptPath).getParent(), script).getCanonicalPath() : pythonScriptPath;
-            logger.info("Running $script");
+            logger.info("Running scriptPath $scriptPath");
 
             if (script == null){
                 logger.info("Performing collection using $arguments");
@@ -162,7 +162,8 @@ class UtilityFunctions {
             Process process = Runtime.getRuntime().exec(command);
             //Only show progress bars for collections
             if (progressBar && totalTifFiles != 0) {
-                UI_functions.showProgressBar(tifCount, totalTifFiles, process, -1)
+                logger.info("calling showProgressBar")
+                UI_functions.showProgressBar(tifCount, totalTifFiles, process, 20000)
                 //UI_functions.showProgressBar(tifCount, totalTifFiles)
             }
 

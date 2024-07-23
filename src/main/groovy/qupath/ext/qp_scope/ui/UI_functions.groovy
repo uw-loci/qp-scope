@@ -57,7 +57,9 @@ class UI_functions {
  * @param timeout Timeout in milliseconds after which the process is considered stalled and is terminated.
  */
     static void showProgressBar(AtomicInteger progressCounter, int totalFiles, Process pythonProcess, int timeout) { // Added Process pythonProcess parameter
+        logger.info("begin showProgressBar")
         Platform.runLater(() -> {
+            logger.info("inside platform.runLater showProgressBar")
             //long startTime = System.currentTimeMillis(); // Capture start time
             AtomicLong startTime = new AtomicLong();
             AtomicLong lastUpdateTime = new AtomicLong(System.currentTimeMillis()); // Track the last update time
