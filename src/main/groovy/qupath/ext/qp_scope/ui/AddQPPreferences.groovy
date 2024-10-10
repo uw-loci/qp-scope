@@ -49,7 +49,7 @@ class AddQPPreferences {
     private static void initializePreferences() {
 
 
-// Flip macro image horizontally
+// Flip macro image horizontally REPLACE
         BooleanProperty isFlippedXProperty = PathPrefs.createPersistentPreference("isFlippedXProperty", false);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isFlippedXProperty, Boolean.class)
@@ -58,7 +58,7 @@ class AddQPPreferences {
                         .description("Allows the slide to be flipped horizontally so that the coordinates can be matched correctly with the stage.")
                         .build()
         );
-        // Flip macro image vertically
+        // Flip macro image vertically REPLACE
         BooleanProperty isFlippedYProperty = PathPrefs.createPersistentPreference("isFlippedYProperty", false);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isFlippedYProperty, Boolean.class)
@@ -68,7 +68,7 @@ class AddQPPreferences {
                         .build()
         );
 
-        // Stage axis is inverted relative to QuPath
+        // Stage axis is inverted relative to QuPath UNSURE
         BooleanProperty isInvertedXProperty = PathPrefs.createPersistentPreference("isInvertedXProperty", false);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isInvertedXProperty, Boolean.class)
@@ -77,7 +77,7 @@ class AddQPPreferences {
                         .description("Stage axis is inverted in X relative to QuPath.")
                         .build()
         );
-        // Stage axis is inverted relative to QuPath
+        // Stage axis is inverted relative to QuPath UNSURE
         BooleanProperty isInvertedYProperty = PathPrefs.createPersistentPreference("isInvertedYProperty", true);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(isInvertedYProperty, Boolean.class)
@@ -87,7 +87,8 @@ class AddQPPreferences {
                         .build()
         );
 // PycroManager Script Path
-        StringProperty pycromanagerProperty = PathPrefs.createPersistentPreference("pycromanagerProperty", "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py");
+        //StringProperty pycromanagerProperty = PathPrefs.createPersistentPreference("pycromanagerProperty", "C:\\Users\\lociuser\\Codes\\smart-wsi-scanner\\minimal_qupathrunner.py");
+        StringProperty pycromanagerProperty = PathPrefs.createPersistentPreference("pycromanagerProperty", "C:\\Users\\Michael Nelson\\OneDrive - UW-Madison\\GitHub_clones\\smart-wsi-scanner\\minimal_qupathrunner.py");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pycromanagerProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
@@ -98,7 +99,9 @@ class AddQPPreferences {
         );
 
 // Python Environment Path
-        StringProperty pythonEnvironmentProperty = PathPrefs.createPersistentPreference("pythonEnvironmentProperty", "C:\\Users\\lociuser\\miniconda3\\envs\\spath");
+
+        //StringProperty pythonEnvironmentProperty = PathPrefs.createPersistentPreference("pythonEnvironmentProperty", "C:\\Users\\lociuser\\miniconda3\\envs\\spath");
+        StringProperty pythonEnvironmentProperty = PathPrefs.createPersistentPreference("pythonEnvironmentProperty", "C:\\Anaconda\\envs\\ls_control");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pythonEnvironmentProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
@@ -108,8 +111,20 @@ class AddQPPreferences {
                         .build()
         );
 
+
+        StringProperty microscopeConfigFileProperty = PathPrefs.createPersistentPreference("microscopeConfigFileProperty", "C:\\ImageAnalysis\\QPExtension0.5.0\\config\\config_CAMM.yml");
+        QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
+                new PropertyItemBuilder<>(microscopeConfigFileProperty, String.class)
+                        .propertyType(PropertyItemBuilder.PropertyType.FILE)
+                        .name("Microscope Config File")
+                        .category(EXTENSION_NAME)
+                        .description("Microscope Config File.")
+                        .build()
+        );
+
 // Projects Folder Path
-        StringProperty projectsFolderProperty = PathPrefs.createPersistentPreference("projectsFolderProperty", "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides");
+        //StringProperty projectsFolderProperty = PathPrefs.createPersistentPreference("projectsFolderProperty", "C:\\Users\\lociuser\\Codes\\MikeN\\data\\slides");
+        StringProperty projectsFolderProperty = PathPrefs.createPersistentPreference("projectsFolderProperty", "C:\\ImageAnalysis\\QPExtension0.5.0\\data\\slides");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(projectsFolderProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
@@ -120,7 +135,8 @@ class AddQPPreferences {
         );
 
 // Extension Path
-        StringProperty extensionPathProperty = PathPrefs.createPersistentPreference("extensionPathProperty", "C:\\Users\\lociuser\\Codes\\MikeN\\qp_scope");
+        //StringProperty extensionPathProperty = PathPrefs.createPersistentPreference("extensionPathProperty", "C:\\Users\\lociuser\\Codes\\MikeN\\qp-scope");
+        StringProperty extensionPathProperty = PathPrefs.createPersistentPreference("extensionPathProperty", "C:\\ImageAnalysis\\QPExtension0.5.0\\qp-scope");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(extensionPathProperty, String.class)
                         .propertyType(PropertyItemBuilder.PropertyType.DIRECTORY)
@@ -145,7 +161,7 @@ class AddQPPreferences {
                         .build()
         );
 
-// First Scan Type
+// First Scan Type POSSIBLY REPLACE WITH A LIST
         StringProperty firstImagingModeProperty = PathPrefs.createPersistentPreference("firstImagingModeProperty", "4x_bf");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(firstImagingModeProperty, String.class)
@@ -155,7 +171,7 @@ class AddQPPreferences {
                         .build()
         );
 
-// Second Scan Type
+// Second Scan Type POSSIBLY REPLACE WITH A LIST
         StringProperty secondImagingModeProperty = PathPrefs.createPersistentPreference("secondImagingModeProperty", "20x_bf");
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(secondImagingModeProperty, String.class)
@@ -181,7 +197,7 @@ class AddQPPreferences {
         );
 
 
-// Pixel Size for First Scan Type
+// Pixel Size for First Scan Type UGH, CAN THIS BE ASSOCIATED, PAIRED LIST
         DoubleProperty pixelSizeFirstImagingModeProperty = PathPrefs.createPersistentPreference("pixelSizeFirstImagingModeProperty", 1.105);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pixelSizeFirstImagingModeProperty, Double.class)
@@ -193,7 +209,7 @@ class AddQPPreferences {
 
 
 
-// Pixel Size for Second Scan Type
+// Pixel Size for Second Scan Type UGH, CAN THIS BE ASSOCIATED, PAIRED LIST
         DoubleProperty pixelSizeSecondImagingModeProperty = PathPrefs.createPersistentPreference("pixelSizeSecondImagingModeProperty", 0.5);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(pixelSizeSecondImagingModeProperty, Double.class)
@@ -203,7 +219,7 @@ class AddQPPreferences {
                         .build()
         );
 
-// Camera Frame Width in Pixels
+// Camera Frame Width in Pixels REPLACE
         IntegerProperty cameraFrameWidthPxProperty = PathPrefs.createPersistentPreference("cameraFrameWidthPxProperty", 1392);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(cameraFrameWidthPxProperty, Integer.class)
@@ -213,7 +229,7 @@ class AddQPPreferences {
                         .build()
         );
 
-// Camera Frame Height in Pixels
+// Camera Frame Height in Pixels REPLACE
         IntegerProperty cameraFrameHeightPxProperty = PathPrefs.createPersistentPreference("cameraFrameHeightPxProperty", 1040);
         QPEx.getQuPath().getPreferencePane().getPropertySheet().getItems().add(
                 new PropertyItemBuilder<>(cameraFrameHeightPxProperty, Integer.class)

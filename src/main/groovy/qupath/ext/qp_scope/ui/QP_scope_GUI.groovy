@@ -219,6 +219,7 @@ class QP_scope_GUI {
             boolean isSlideFlippedX = preferences.find{it.getName() == "Flip macro image X"}.getValue() as Boolean
             boolean isSlideFlippedY = preferences.find{it.getName() == "Flip macro image Y"}.getValue() as Boolean
             String firstImagingMode = preferences.find { it.getName() == "First Scan Type" }.getValue() as String
+            String configFileLocation = preferences.find { it.getName() == "Microscope Config File" }.getValue() as String
             //TODO add entry in GUI to get annotation labels
             def classLabels = ["Tissue"]
             // Log retrieved preference values
@@ -368,7 +369,8 @@ class QP_scope_GUI {
                     Semaphore pythonCommandSemaphore = new Semaphore(1);
                     annotations.each { annotation ->
 
-                        List<String> args = [projectsFolderPath,
+                        List<String> args = [configFileLocation,
+                                             projectsFolderPath,
                                              sampleLabel,
                                              projectDetails.imagingModeWithIndex,
                                              annotation.getName(),
@@ -489,7 +491,7 @@ class QP_scope_GUI {
             String compressionType = preferences.find{it.getName() == "Compression type"}.getValue() as String
             String tileHandling = preferences.find{it.getName() == "Tile Handling Method"}.getValue() as String
             String firstImagingMode = preferences.find { it.getName() == "First Scan Type" }.getValue() as String
-            // Continue with previous behavior using coordinates
+            String configFileLocation = preferences.find { it.getName() == "Microscope Config File" }.getValue() as String
             if (boxString != "") {
                 def values = boxString.replaceAll("[^0-9.,]", "").split(",")
                 if (values.length == 4) {
@@ -530,7 +532,8 @@ class QP_scope_GUI {
             UtilityFunctions.runPythonCommand(virtualEnvPath, pythonScriptPath, [firstImagingMode], "swap_objective_lens.py")
             //Send the scanning command to the microscope
 
-            List args = [projectsFolderPath,
+            List args = [configFileLocation,
+                         projectsFolderPath,
                          sampleLabel,
                          imagingModeWithIndex,
                          "bounds"]
@@ -653,7 +656,7 @@ class QP_scope_GUI {
             String compressionType = preferences.find { it.getName() == "Compression type" }.getValue() as String
             String tileHandling = preferences.find { it.getName() == "Tile Handling Method" }.getValue() as String
             String secondImagingMode = preferences.find { it.getName() == "Second Scan Type" }.getValue() as String
-
+            String configFileLocation = preferences.find { it.getName() == "Microscope Config File" }.getValue() as String
             //SETUP: collect variables
             QuPathGUI qupathGUI = QPEx.getQuPath()
             //String imagingModeWithIndex = MinorFunctions.getUniqueFolderName(projectsFolderPath + File.separator + sampleLabel + File.separator + secondImagingMode)
@@ -788,7 +791,8 @@ class QP_scope_GUI {
                     Semaphore pythonCommandSemaphore = new Semaphore(1);
                     annotations.each { annotation ->
 
-                        List<String> args = [projectsFolderPath,
+                        List<String> args = [configFileLocation,
+                                             projectsFolderPath,
                                              sampleLabel,
                                              projectDetails.imagingModeWithIndex,
                                              annotation.getName(),
