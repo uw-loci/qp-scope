@@ -20,7 +20,7 @@ import qupath.ext.qp_scope.utilities.MicroscopeConfigManager
 /**
  * Built from the QuPath extension template - an extension to control a microscope through a Python interface
  */
-class `QP_scope implements QuPathExtension, GitHubProject {
+class QP_scope implements QuPathExtension, GitHubProject {
     def logger = LoggerFactory.getLogger(QP_scope.class)
     // Setting the variables here is enough for them to be available in the extension
     private static final String EXTENSION_NAME = "Microscopy in QuPath"
